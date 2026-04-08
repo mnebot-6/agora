@@ -1,0 +1,22 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/composeApp/build
+/core/*/build
+/feature/*/build
+*.apk
+*.aab
+*.hprof
+# Kotlin metadata cache
+.kotlin/
+# Claude Code local settings
+.claude/settings.local.json
+# Google services (contains keys)
+google-services.json
