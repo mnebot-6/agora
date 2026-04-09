@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,18 +22,38 @@ fun ErrorScreen(
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
+        GreekKeyDivider(
+            color = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
+            modifier = Modifier.fillMaxWidth(0.5f),
+            patternHeight = 8.dp,
         )
-        if (onRetry != null) {
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onRetry) {
-                Text("Reintentar")
+
+        Spacer(Modifier.height(16.dp))
+
+        StoneCard(
+            borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+            modifier = Modifier.fillMaxWidth(0.85f),
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                if (onRetry != null) {
+                    Spacer(Modifier.height(16.dp))
+                    AgoraButton(
+                        text = "Reintentar",
+                        onClick = onRetry,
+                        variant = AgoraButtonVariant.Secondary,
+                    )
+                }
             }
         }
     }

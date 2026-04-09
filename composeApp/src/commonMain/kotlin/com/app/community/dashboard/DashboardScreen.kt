@@ -1,8 +1,8 @@
 package com.app.community.dashboard
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,17 +17,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,8 +38,15 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.SlotMode
+import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FriezeBandHeader
+import com.app.community.core.ui.components.GreekFrame
 import com.app.community.core.ui.components.LoadingScreen
+import com.app.community.core.ui.components.SlotStatusBadge
+import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.theme.AgoraElevation
+import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.slotStatusColors
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import kotlinx.datetime.TimeZone
@@ -61,7 +63,7 @@ class DashboardScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
+                AgoraTopBar(
                     title = {
                         Text(
                             "Agora",
@@ -118,10 +120,10 @@ private fun DashboardContent(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(AgoraSpacing.screenHorizontal),
+        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
     ) {
-        // Hero card — next activity
+        // Hero card -- next activity
         val next = state.nextActivity
         if (next != null) {
             item(key = "hero") {
@@ -135,11 +137,9 @@ private fun DashboardContent(
         // Upcoming activities header
         if (state.upcomingActivities.size > 1) {
             item(key = "header") {
-                Text(
-                    text = "Pr\u00f3ximas actividades",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(top = 4.dp),
+                FriezeBandHeader(
+                    title = "Pr\u00f3ximas actividades",
+                    modifier = Modifier.padding(top = AgoraSpacing.xs),
                 )
             }
 
@@ -167,12 +167,13 @@ private fun HeroActivityCard(
     val localDt = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
     val slotColors = MaterialTheme.slotStatusColors
 
-    Card(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = MaterialTheme.shapes.large,
+    StoneCard(
+        modifier = modifier,
+        showGreekBorder = true,
+        elevation = AgoraElevation.hero,
+        onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(AgoraSpacing.heroCardInternal)) {
             // Activity name
             Text(
                 text = activity.name,
@@ -180,7 +181,7 @@ private fun HeroActivityCard(
                 fontWeight = FontWeight.Bold,
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(AgoraSpacing.md))
 
             // Date/time
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -190,7 +191,7 @@ private fun HeroActivityCard(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(AgoraSpacing.xs + AgoraSpacing.xxs))
                 Text(
                     text = "${dayOfWeekName(localDt.dayOfWeek)} ${localDt.dayOfMonth}, ${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
                     style = MaterialTheme.typography.bodyMedium,
@@ -199,7 +200,7 @@ private fun HeroActivityCard(
 
             // Location
             activity.locationName?.let { loc ->
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(AgoraSpacing.xs))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.LocationOn,
@@ -207,7 +208,7 @@ private fun HeroActivityCard(
                         tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(18.dp),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(AgoraSpacing.xs + AgoraSpacing.xxs))
                     Text(
                         text = loc,
                         style = MaterialTheme.typography.bodySmall,
@@ -216,31 +217,23 @@ private fun HeroActivityCard(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(AgoraSpacing.lg))
 
             // Status badge
-            val (badgeColors, badgeText) = when {
+            val (badgeColorPair, badgeText) = when {
                 info.isUserReserved -> slotColors.reservedByMe to "Reservado"
                 info.userQueuePosition != null -> slotColors.reservedByOther to "En cola #${info.userQueuePosition}"
                 else -> slotColors.available to "No reservado"
             }
 
-            Surface(
-                color = badgeColors.container,
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Text(
-                    text = badgeText,
-                    color = badgeColors.content,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
+            SlotStatusBadge(
+                text = badgeText,
+                colorPair = badgeColorPair,
+            )
 
             // Slot counter (only for limited modes)
             if (activity.slotMode != SlotMode.UNLIMITED && info.availableSlots >= 0) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(AgoraSpacing.lg))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${info.availableSlots}",
@@ -252,12 +245,12 @@ private fun HeroActivityCard(
                             MaterialTheme.colorScheme.error
                         },
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(AgoraSpacing.sm))
                     Text(
                         text = if (info.availableSlots == 1) "plaza libre" else "plazas libres",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.padding(bottom = AgoraSpacing.sm),
                     )
                 }
             }
@@ -275,12 +268,15 @@ private fun CompactActivityCard(
     val localDt = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
     val slotColors = MaterialTheme.slotStatusColors
 
-    OutlinedCard(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
+    StoneCard(
+        modifier = modifier,
+        elevation = AgoraElevation.none,
+        onClick = onClick,
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(AgoraSpacing.md)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -307,10 +303,10 @@ private fun CompactActivityCard(
                 }
             }
 
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(AgoraSpacing.sm))
 
             // Status chip
-            val (chipColors, chipText) = when {
+            val (chipColorPair, chipText) = when {
                 info.isUserReserved -> slotColors.reservedByMe to "Reservado"
                 info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
                     slotColors.reservedByOther to "Lleno"
@@ -321,40 +317,39 @@ private fun CompactActivityCard(
                 else -> slotColors.available to "${info.availableSlots} plazas"
             }
 
-            Surface(
-                color = chipColors.container,
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Text(
-                    text = chipText,
-                    color = chipColors.content,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-            }
+            SlotStatusBadge(
+                text = chipText,
+                colorPair = chipColorPair,
+                isCompact = true,
+            )
         }
     }
 }
 
 @Composable
 private fun EmptyDashboard(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    GreekFrame(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(AgoraSpacing.xxl),
     ) {
-        Text(
-            text = "Tu \u00e1gora est\u00e1 vac\u00eda",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "\u00danete a una comunidad para ver actividades.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline,
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(AgoraSpacing.xxl),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Tu \u00e1gora est\u00e1 vac\u00eda",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(AgoraSpacing.sm))
+            Text(
+                text = "\u00danete a una comunidad para ver actividades.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
     }
 }
 

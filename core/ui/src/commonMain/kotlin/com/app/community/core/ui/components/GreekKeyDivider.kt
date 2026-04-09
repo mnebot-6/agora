@@ -13,19 +13,27 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+enum class GreekKeyVariant { Single, Double }
+
 /**
  * Divisor decorativo con patron de greca/meandro griego.
  * Dibuja el clasico patron escalonado que se encuentra en
  * frisos y bordes de la arquitectura griega antigua.
+ *
+ * Variante [Double] dibuja dos filas paralelas del meandro.
  */
 @Composable
 fun GreekKeyDivider(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.outlineVariant,
     strokeWidth: Dp = 1.dp,
-    patternHeight: Dp = 10.dp,
+    patternHeight: Dp = 12.dp,
+    variant: GreekKeyVariant = GreekKeyVariant.Single,
 ) {
-    val totalHeight = patternHeight + strokeWidth * 2
+    val rowCount = if (variant == GreekKeyVariant.Double) 2 else 1
+    val gap = if (rowCount > 1) 4.dp else 0.dp
+    val totalHeight = (patternHeight + strokeWidth * 2) * rowCount + gap * (rowCount - 1)
+
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -36,45 +44,33 @@ fun GreekKeyDivider(
         val ph = patternHeight.toPx()
         val unitWidth = ph * 2f
         val width = size.width
+        val gapPx = gap.toPx()
+        val rowH = ph + sw * 2
 
-        val midY = size.height / 2f
-        val top = midY - ph / 2f
-        val bottom = midY + ph / 2f
+        for (row in 0 until rowCount) {
+            val rowOffset = row * (rowH + gapPx)
+            val midY = rowOffset + rowH / 2f
+            val top = midY - ph / 2f
+            val bottom = midY + ph / 2f
 
-        // How many full pattern units fit
-        val unitCount = (width / unitWidth).toInt()
-        val totalPatternWidth = unitCount * unitWidth
-        val startX = (width - totalPatternWidth) / 2f
+            val unitCount = (width / unitWidth).toInt()
+            val totalPatternWidth = unitCount * unitWidth
+            val startX = (width - totalPatternWidth) / 2f
 
-        // Draw the meander pattern: each unit is a squared spiral step
-        for (i in 0 until unitCount) {
-            val x = startX + i * unitWidth
-            val halfUnit = unitWidth / 2f
-            val quarter = unitWidth / 4f
+            for (i in 0 until unitCount) {
+                val x = startX + i * unitWidth
+                val halfUnit = unitWidth / 2f
+                val quarter = unitWidth / 4f
 
-            // Top horizontal line across full unit
-            drawLine(color, Offset(x, top), Offset(x + unitWidth, top), sw, StrokeCap.Butt)
-
-            // Right side: vertical down from top
-            drawLine(color, Offset(x + unitWidth, top), Offset(x + unitWidth, bottom), sw, StrokeCap.Butt)
-
-            // Bottom horizontal back to midpoint
-            drawLine(color, Offset(x + unitWidth, bottom), Offset(x + halfUnit, bottom), sw, StrokeCap.Butt)
-
-            // Vertical up to center
-            drawLine(color, Offset(x + halfUnit, bottom), Offset(x + halfUnit, midY), sw, StrokeCap.Butt)
-
-            // Horizontal step inward
-            drawLine(color, Offset(x + halfUnit, midY), Offset(x + quarter, midY), sw, StrokeCap.Butt)
-
-            // Vertical down from center to near bottom
-            drawLine(color, Offset(x + quarter, midY), Offset(x + quarter, bottom - quarter), sw, StrokeCap.Butt)
-
-            // Connect bottom left
-            drawLine(color, Offset(x + quarter, bottom - quarter), Offset(x, bottom - quarter), sw, StrokeCap.Butt)
-
-            // Left side vertical up
-            drawLine(color, Offset(x, bottom - quarter), Offset(x, top), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x, top), Offset(x + unitWidth, top), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + unitWidth, top), Offset(x + unitWidth, bottom), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + unitWidth, bottom), Offset(x + halfUnit, bottom), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + halfUnit, bottom), Offset(x + halfUnit, midY), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + halfUnit, midY), Offset(x + quarter, midY), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + quarter, midY), Offset(x + quarter, bottom - quarter), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x + quarter, bottom - quarter), Offset(x, bottom - quarter), sw, StrokeCap.Butt)
+                drawLine(color, Offset(x, bottom - quarter), Offset(x, top), sw, StrokeCap.Butt)
+            }
         }
     }
 }

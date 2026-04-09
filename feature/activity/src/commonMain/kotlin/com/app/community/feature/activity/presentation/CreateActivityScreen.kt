@@ -1,6 +1,6 @@
 package com.app.community.feature.activity.presentation
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -20,22 +20,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import com.app.community.core.ui.components.GreekKeyDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,13 +41,21 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.SlotMode
+import com.app.community.core.ui.components.AgoraButton
+import com.app.community.core.ui.components.AgoraButtonVariant
+import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.FriezeBandHeader
+import com.app.community.core.ui.components.GreekKeyDivider
+import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.theme.AgoraElevation
+import com.app.community.core.ui.theme.AgoraSpacing
+import com.app.community.core.ui.theme.agoraColors
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 
 @Serializable
 data class CreateActivityScreen(val communityId: String) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -70,7 +70,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
+                AgoraTopBar(
                     title = { Text("Nueva Actividad") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
@@ -84,10 +84,13 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
+                    .background(MaterialTheme.agoraColors.parchment)
+                    .padding(AgoraSpacing.screenHorizontal)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(AgoraSpacing.md),
             ) {
+                Spacer(Modifier.height(AgoraSpacing.xs))
+
                 // Name
                 OutlinedTextField(
                     value = state.name,
@@ -102,7 +105,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = screenModel::onDescriptionChange,
-                    label = { Text("Descripción") },
+                    label = { Text("Descripcion") },
                     placeholder = { Text("Soporta formato Markdown") },
                     minLines = 3,
                     maxLines = 6,
@@ -110,7 +113,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 )
 
                 // Date and Time row
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
                     OutlinedTextField(
                         value = state.date,
                         onValueChange = screenModel::onDateChange,
@@ -130,7 +133,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 }
 
                 // Duration
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
                     OutlinedTextField(
                         value = state.durationHours.toString(),
                         onValueChange = { screenModel.onDurationHoursChange(it.toIntOrNull() ?: 0) },
@@ -152,7 +155,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     value = state.locationName,
                     onValueChange = screenModel::onLocationNameChange,
                     label = { Text("Lugar") },
-                    placeholder = { Text("Ej: Pabellón de la Fuensanta") },
+                    placeholder = { Text("Ej: Pabellon de la Fuensanta") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -162,30 +165,37 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     value = state.costDescription,
                     onValueChange = screenModel::onCostDescriptionChange,
                     label = { Text("Coste") },
-                    placeholder = { Text("Ej: Bizum de 6.5€ por persona") },
+                    placeholder = { Text("Ej: Bizum de 6.5 euros por persona") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 // Slot mode selector
-                Spacer(Modifier.height(8.dp))
-                Text("Tipo de plazas", style = MaterialTheme.typography.titleSmall)
+                GreekKeyDivider()
 
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = state.slotMode == SlotMode.UNLIMITED,
+                FriezeBandHeader(title = "Tipo de plazas")
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                ) {
+                    SlotModeCard(
+                        label = "Sin limite",
+                        isSelected = state.slotMode == SlotMode.UNLIMITED,
                         onClick = { screenModel.onSlotModeChange(SlotMode.UNLIMITED) },
-                        label = { Text("Sin límite") },
+                        modifier = Modifier.weight(1f),
                     )
-                    FilterChip(
-                        selected = state.slotMode == SlotMode.LIMITED,
+                    SlotModeCard(
+                        label = "Limitado",
+                        isSelected = state.slotMode == SlotMode.LIMITED,
                         onClick = { screenModel.onSlotModeChange(SlotMode.LIMITED) },
-                        label = { Text("Limitado") },
+                        modifier = Modifier.weight(1f),
                     )
-                    FilterChip(
-                        selected = state.slotMode == SlotMode.LIMITED_WITH_POSITIONS,
+                    SlotModeCard(
+                        label = "Posiciones",
+                        isSelected = state.slotMode == SlotMode.LIMITED_WITH_POSITIONS,
                         onClick = { screenModel.onSlotModeChange(SlotMode.LIMITED_WITH_POSITIONS) },
-                        label = { Text("Con posiciones") },
+                        modifier = Modifier.weight(1f),
                     )
                 }
 
@@ -194,7 +204,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     OutlinedTextField(
                         value = state.maxSlots,
                         onValueChange = screenModel::onMaxSlotsChange,
-                        label = { Text("Número de plazas *") },
+                        label = { Text("Numero de plazas *") },
                         placeholder = { Text("Ej: 12") },
                         singleLine = true,
                         modifier = Modifier.width(160.dp),
@@ -215,27 +225,45 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(AgoraSpacing.lg))
 
                 // Create button
-                Button(
+                AgoraButton(
+                    text = "Crear Actividad",
                     onClick = screenModel::create,
+                    variant = AgoraButtonVariant.Primary,
                     enabled = state.status !is CreateActivityStatus.Loading,
+                    isLoading = state.status is CreateActivityStatus.Loading,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (state.status is CreateActivityStatus.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.height(20.dp).width(20.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Text("Crear Actividad")
-                    }
-                }
+                )
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(AgoraSpacing.xxl))
             }
         }
+    }
+}
+
+@Composable
+private fun SlotModeCard(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    StoneCard(
+        modifier = modifier,
+        elevation = if (isSelected) AgoraElevation.standard else AgoraElevation.none,
+        borderColor = if (isSelected) MaterialTheme.agoraColors.goldLeaf else MaterialTheme.colorScheme.outlineVariant,
+        containerColor = if (isSelected) MaterialTheme.agoraColors.parchment else MaterialTheme.colorScheme.surface,
+        onClick = onClick,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.agoraColors.onParchment else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = AgoraSpacing.md, vertical = AgoraSpacing.sm),
+        )
     }
 }
 
@@ -249,11 +277,11 @@ private fun PositionConfigurator(
     state: CreateActivityUiState,
     screenModel: CreateActivityScreenModel,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg)) {
         GreekKeyDivider()
 
         // Step 1: Define positions
-        Text("1. Define posiciones", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        FriezeBandHeader(title = "1. Define posiciones")
         Text(
             "Las posiciones disponibles (ej: Central, Libero, Colocador...)",
             style = MaterialTheme.typography.bodySmall,
@@ -264,12 +292,12 @@ private fun PositionConfigurator(
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
             ) {
                 OutlinedTextField(
                     value = position.name,
                     onValueChange = { screenModel.updatePositionName(position.id, it) },
-                    placeholder = { Text("Nombre posición") },
+                    placeholder = { Text("Nombre posicion") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -283,16 +311,16 @@ private fun PositionConfigurator(
 
         TextButton(onClick = screenModel::addPosition) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("Añadir posición")
+            Spacer(Modifier.width(AgoraSpacing.xs))
+            Text("Anadir posicion")
         }
 
-        HorizontalDivider()
+        GreekKeyDivider()
 
         // Step 2: Define groups and slots
-        Text("2. Define grupos y huecos", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        FriezeBandHeader(title = "2. Define grupos y huecos")
         Text(
-            "Cada grupo tiene huecos. Cada hueco acepta una o más posiciones.",
+            "Cada grupo tiene huecos. Cada hueco acepta una o mas posiciones.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
         )
@@ -300,8 +328,11 @@ private fun PositionConfigurator(
         val validPositions = state.positions.filter { it.name.isNotBlank() }
 
         state.groups.forEach { group ->
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            StoneCard(elevation = AgoraElevation.subtle) {
+                Column(
+                    Modifier.padding(AgoraSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                ) {
                     // Group header
                     Row(
                         Modifier.fillMaxWidth(),
@@ -326,7 +357,7 @@ private fun PositionConfigurator(
                         Column(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(start = 8.dp),
+                                .padding(start = AgoraSpacing.sm),
                         ) {
                             Row(
                                 Modifier.fillMaxWidth(),
@@ -346,8 +377,8 @@ private fun PositionConfigurator(
 
                             // Position chips for this slot
                             FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                                verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
                             ) {
                                 validPositions.forEach { position ->
                                     FilterChip(
@@ -363,29 +394,26 @@ private fun PositionConfigurator(
                     }
 
                     // Add slot button
-                    OutlinedButton(
+                    AgoraButton(
+                        text = "Anadir hueco",
                         onClick = { screenModel.addSlotToGroup(group.id) },
+                        variant = AgoraButtonVariant.Secondary,
                         modifier = Modifier.fillMaxWidth(),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-                    ) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Añadir hueco")
-                    }
+                    )
                 }
             }
         }
 
         TextButton(onClick = screenModel::addGroup) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("Añadir grupo")
+            Spacer(Modifier.width(AgoraSpacing.xs))
+            Text("Anadir grupo")
         }
 
         // Preview
         if (state.totalSlotCount > 0) {
-            HorizontalDivider()
-            Text("Vista previa", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            GreekKeyDivider()
+            FriezeBandHeader(title = "Vista previa")
             Text(
                 "${state.totalSlotCount} huecos en ${state.groups.size} grupo(s)",
                 style = MaterialTheme.typography.bodySmall,
@@ -404,7 +432,7 @@ private fun PositionConfigurator(
                             .mapNotNull { pid -> validPositions.find { it.id == pid }?.name }
                             .joinToString(" / ")
                         Text(
-                            "  ${index + 1}. ${posNames.ifEmpty { "Sin posición" }}",
+                            "  ${index + 1}. ${posNames.ifEmpty { "Sin posicion" }}",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

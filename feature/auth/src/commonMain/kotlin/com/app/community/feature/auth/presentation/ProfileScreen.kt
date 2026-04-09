@@ -1,5 +1,6 @@
 package com.app.community.feature.auth.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,25 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,12 +34,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
+import com.app.community.core.ui.components.AgoraButton
+import com.app.community.core.ui.components.AgoraButtonVariant
+import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.ColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
+import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.theme.AgoraElevation
+import com.app.community.core.ui.theme.AgoraSpacing
+import com.app.community.core.ui.theme.agoraColors
 
 class ProfileScreen : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val screenModel = koinScreenModel<ProfileScreenModel>()
@@ -62,7 +63,7 @@ class ProfileScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
+                AgoraTopBar(
                     title = { Text("Perfil") },
                     actions = {
                         if (!state.isEditing && state.profile != null) {
@@ -109,19 +110,24 @@ private fun ProfileContent(
     var showSignOutDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(AgoraSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg),
     ) {
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(AgoraSpacing.lg))
 
-        // Avatar placeholder
-        Surface(
+        // Avatar as carved stone relief (square StoneCard)
+        StoneCard(
             modifier = Modifier.size(96.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
+            elevation = AgoraElevation.standard,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     Icons.Default.Person,
                     contentDescription = null,
@@ -131,6 +137,10 @@ private fun ProfileContent(
             }
         }
 
+        ColumnDivider(modifier = Modifier.padding(horizontal = AgoraSpacing.xxl))
+
+        FriezeBandHeader(title = "Perfil")
+
         Text(
             text = profile.displayName,
             style = MaterialTheme.typography.headlineSmall,
@@ -139,28 +149,25 @@ private fun ProfileContent(
 
         Spacer(Modifier.weight(1f))
 
-        OutlinedButton(
+        AgoraButton(
+            text = "Cerrar sesion",
             onClick = { showSignOutDialog = true },
+            variant = AgoraButtonVariant.Danger,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error,
-            ),
-        ) {
-            Text("Cerrar sesión")
-        }
+        )
     }
 
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Cerrar sesión") },
-            text = { Text("¿Seguro que quieres cerrar sesión?") },
+            title = { Text("Cerrar sesion") },
+            text = { Text("Seguro que quieres cerrar sesion?") },
             confirmButton = {
                 TextButton(onClick = {
                     showSignOutDialog = false
                     onSignOut()
                 }) {
-                    Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
+                    Text("Cerrar sesion", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -182,9 +189,14 @@ private fun EditProfileContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.agoraColors.parchment)
+            .padding(AgoraSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg),
     ) {
+        FriezeBandHeader(title = "Editar perfil")
+
         OutlinedTextField(
             value = displayName,
             onValueChange = onDisplayNameChange,
@@ -196,27 +208,21 @@ private fun EditProfileContent(
 
         Spacer(Modifier.weight(1f))
 
-        Button(
+        AgoraButton(
+            text = "Guardar",
             onClick = onSave,
+            variant = AgoraButtonVariant.Primary,
             enabled = !isSaving && displayName.isNotBlank(),
+            isLoading = isSaving,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Text("Guardar")
-            }
-        }
+        )
 
-        TextButton(
+        AgoraButton(
+            text = "Cancelar",
             onClick = onCancel,
+            variant = AgoraButtonVariant.Tertiary,
             enabled = !isSaving,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Cancelar")
-        }
+        )
     }
 }

@@ -12,25 +12,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import com.app.community.core.ui.components.GreekKeyDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,11 +42,18 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
+import com.app.community.core.model.MemberRole
+import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FriezeBandHeader
+import com.app.community.core.ui.components.LoadingScreen
+import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.theme.AgoraElevation
+import com.app.community.core.ui.theme.AgoraSpacing
+import com.app.community.core.ui.theme.StoneTabletShape
+import com.app.community.core.ui.theme.agoraColors
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.CreateActivityScreen
-import com.app.community.core.model.MemberRole
-import com.app.community.core.ui.components.ErrorScreen
-import com.app.community.core.ui.components.LoadingScreen
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
@@ -74,8 +76,15 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                AgoraTopBar(
+                    title = {
+                        Text(
+                            title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -86,6 +95,9 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { navigator.push(CreateActivityScreen(communityId)) },
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
+                    shape = RoundedCornerShape(4.dp),
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Crear actividad")
                 }
@@ -134,85 +146,89 @@ private fun CommunityDetailContent(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(AgoraSpacing.screenHorizontal),
+        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
     ) {
         // Description
         if (!community.description.isNullOrBlank()) {
             item {
-                Text(
-                    text = community.description.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Surface(
+                    color = MaterialTheme.agoraColors.parchment,
+                    shape = StoneTabletShape,
+                ) {
+                    Text(
+                        text = community.description.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.agoraColors.onParchment,
+                        modifier = Modifier.padding(AgoraSpacing.cardInternal),
+                    )
+                }
             }
         }
 
         // Invite code chip
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AssistChip(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(community.inviteCode))
-                    },
-                    label = { Text("Invite: ${community.inviteCode}") },
-                    trailingIcon = {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = "Copiar código",
-                            modifier = Modifier.height(16.dp),
-                        )
-                    },
-                )
+            StoneCard(
+                elevation = AgoraElevation.none,
+                borderColor = MaterialTheme.agoraColors.goldLeaf,
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(community.inviteCode))
+                },
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AgoraSpacing.cardInternal, vertical = AgoraSpacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Invite: ${community.inviteCode}",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
+                        ),
+                        color = MaterialTheme.agoraColors.goldLeaf,
+                    )
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Copiar codigo",
+                        modifier = Modifier.height(16.dp),
+                        tint = MaterialTheme.agoraColors.goldLeaf,
+                    )
+                }
             }
         }
 
-        // Members section
+        // Members section header
         item {
-            Spacer(Modifier.height(4.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "${members.size} miembro${if (members.size != 1) "s" else ""}",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (isAdmin) {
-                    TextButton(onClick = onManageMembers) {
-                        Text("Gestionar")
+            FriezeBandHeader(
+                title = "Miembros (${members.size})",
+                trailingContent = if (isAdmin) {
+                    {
+                        TextButton(onClick = onManageMembers) {
+                            Text("Gestionar")
+                        }
                     }
-                }
-            }
+                } else {
+                    null
+                },
+            )
         }
 
         // Activities section header
         item {
-            Spacer(Modifier.height(4.dp))
-            GreekKeyDivider()
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Actividades",
-                style = MaterialTheme.typography.titleMedium,
+            FriezeBandHeader(
+                title = "Actividades (${activities.size})",
             )
         }
 
         if (activities.isEmpty()) {
             item {
                 Text(
-                    text = "Aún no hay actividades. Crea la primera.",
+                    text = "Aun no hay actividades. Crea la primera.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = AgoraSpacing.sm),
                 )
             }
         } else {
@@ -226,7 +242,6 @@ private fun CommunityDetailContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ActivityCard(
     activity: Activity,
@@ -237,17 +252,17 @@ private fun ActivityCard(
     val dateText = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
     val timeText = "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}"
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    StoneCard(
+        modifier = modifier,
+        elevation = AgoraElevation.none,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(AgoraSpacing.md)) {
             Text(
                 text = activity.name,
                 style = MaterialTheme.typography.titleSmall,
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(AgoraSpacing.xs))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -259,7 +274,7 @@ private fun ActivityCard(
                 )
                 val slotText = when {
                     activity.maxSlots != null -> "${activity.maxSlots} plazas"
-                    else -> "Sin límite"
+                    else -> "Sin limite"
                 }
                 Text(
                     text = slotText,

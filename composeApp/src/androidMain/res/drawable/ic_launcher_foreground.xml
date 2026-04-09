@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Ionic column capital — foreground for adaptive icon -->
+    <!-- Cream: #FAF6EE, Gold: #C49008 -->
+
+    <!-- ===== ABACUS (top slab) ===== -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="M20,20 L88,20 L88,28 Q88,30 86,30 L22,30 Q20,30 20,28 Z" />
+
+    <!-- Gold band under abacus -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="M24,30 L84,30 L84,34 L24,34 Z" />
+
+    <!-- ===== ECHINUS / VOLUTE BODY (cream base) ===== -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="M22,34 L86,34 L86,38 C86,48 80,54 76,54 L32,54 C28,54 22,48 22,38 Z" />
+
+    <!-- Gold horizontal band in echinus center -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="M36,40 Q36,38 38,38 L70,38 Q72,38 72,40 L72,46 Q72,48 70,48 L38,48 Q36,48 36,46 Z" />
+
+    <!-- ===== LEFT VOLUTE (outer spiral — gold) ===== -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M32,34
+            C18,34 16,44 16,46
+            C16,54 22,58 30,58
+            C38,58 42,54 42,46
+            C42,40 38,36 34,36
+            L32,34 Z" />
+    <!-- Left volute inner (cream) -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="
+            M30,38
+            C22,38 20,43 20,46
+            C20,52 24,54 30,54
+            C36,54 38,51 38,46
+            C38,42 35,40 32,40
+            L30,38 Z" />
+    <!-- Left volute core (gold dot) -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M30,42
+            C26,42 24,44 24,46
+            C24,49 26,50 30,50
+            C33,50 34,48 34,46
+            C34,44 33,42 30,42 Z" />
+    <!-- Left volute eye (cream center) -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="
+            M30,44
+            C28,44 27,45 27,46
+            C27,48 28,48.5 30,48.5
+            C32,48.5 33,47.5 33,46
+            C33,44.5 32,44 30,44 Z" />
+
+    <!-- ===== RIGHT VOLUTE (outer spiral — gold) ===== -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M76,34
+            C90,34 92,44 92,46
+            C92,54 86,58 78,58
+            C70,58 66,54 66,46
+            C66,40 70,36 74,36
+            L76,34 Z" />
+    <!-- Right volute inner (cream) -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="
+            M78,38
+            C86,38 88,43 88,46
+            C88,52 84,54 78,54
+            C72,54 70,51 70,46
+            C70,42 73,40 76,40
+            L78,38 Z" />
+    <!-- Right volute core (gold dot) -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M78,42
+            C82,42 84,44 84,46
+            C84,49 82,50 78,50
+            C75,50 74,48 74,46
+            C74,44 75,42 78,42 Z" />
+    <!-- Right volute eye (cream center) -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="
+            M78,44
+            C80,44 81,45 81,46
+            C81,48 80,48.5 78,48.5
+            C76,48.5 75,47.5 75,46
+            C75,44.5 76,44 78,44 Z" />
+
+    <!-- ===== COLUMN SHAFT ===== -->
+    <path
+        android:fillColor="#FAF6EE"
+        android:pathData="M36,54 L72,54 L72,88 L36,88 Z" />
+
+    <!-- Fluting arches (gold, semicircular tops) -->
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M42,58 C42,54 46,54 46,58 L46,88 L42,88 Z" />
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M48,58 C48,54 52,54 52,58 L52,88 L48,88 Z" />
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M54,58 C54,54 58,54 58,58 L58,88 L54,88 Z" />
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M60,58 C60,54 64,54 64,58 L64,88 L60,88 Z" />
+    <path
+        android:fillColor="#C49008"
+        android:pathData="
+            M66,58 C66,54 70,54 70,58 L70,88 L66,88 Z" />
+
+</vector>

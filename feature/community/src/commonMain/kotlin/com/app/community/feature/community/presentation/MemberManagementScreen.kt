@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import com.app.community.core.ui.components.GreekKeyDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +23,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,15 +33,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.MemberRole
+import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.ColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
+import com.app.community.core.ui.theme.AgoraSpacing
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 
@@ -67,8 +68,13 @@ data class MemberManagementScreen(val communityId: String) : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Miembros") },
+                AgoraTopBar(
+                    title = {
+                        Text(
+                            "Miembros",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
@@ -113,16 +119,11 @@ private fun MemberList(
     val users = members.filter { it.role == MemberRole.USER }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = AgoraSpacing.screenHorizontal),
+        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
     ) {
         item {
-            Text(
-                "Admins (${admins.size})",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
+            FriezeBandHeader(title = "Administradores (${admins.size})")
         }
         items(admins, key = { it.userId }) { member ->
             MemberRow(
@@ -132,16 +133,11 @@ private fun MemberList(
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
             )
+            ColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
 
         item {
-            GreekKeyDivider(Modifier.padding(vertical = 8.dp))
-            Text(
-                "Usuarios (${users.size})",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
+            FriezeBandHeader(title = "Usuarios (${users.size})")
         }
         items(users, key = { it.userId }) { member ->
             MemberRow(
@@ -151,6 +147,7 @@ private fun MemberList(
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
             )
+            ColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
     }
 }
@@ -168,13 +165,13 @@ private fun MemberRow(
     var showRemoveDialog by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isMe) "$displayName (t\u00fa)" else displayName,
+                text = if (isMe) "$displayName (tu)" else displayName,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
             )
@@ -190,7 +187,7 @@ private fun MemberRow(
         }
 
         if (isCurrentUserAdmin && !isMe) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
                 TextButton(onClick = { onToggleRole(member) }) {
                     Text(
                         if (member.role == MemberRole.ADMIN) "Quitar admin" else "Hacer admin",
@@ -212,7 +209,7 @@ private fun MemberRow(
         AlertDialog(
             onDismissRequest = { showRemoveDialog = false },
             title = { Text("Expulsar miembro") },
-            text = { Text("\u00bfSeguro que quieres expulsar a $displayName de la comunidad?") },
+            text = { Text("Seguro que quieres expulsar a $displayName de la comunidad?") },
             confirmButton = {
                 TextButton(onClick = {
                     showRemoveDialog = false
