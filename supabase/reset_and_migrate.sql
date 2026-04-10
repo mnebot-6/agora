@@ -19,6 +19,8 @@ DROP FUNCTION IF EXISTS mark_slot_paid(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS join_substitute_queue(uuid, uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS leave_substitute_queue(uuid, uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS get_upcoming_activities(uuid) CASCADE;
+DROP FUNCTION IF EXISTS get_my_community_ids() CASCADE;
+DROP FUNCTION IF EXISTS get_my_admin_community_ids() CASCADE;
 DROP FUNCTION IF EXISTS handle_new_community() CASCADE;
 -- NOTE: handle_new_user is NOT dropped to keep auth trigger intact
 
@@ -298,6 +300,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================================
 -- MIGRATION 003: RLS Policies
 -- ============================================================================
+
+-- Helper functions to avoid infinite recursion on community_members policies
+CREATE OR REPLACE FUNCTION get_my_community_ids()
+RETURNS SETOF UUID AS $$
+    SELECT community_id FROM community_members WHERE user_id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION get_my_admin_community_ids()
+RETURNS SETOF UUID AS $$
+    SELECT community_id FROM community_members WHERE user_id = auth.uid() AND role = 'admin';
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
@@ -319,73 +333,70 @@ CREATE POLICY "Users can update their own profile"
 -- Communities
 CREATE POLICY "Communities are viewable by members"
     ON communities FOR SELECT TO authenticated
-    USING (id IN (SELECT community_id FROM community_members WHERE user_id = auth.uid()));
+    USING (id IN (SELECT get_my_community_ids()));
 CREATE POLICY "Communities are viewable by invite code"
     ON communities FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Authenticated users can create communities"
     ON communities FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
 
--- Community members
+-- Community members (use helper functions to avoid self-referencing recursion)
 CREATE POLICY "Members can view their community's membership"
     ON community_members FOR SELECT TO authenticated
-    USING (community_id IN (SELECT community_id FROM community_members WHERE user_id = auth.uid()));
+    USING (community_id IN (SELECT get_my_community_ids()));
 CREATE POLICY "Users can join communities"
     ON community_members FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 CREATE POLICY "Admins can update member roles"
     ON community_members FOR UPDATE TO authenticated
-    USING (community_id IN (SELECT community_id FROM community_members WHERE user_id = auth.uid() AND role = 'admin'));
+    USING (community_id IN (SELECT get_my_admin_community_ids()));
 CREATE POLICY "Admins can remove members"
     ON community_members FOR DELETE TO authenticated
-    USING (user_id = auth.uid() OR community_id IN (
-        SELECT community_id FROM community_members WHERE user_id = auth.uid() AND role = 'admin'));
+    USING (user_id = auth.uid() OR community_id IN (SELECT get_my_admin_community_ids()));
 
 -- Activities
 CREATE POLICY "Activities are viewable by community members"
     ON activities FOR SELECT TO authenticated
-    USING (community_id IN (SELECT community_id FROM community_members WHERE user_id = auth.uid()));
+    USING (community_id IN (SELECT get_my_community_ids()));
 CREATE POLICY "Community admins can create activities"
     ON activities FOR INSERT TO authenticated
-    WITH CHECK (community_id IN (
-        SELECT community_id FROM community_members WHERE user_id = auth.uid() AND role = 'admin')
+    WITH CHECK (community_id IN (SELECT get_my_admin_community_ids())
         AND created_by = auth.uid());
 CREATE POLICY "Community admins can update activities"
     ON activities FOR UPDATE TO authenticated
-    USING (community_id IN (
-        SELECT community_id FROM community_members WHERE user_id = auth.uid() AND role = 'admin'));
+    USING (community_id IN (SELECT get_my_admin_community_ids()));
 
 -- Slot groups, positions, slots, slot_positions (SELECT for members, INSERT for admins)
 CREATE POLICY "Slot groups viewable by community members"
     ON slot_groups FOR SELECT TO authenticated
-    USING (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid()));
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids())));
 CREATE POLICY "Admins can create slot groups"
     ON slot_groups FOR INSERT TO authenticated
-    WITH CHECK (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid() AND cm.role = 'admin'));
+    WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Positions viewable by community members"
     ON positions FOR SELECT TO authenticated
-    USING (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid()));
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids())));
 CREATE POLICY "Admins can create positions"
     ON positions FOR INSERT TO authenticated
-    WITH CHECK (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid() AND cm.role = 'admin'));
+    WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Slots viewable by community members"
     ON slots FOR SELECT TO authenticated
-    USING (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid()));
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids())));
 CREATE POLICY "Admins can create slots"
     ON slots FOR INSERT TO authenticated
-    WITH CHECK (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid() AND cm.role = 'admin'));
+    WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Slot positions viewable by community members"
     ON slot_positions FOR SELECT TO authenticated
-    USING (slot_id IN (SELECT s.id FROM slots s JOIN activities a ON a.id = s.activity_id JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid()));
+    USING (slot_id IN (SELECT s.id FROM slots s WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids()))));
 CREATE POLICY "Admins can create slot positions"
     ON slot_positions FOR INSERT TO authenticated
-    WITH CHECK (slot_id IN (SELECT s.id FROM slots s JOIN activities a ON a.id = s.activity_id JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid() AND cm.role = 'admin'));
+    WITH CHECK (slot_id IN (SELECT s.id FROM slots s WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids()))));
 
 -- Substitute queue
 CREATE POLICY "Substitute queue viewable by community members"
     ON substitute_queue FOR SELECT TO authenticated
-    USING (activity_id IN (SELECT a.id FROM activities a JOIN community_members cm ON cm.community_id = a.community_id WHERE cm.user_id = auth.uid()));
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids())));
 CREATE POLICY "Users can manage their own substitute entries"
     ON substitute_queue FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 CREATE POLICY "Users can remove their own substitute entries"
