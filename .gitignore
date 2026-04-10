@@ -20,3 +20,5 @@ local.properties
 .claude/settings.local.json
 # Google services (contains keys)
 google-services.json
+# Node modules
+node_modules/
