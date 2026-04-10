@@ -8,66 +8,66 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
-// --- Agora Light Palette — Policromia arquitectonica griega ---
+// --- Agora Light Palette — Orden Jonico: elegancia y refinamiento ---
 private val AgoraLightScheme = lightColorScheme(
-    primary = Color(0xFF1A4D8C),            // Azul Egipcio — triglifos
+    primary = Color(0xFF1A7D7A),            // Teal Egeo — mar jonico
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFCEDEF5),    // Azul fresco deslavado
-    onPrimaryContainer = Color(0xFF002B5C),
-    secondary = Color(0xFFA62D2D),           // Cinabrio vivo — frisos, bandas
+    primaryContainer = Color(0xFFCCECEB),    // Teal wash suave
+    onPrimaryContainer = Color(0xFF002F2E),
+    secondary = Color(0xFF5D7D6A),           // Bronce oxidado — patina
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFF8D3CF),  // Terracota calido
-    onSecondaryContainer = Color(0xFF3E0707),
-    tertiary = Color(0xFFC49008),            // Ocre dorado enriquecido — capiteles
+    secondaryContainer = Color(0xFFD8EDDF),  // Patina suave
+    onSecondaryContainer = Color(0xFF1A2E22),
+    tertiary = Color(0xFFD4A855),            // Oro refinado — volutas doradas
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFFFEDB8),   // Caliza dorada rica
+    tertiaryContainer = Color(0xFFFFF2D6),   // Oro palido
     onTertiaryContainer = Color(0xFF3A2800),
-    background = Color(0xFFFAF6EE),          // Marmol pentelico calido
-    onBackground = Color(0xFF1A1814),        // Negro vid
-    surface = Color(0xFFFFFBF5),             // Marmol pulido
-    onSurface = Color(0xFF1A1814),
-    surfaceVariant = Color(0xFFEDE7DC),      // Caliza erosionada
+    background = Color(0xFFFAF8F4),          // Marmol pario luminoso
+    onBackground = Color(0xFF1A1A18),        // Negro profundo
+    surface = Color(0xFFFFFCF8),             // Marfil pulido
+    onSurface = Color(0xFF1A1A18),
+    surfaceVariant = Color(0xFFEDE9E2),      // Caliza relieve
     onSurfaceVariant = Color(0xFF49463F),
-    surfaceContainerLowest = Color(0xFFFFFFFF),  // Yeso blanco
-    surfaceContainerLow = Color(0xFFFDF8F1),
-    surfaceContainer = Color(0xFFF7F2E9),        // Caliza
-    surfaceContainerHigh = Color(0xFFF1ECE3),    // Piedra labrada
-    surfaceContainerHighest = Color(0xFFEBE6DD), // Caliza profunda
-    outline = Color(0xFF78746E),             // Gris piedra erosionada
-    outlineVariant = Color(0xFFC8C2B8),      // Borde de piedra claro
+    surfaceContainerLowest = Color(0xFFFFFFFF),  // Blanco puro
+    surfaceContainerLow = Color(0xFFFEFAF4),
+    surfaceContainer = Color(0xFFF8F4ED),        // Caliza suave
+    surfaceContainerHigh = Color(0xFFF2EEE6),    // Marmol labrado
+    surfaceContainerHighest = Color(0xFFECE8E0), // Caliza profunda
+    outline = Color(0xFF7A7770),             // Marmol erosionado
+    outlineVariant = Color(0xFFCCC8C0),      // Borde de marmol claro
     error = Color(0xFFBA1A1A),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
 )
 
-// --- Agora Dark Palette — Templo a la luz de antorchas ---
+// --- Agora Dark Palette — Templo jonico a la luz de la luna ---
 private val AgoraDarkScheme = darkColorScheme(
-    primary = Color(0xFFA8CCFE),             // Azul Egeo suave
-    onPrimary = Color(0xFF003062),
-    primaryContainer = Color(0xFF103F74),    // Azul templo nocturno
-    onPrimaryContainer = Color(0xFFCEDEF5),
-    secondary = Color(0xFFFFB8AE),           // Cinabrio suave
-    onSecondary = Color(0xFF5F1414),
-    secondaryContainer = Color(0xFF802222),  // Friso en sombra
-    onSecondaryContainer = Color(0xFFF8D3CF),
-    tertiary = Color(0xFFECCC6E),            // Oro a la luz de antorcha
+    primary = Color(0xFF8ED4D2),             // Teal Egeo suave
+    onPrimary = Color(0xFF00403E),
+    primaryContainer = Color(0xFF0A5C5A),    // Teal templo nocturno
+    onPrimaryContainer = Color(0xFFCCECEB),
+    secondary = Color(0xFFBCD4C6),           // Patina suave
+    onSecondary = Color(0xFF263D30),
+    secondaryContainer = Color(0xFF3C5546),  // Bronce en sombra
+    onSecondaryContainer = Color(0xFFD8EDDF),
+    tertiary = Color(0xFFECCC6E),            // Oro a la luz de la luna
     onTertiary = Color(0xFF453000),
     tertiaryContainer = Color(0xFF654F00),   // Oro brunido profundo
-    onTertiaryContainer = Color(0xFFFFEDB8),
-    background = Color(0xFF131210),          // Obsidiana/basalto
-    onBackground = Color(0xFFE8E3DA),
-    surface = Color(0xFF1B1A16),             // Piedra oscura
-    onSurface = Color(0xFFE8E3DA),
-    surfaceVariant = Color(0xFF49463F),      // Piedra oscura erosionada
-    onSurfaceVariant = Color(0xFFC8C2B8),
+    onTertiaryContainer = Color(0xFFFFF2D6),
+    background = Color(0xFF131312),          // Obsidiana
+    onBackground = Color(0xFFE6E3DC),
+    surface = Color(0xFF1B1A18),             // Piedra oscura
+    onSurface = Color(0xFFE6E3DC),
+    surfaceVariant = Color(0xFF48463F),      // Piedra oscura erosionada
+    onSurfaceVariant = Color(0xFFC8C4BC),
     surfaceContainerLowest = Color(0xFF0E0D0B),
-    surfaceContainerLow = Color(0xFF1B1A16),
-    surfaceContainer = Color(0xFF201F1B),
-    surfaceContainerHigh = Color(0xFF2B2A25),
+    surfaceContainerLow = Color(0xFF1B1A18),
+    surfaceContainer = Color(0xFF201F1C),
+    surfaceContainerHigh = Color(0xFF2B2A26),
     surfaceContainerHighest = Color(0xFF363530),
-    outline = Color(0xFF948F87),             // Piedra en penumbra
-    outlineVariant = Color(0xFF49463F),
+    outline = Color(0xFF949088),             // Marmol en penumbra
+    outlineVariant = Color(0xFF48463F),
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
@@ -76,7 +76,7 @@ private val AgoraDarkScheme = darkColorScheme(
 
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = false, // TODO: restaurar isSystemInDarkTheme() cuando el modo oscuro este listo
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) AgoraDarkScheme else AgoraLightScheme

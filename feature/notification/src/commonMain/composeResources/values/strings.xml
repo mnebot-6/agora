@@ -1,0 +1,8 @@
+<resources>
+    <string name="notifications_title">Notifications</string>
+    <string name="mark_all_read">Read all</string>
+    <string name="no_notifications">Nothing new for now</string>
+    <string name="type_new_activity">New activity</string>
+    <string name="type_slot_released">Slot released</string>
+    <string name="type_substitute_promoted">Promoted</string>
+</resources>

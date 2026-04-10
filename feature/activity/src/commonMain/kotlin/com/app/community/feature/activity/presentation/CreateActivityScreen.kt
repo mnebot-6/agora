@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,13 +44,22 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.SlotMode
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
+import com.app.community.core.ui.components.AgoraDatePickerField
+import com.app.community.core.ui.components.AgoraDurationPickerField
+import com.app.community.core.ui.components.AgoraTimePickerField
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.FriezeBandHeader
-import com.app.community.core.ui.components.GreekKeyDivider
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.DentilDivider
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.activity.generated.resources.Res
+import agora.feature.activity.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 
@@ -71,10 +81,10 @@ data class CreateActivityScreen(val communityId: String) : Screen {
         Scaffold(
             topBar = {
                 AgoraTopBar(
-                    title = { Text("Nueva Actividad") },
+                    title = { Text(stringResource(Res.string.create_title)) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -95,8 +105,8 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 OutlinedTextField(
                     value = state.name,
                     onValueChange = screenModel::onNameChange,
-                    label = { Text("Nombre *") },
-                    placeholder = { Text("Ej: Voley Mixto") },
+                    label = { Text(stringResource(Res.string.label_name_required)) },
+                    placeholder = { Text(stringResource(Res.string.create_name_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -105,57 +115,51 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = screenModel::onDescriptionChange,
-                    label = { Text("Descripcion") },
-                    placeholder = { Text("Soporta formato Markdown") },
+                    label = { Text(stringResource(Res.string.label_description)) },
+                    placeholder = { Text(stringResource(Res.string.placeholder_markdown)) },
                     minLines = 3,
                     maxLines = 6,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Date and Time row
+                // Date and Time pickers
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
-                    OutlinedTextField(
-                        value = state.date,
-                        onValueChange = screenModel::onDateChange,
-                        label = { Text("Fecha *") },
-                        placeholder = { Text("DD/MM/YYYY") },
-                        singleLine = true,
+                    val dateDisplayText = state.dateMillis?.let { millis ->
+                        val d = Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date
+                        "${d.dayOfMonth.toString().padStart(2, '0')}/${d.monthNumber.toString().padStart(2, '0')}/${d.year}"
+                    } ?: ""
+                    AgoraDatePickerField(
+                        selectedDateMillis = state.dateMillis,
+                        onDateSelected = screenModel::onDateSelected,
+                        label = stringResource(Res.string.label_date_required),
+                        displayText = dateDisplayText,
+                        placeholder = stringResource(Res.string.create_date_placeholder),
                         modifier = Modifier.weight(1f),
                     )
-                    OutlinedTextField(
-                        value = state.time,
-                        onValueChange = screenModel::onTimeChange,
-                        label = { Text("Hora *") },
-                        placeholder = { Text("HH:MM") },
-                        singleLine = true,
+                    AgoraTimePickerField(
+                        hour = state.timeHour,
+                        minute = state.timeMinute,
+                        onTimeSelected = screenModel::onTimeSelected,
+                        label = stringResource(Res.string.label_time_required),
                         modifier = Modifier.weight(1f),
                     )
                 }
 
-                // Duration
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
-                    OutlinedTextField(
-                        value = state.durationHours.toString(),
-                        onValueChange = { screenModel.onDurationHoursChange(it.toIntOrNull() ?: 0) },
-                        label = { Text("Horas") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = state.durationMinutes.toString(),
-                        onValueChange = { screenModel.onDurationMinutesChange(it.toIntOrNull() ?: 0) },
-                        label = { Text("Minutos") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+                // Duration picker
+                AgoraDurationPickerField(
+                    hours = state.durationHours,
+                    minutes = state.durationMinutes,
+                    onDurationSelected = screenModel::onDurationSelected,
+                    label = stringResource(Res.string.label_duration),
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 // Location
                 OutlinedTextField(
                     value = state.locationName,
                     onValueChange = screenModel::onLocationNameChange,
-                    label = { Text("Lugar") },
-                    placeholder = { Text("Ej: Pabellon de la Fuensanta") },
+                    label = { Text(stringResource(Res.string.label_location)) },
+                    placeholder = { Text(stringResource(Res.string.create_location_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -164,35 +168,35 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                 OutlinedTextField(
                     value = state.costDescription,
                     onValueChange = screenModel::onCostDescriptionChange,
-                    label = { Text("Coste") },
-                    placeholder = { Text("Ej: Bizum de 6.5 euros por persona") },
+                    label = { Text(stringResource(Res.string.label_cost)) },
+                    placeholder = { Text(stringResource(Res.string.create_cost_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 // Slot mode selector
-                GreekKeyDivider()
+                DentilDivider()
 
-                FriezeBandHeader(title = "Tipo de plazas")
+                FriezeBandHeader(title = stringResource(Res.string.slot_type_header))
 
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
                 ) {
                     SlotModeCard(
-                        label = "Sin limite",
+                        label = stringResource(Res.string.slot_mode_unlimited),
                         isSelected = state.slotMode == SlotMode.UNLIMITED,
                         onClick = { screenModel.onSlotModeChange(SlotMode.UNLIMITED) },
                         modifier = Modifier.weight(1f),
                     )
                     SlotModeCard(
-                        label = "Limitado",
+                        label = stringResource(Res.string.slot_mode_limited),
                         isSelected = state.slotMode == SlotMode.LIMITED,
                         onClick = { screenModel.onSlotModeChange(SlotMode.LIMITED) },
                         modifier = Modifier.weight(1f),
                     )
                     SlotModeCard(
-                        label = "Posiciones",
+                        label = stringResource(Res.string.slot_mode_positions),
                         isSelected = state.slotMode == SlotMode.LIMITED_WITH_POSITIONS,
                         onClick = { screenModel.onSlotModeChange(SlotMode.LIMITED_WITH_POSITIONS) },
                         modifier = Modifier.weight(1f),
@@ -204,16 +208,47 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     OutlinedTextField(
                         value = state.maxSlots,
                         onValueChange = screenModel::onMaxSlotsChange,
-                        label = { Text("Numero de plazas *") },
-                        placeholder = { Text("Ej: 12") },
+                        label = { Text(stringResource(Res.string.create_max_slots_label)) },
+                        placeholder = { Text(stringResource(Res.string.create_max_slots_placeholder)) },
                         singleLine = true,
                         modifier = Modifier.width(160.dp),
                     )
                 }
 
-                // Position mode: full configurator
+                // Position mode: templates + configurator
                 if (state.slotMode == SlotMode.LIMITED_WITH_POSITIONS) {
+                    TemplateSection(state = state, screenModel = screenModel)
                     PositionConfigurator(state = state, screenModel = screenModel)
+                }
+
+                // Save template dialog
+                if (state.showSaveTemplateDialog) {
+                    AlertDialog(
+                        onDismissRequest = screenModel::hideSaveTemplateDialog,
+                        title = { Text(stringResource(Res.string.create_save_template_title)) },
+                        text = {
+                            OutlinedTextField(
+                                value = state.saveTemplateName,
+                                onValueChange = screenModel::onSaveTemplateNameChange,
+                                label = { Text(stringResource(Res.string.create_template_name_label)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = screenModel::saveAsTemplate,
+                                enabled = state.saveTemplateName.isNotBlank(),
+                            ) {
+                                Text(stringResource(Res.string.create_save_template_confirm))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = screenModel::hideSaveTemplateDialog) {
+                                Text(stringResource(Res.string.label_cancel))
+                            }
+                        },
+                    )
                 }
 
                 // Error
@@ -229,7 +264,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
 
                 // Create button
                 AgoraButton(
-                    text = "Crear Actividad",
+                    text = stringResource(Res.string.create_button),
                     onClick = screenModel::create,
                     variant = AgoraButtonVariant.Primary,
                     enabled = state.status !is CreateActivityStatus.Loading,
@@ -250,10 +285,10 @@ private fun SlotModeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    StoneCard(
+    MarbleCard(
         modifier = modifier,
         elevation = if (isSelected) AgoraElevation.standard else AgoraElevation.none,
-        borderColor = if (isSelected) MaterialTheme.agoraColors.goldLeaf else MaterialTheme.colorScheme.outlineVariant,
+        borderColor = if (isSelected) MaterialTheme.agoraColors.gildedVolute else MaterialTheme.colorScheme.outlineVariant,
         containerColor = if (isSelected) MaterialTheme.agoraColors.parchment else MaterialTheme.colorScheme.surface,
         onClick = onClick,
     ) {
@@ -268,6 +303,57 @@ private fun SlotModeCard(
 }
 
 // ============================================================================
+// Template Section
+// ============================================================================
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TemplateSection(
+    state: CreateActivityUiState,
+    screenModel: CreateActivityScreenModel,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+        FriezeBandHeader(title = stringResource(Res.string.create_templates_header))
+        Text(
+            stringResource(Res.string.create_templates_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+        ) {
+            state.templates.forEach { template ->
+                val isDefault = template.userId == null
+                FilterChip(
+                    selected = false,
+                    onClick = { screenModel.applyTemplate(template) },
+                    label = { Text(template.name, style = MaterialTheme.typography.labelSmall) },
+                    trailingIcon = if (!isDefault) {
+                        {
+                            IconButton(
+                                onClick = { screenModel.deleteTemplate(template.id) },
+                                modifier = Modifier.size(18.dp),
+                            ) {
+                                Icon(Icons.Default.Close, stringResource(Res.string.label_delete), modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    } else null,
+                )
+            }
+        }
+        if (state.totalSlotCount > 0) {
+            AgoraButton(
+                text = stringResource(Res.string.create_save_template),
+                onClick = screenModel::showSaveTemplateDialog,
+                variant = AgoraButtonVariant.Tertiary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+// ============================================================================
 // Position Configurator (multi-step)
 // ============================================================================
 
@@ -278,12 +364,12 @@ private fun PositionConfigurator(
     screenModel: CreateActivityScreenModel,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg)) {
-        GreekKeyDivider()
+        DentilDivider()
 
         // Step 1: Define positions
-        FriezeBandHeader(title = "1. Define posiciones")
+        FriezeBandHeader(title = stringResource(Res.string.create_step1_title))
         Text(
-            "Las posiciones disponibles (ej: Central, Libero, Colocador...)",
+            stringResource(Res.string.create_step1_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
         )
@@ -297,13 +383,13 @@ private fun PositionConfigurator(
                 OutlinedTextField(
                     value = position.name,
                     onValueChange = { screenModel.updatePositionName(position.id, it) },
-                    placeholder = { Text("Nombre posicion") },
+                    placeholder = { Text(stringResource(Res.string.create_position_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
                 if (state.positions.size > 1) {
                     IconButton(onClick = { screenModel.removePosition(position.id) }) {
-                        Icon(Icons.Default.Close, "Eliminar", modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Close, stringResource(Res.string.create_delete_position_cd), modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -312,15 +398,15 @@ private fun PositionConfigurator(
         TextButton(onClick = screenModel::addPosition) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(AgoraSpacing.xs))
-            Text("Anadir posicion")
+            Text(stringResource(Res.string.create_add_position))
         }
 
-        GreekKeyDivider()
+        DentilDivider()
 
         // Step 2: Define groups and slots
-        FriezeBandHeader(title = "2. Define grupos y huecos")
+        FriezeBandHeader(title = stringResource(Res.string.create_step2_title))
         Text(
-            "Cada grupo tiene huecos. Cada hueco acepta una o mas posiciones.",
+            stringResource(Res.string.create_step2_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
         )
@@ -328,7 +414,7 @@ private fun PositionConfigurator(
         val validPositions = state.positions.filter { it.name.isNotBlank() }
 
         state.groups.forEach { group ->
-            StoneCard(elevation = AgoraElevation.subtle) {
+            MarbleCard(elevation = AgoraElevation.subtle) {
                 Column(
                     Modifier.padding(AgoraSpacing.md),
                     verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
@@ -341,13 +427,13 @@ private fun PositionConfigurator(
                         OutlinedTextField(
                             value = group.name,
                             onValueChange = { screenModel.updateGroupName(group.id, it) },
-                            label = { Text("Nombre grupo") },
+                            label = { Text(stringResource(Res.string.create_group_name_label)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f),
                         )
                         if (state.groups.size > 1) {
                             IconButton(onClick = { screenModel.removeGroup(group.id) }) {
-                                Icon(Icons.Default.Delete, "Eliminar grupo", modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Delete, stringResource(Res.string.create_delete_group_cd), modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -365,13 +451,13 @@ private fun PositionConfigurator(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    "Hueco ${index + 1}",
+                                    stringResource(Res.string.create_slot_index, index + 1),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 IconButton(
                                     onClick = { screenModel.removeSlotFromGroup(group.id, slot.id) },
                                 ) {
-                                    Icon(Icons.Default.Close, "Eliminar hueco", modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Close, stringResource(Res.string.create_delete_slot_cd), modifier = Modifier.size(16.dp))
                                 }
                             }
 
@@ -395,7 +481,7 @@ private fun PositionConfigurator(
 
                     // Add slot button
                     AgoraButton(
-                        text = "Anadir hueco",
+                        text = stringResource(Res.string.create_add_slot),
                         onClick = { screenModel.addSlotToGroup(group.id) },
                         variant = AgoraButtonVariant.Secondary,
                         modifier = Modifier.fillMaxWidth(),
@@ -407,23 +493,25 @@ private fun PositionConfigurator(
         TextButton(onClick = screenModel::addGroup) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(AgoraSpacing.xs))
-            Text("Anadir grupo")
+            Text(stringResource(Res.string.create_add_group))
         }
 
         // Preview
         if (state.totalSlotCount > 0) {
-            GreekKeyDivider()
-            FriezeBandHeader(title = "Vista previa")
+            DentilDivider()
+            FriezeBandHeader(title = stringResource(Res.string.create_preview_title))
             Text(
-                "${state.totalSlotCount} huecos en ${state.groups.size} grupo(s)",
+                stringResource(Res.string.create_preview_summary, state.totalSlotCount, state.groups.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
 
+            val groupFallback = stringResource(Res.string.create_group_fallback)
+            val noPositionLabel = stringResource(Res.string.no_position)
             state.groups.forEach { group ->
                 if (group.slots.isNotEmpty()) {
                     Text(
-                        group.name.ifBlank { "Grupo" },
+                        group.name.ifBlank { groupFallback },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -432,7 +520,7 @@ private fun PositionConfigurator(
                             .mapNotNull { pid -> validPositions.find { it.id == pid }?.name }
                             .joinToString(" / ")
                         Text(
-                            "  ${index + 1}. ${posNames.ifEmpty { "Sin posicion" }}",
+                            "  ${index + 1}. ${posNames.ifEmpty { noPositionLabel }}",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

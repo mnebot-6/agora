@@ -7,8 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    // Apply google-services only when google-services.json exists
-    // alias(libs.plugins.googleServices)
+    alias(libs.plugins.googleServices) apply false
 }
 
 kotlin {
@@ -80,9 +79,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.androidx.activity.compose)
-            // Firebase - uncomment when google-services.json is added
-            // implementation(platform(libs.firebase.bom))
-            // implementation(libs.firebase.messaging)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
         }
 
         iosMain.dependencies {
@@ -119,4 +117,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }

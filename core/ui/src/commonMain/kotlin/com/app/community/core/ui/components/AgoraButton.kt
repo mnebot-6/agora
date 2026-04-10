@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 enum class AgoraButtonVariant { Primary, Secondary, Tertiary, Danger }
 
 /**
- * Boton tematizado con variantes inspiradas en la paleta griega.
- * Incluye estado de carga con spinner geometrico.
+ * Boton tematizado con variantes inspiradas en la paleta jonica.
+ * Incluye estado de carga con spinner de curvas fluidas.
  */
 @Composable
 fun AgoraButton(
@@ -57,10 +57,15 @@ fun AgoraButton(
         }
 
         AgoraButtonVariant.Tertiary -> {
-            TextButton(
+            OutlinedButton(
                 onClick = onClick,
                 modifier = modifier,
                 enabled = isEnabled,
+                shape = MaterialTheme.shapes.small,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.tertiary,
+                ),
             ) {
                 ButtonContent(text, isLoading, MaterialTheme.colorScheme.tertiary)
             }
@@ -94,7 +99,7 @@ private fun ButtonContent(
             modifier = Modifier.height(20.dp).padding(end = 4.dp),
             strokeWidth = 2.dp,
             color = indicatorColor,
-            strokeCap = StrokeCap.Square,
+            strokeCap = StrokeCap.Round,
         )
     }
     Text(text)

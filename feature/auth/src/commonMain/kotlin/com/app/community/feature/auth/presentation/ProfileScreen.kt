@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,14 +39,17 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.ColumnDivider
+import com.app.community.core.ui.components.FlutedColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.auth.generated.resources.Res
+import agora.feature.auth.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class ProfileScreen : Screen {
 
@@ -64,11 +69,11 @@ class ProfileScreen : Screen {
         Scaffold(
             topBar = {
                 AgoraTopBar(
-                    title = { Text("Perfil") },
+                    title = { Text(stringResource(Res.string.profile_title)) },
                     actions = {
                         if (!state.isEditing && state.profile != null) {
                             TextButton(onClick = screenModel::startEditing) {
-                                Text("Editar")
+                                Text(stringResource(Res.string.profile_edit), color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
                     },
@@ -93,6 +98,8 @@ class ProfileScreen : Screen {
                 )
                 state.profile != null -> ProfileContent(
                     profile = state.profile!!,
+                    isDarkMode = state.isDarkMode,
+                    onToggleDarkMode = screenModel::toggleDarkMode,
                     onSignOut = screenModel::signOut,
                     modifier = Modifier.padding(padding),
                 )
@@ -104,6 +111,8 @@ class ProfileScreen : Screen {
 @Composable
 private fun ProfileContent(
     profile: com.app.community.core.model.Profile,
+    isDarkMode: Boolean,
+    onToggleDarkMode: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -119,7 +128,7 @@ private fun ProfileContent(
         Spacer(Modifier.height(AgoraSpacing.lg))
 
         // Avatar as carved stone relief (square StoneCard)
-        StoneCard(
+        MarbleCard(
             modifier = Modifier.size(96.dp),
             elevation = AgoraElevation.standard,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -137,9 +146,9 @@ private fun ProfileContent(
             }
         }
 
-        ColumnDivider(modifier = Modifier.padding(horizontal = AgoraSpacing.xxl))
+        FlutedColumnDivider(modifier = Modifier.padding(horizontal = AgoraSpacing.xxl))
 
-        FriezeBandHeader(title = "Perfil")
+        FriezeBandHeader(title = stringResource(Res.string.profile_title))
 
         Text(
             text = profile.displayName,
@@ -147,10 +156,31 @@ private fun ProfileContent(
             fontWeight = FontWeight.Bold,
         )
 
+        FlutedColumnDivider(modifier = Modifier.padding(horizontal = AgoraSpacing.xxl))
+
+        MarbleCard(elevation = AgoraElevation.subtle) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AgoraSpacing.md, vertical = AgoraSpacing.sm),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(Res.string.profile_dark_mode),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = isDarkMode,
+                    onCheckedChange = { onToggleDarkMode() },
+                )
+            }
+        }
+
         Spacer(Modifier.weight(1f))
 
         AgoraButton(
-            text = "Cerrar sesion",
+            text = stringResource(Res.string.profile_sign_out),
             onClick = { showSignOutDialog = true },
             variant = AgoraButtonVariant.Danger,
             modifier = Modifier.fillMaxWidth(),
@@ -160,19 +190,19 @@ private fun ProfileContent(
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Cerrar sesion") },
-            text = { Text("Seguro que quieres cerrar sesion?") },
+            title = { Text(stringResource(Res.string.profile_sign_out)) },
+            text = { Text(stringResource(Res.string.profile_sign_out_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     showSignOutDialog = false
                     onSignOut()
                 }) {
-                    Text("Cerrar sesion", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(Res.string.profile_sign_out), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )
@@ -195,12 +225,12 @@ private fun EditProfileContent(
             .padding(AgoraSpacing.xl),
         verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg),
     ) {
-        FriezeBandHeader(title = "Editar perfil")
+        FriezeBandHeader(title = stringResource(Res.string.profile_edit_title))
 
         OutlinedTextField(
             value = displayName,
             onValueChange = onDisplayNameChange,
-            label = { Text("Nombre") },
+            label = { Text(stringResource(Res.string.name)) },
             singleLine = true,
             enabled = !isSaving,
             modifier = Modifier.fillMaxWidth(),
@@ -208,21 +238,25 @@ private fun EditProfileContent(
 
         Spacer(Modifier.weight(1f))
 
-        AgoraButton(
-            text = "Guardar",
-            onClick = onSave,
-            variant = AgoraButtonVariant.Primary,
-            enabled = !isSaving && displayName.isNotBlank(),
-            isLoading = isSaving,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
-
-        AgoraButton(
-            text = "Cancelar",
-            onClick = onCancel,
-            variant = AgoraButtonVariant.Tertiary,
-            enabled = !isSaving,
-            modifier = Modifier.fillMaxWidth(),
-        )
+            horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+        ) {
+            AgoraButton(
+                text = stringResource(Res.string.cancel),
+                onClick = onCancel,
+                variant = AgoraButtonVariant.Tertiary,
+                enabled = !isSaving,
+                modifier = Modifier.weight(1f),
+            )
+            AgoraButton(
+                text = stringResource(Res.string.profile_save),
+                onClick = onSave,
+                variant = AgoraButtonVariant.Primary,
+                enabled = !isSaving && displayName.isNotBlank(),
+                isLoading = isSaving,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }

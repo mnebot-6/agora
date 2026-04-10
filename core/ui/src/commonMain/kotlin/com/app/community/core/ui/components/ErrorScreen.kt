@@ -13,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import agora.core.ui.generated.resources.Res
+import agora.core.ui.generated.resources.retry
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ErrorScreen(
@@ -25,15 +28,15 @@ fun ErrorScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        GreekKeyDivider(
+        DentilDivider(
             color = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
             modifier = Modifier.fillMaxWidth(0.5f),
-            patternHeight = 8.dp,
+            patternHeight = 6.dp,
         )
 
         Spacer(Modifier.height(16.dp))
 
-        StoneCard(
+        MarbleCard(
             borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
             modifier = Modifier.fillMaxWidth(0.85f),
         ) {
@@ -49,7 +52,7 @@ fun ErrorScreen(
                 if (onRetry != null) {
                     Spacer(Modifier.height(16.dp))
                     AgoraButton(
-                        text = "Reintentar",
+                        text = stringResource(Res.string.retry),
                         onClick = onRetry,
                         variant = AgoraButtonVariant.Secondary,
                     )

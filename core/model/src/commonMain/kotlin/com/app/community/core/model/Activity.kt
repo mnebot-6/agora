@@ -36,14 +36,12 @@ data class Activity(
     val status: ActivityStatus = ActivityStatus.ACTIVE,
 ) {
     val location: Location?
-        get() = if (locationName != null && locationLat != null && locationLng != null) {
-            Location(locationName, locationLat, locationLng)
-        } else null
+        get() = locationName?.let { Location(it, locationLat, locationLng) }
 }
 
 @Serializable
 data class Location(
     val name: String,
-    val lat: Double,
-    val lng: Double,
+    val lat: Double? = null,
+    val lng: Double? = null,
 )

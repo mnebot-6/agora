@@ -16,18 +16,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import agora.composeapp.generated.resources.Res
+import agora.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,10 +44,10 @@ import com.app.community.core.model.SlotMode
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
-import com.app.community.core.ui.components.GreekFrame
+import com.app.community.core.ui.components.IonicFrame
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.SlotStatusBadge
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.slotStatusColors
@@ -61,6 +64,8 @@ class DashboardScreen : Screen {
         val screenModel = koinScreenModel<DashboardScreenModel>()
         val uiState by screenModel.uiState.collectAsState()
 
+        LaunchedEffect(Unit) { screenModel.refresh() }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
@@ -69,13 +74,7 @@ class DashboardScreen : Screen {
                             "Agora",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
                         )
-                    },
-                    actions = {
-                        IconButton(onClick = { screenModel.refresh() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
-                        }
                     },
                 )
             },
@@ -138,7 +137,7 @@ private fun DashboardContent(
         if (state.upcomingActivities.size > 1) {
             item(key = "header") {
                 FriezeBandHeader(
-                    title = "Pr\u00f3ximas actividades",
+                    title = stringResource(Res.string.dashboard_upcoming_activities),
                     modifier = Modifier.padding(top = AgoraSpacing.xs),
                 )
             }
@@ -167,77 +166,82 @@ private fun HeroActivityCard(
     val localDt = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
     val slotColors = MaterialTheme.slotStatusColors
 
-    StoneCard(
+    MarbleCard(
         modifier = modifier,
-        showGreekBorder = true,
+        showDentilBorder = true,
         elevation = AgoraElevation.hero,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(AgoraSpacing.heroCardInternal)) {
-            // Activity name
-            Text(
-                text = activity.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Spacer(Modifier.height(AgoraSpacing.md))
-
-            // Date/time
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.DateRange,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(AgoraSpacing.xs + AgoraSpacing.xxs))
+        Row(
+            modifier = Modifier.padding(AgoraSpacing.heroCardInternal).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Left: activity info
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${dayOfWeekName(localDt.dayOfWeek)} ${localDt.dayOfMonth}, ${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = activity.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                 )
-            }
 
-            // Location
-            activity.locationName?.let { loc ->
-                Spacer(Modifier.height(AgoraSpacing.xs))
+                Spacer(Modifier.height(AgoraSpacing.sm))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.LocationOn,
+                        Icons.Default.DateRange,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
                     )
-                    Spacer(Modifier.width(AgoraSpacing.xs + AgoraSpacing.xxs))
+                    Spacer(Modifier.width(AgoraSpacing.xs))
                     Text(
-                        text = loc,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        text = "${dayOfWeekAbbr(localDt.dayOfWeek)} ${localDt.dayOfMonth}, ${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+
+                activity.locationName?.let { loc ->
+                    Spacer(Modifier.height(AgoraSpacing.xxs))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(AgoraSpacing.xs))
+                        Text(
+                            text = loc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(AgoraSpacing.sm))
+
+                val (badgeColorPair, badgeText) = when {
+                    info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
+                    info.userQueuePosition != null -> slotColors.reservedByOther to stringResource(Res.string.dashboard_status_in_queue, info.userQueuePosition!!)
+                    else -> slotColors.available to stringResource(Res.string.dashboard_status_not_reserved)
+                }
+
+                SlotStatusBadge(
+                    text = badgeText,
+                    colorPair = badgeColorPair,
+                    isCompact = true,
+                )
             }
 
-            Spacer(Modifier.height(AgoraSpacing.lg))
-
-            // Status badge
-            val (badgeColorPair, badgeText) = when {
-                info.isUserReserved -> slotColors.reservedByMe to "Reservado"
-                info.userQueuePosition != null -> slotColors.reservedByOther to "En cola #${info.userQueuePosition}"
-                else -> slotColors.available to "No reservado"
-            }
-
-            SlotStatusBadge(
-                text = badgeText,
-                colorPair = badgeColorPair,
-            )
-
-            // Slot counter (only for limited modes)
+            // Right: slot counter
             if (activity.slotMode != SlotMode.UNLIMITED && info.availableSlots >= 0) {
-                Spacer(Modifier.height(AgoraSpacing.lg))
-                Row(verticalAlignment = Alignment.Bottom) {
+                Spacer(Modifier.width(AgoraSpacing.md))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "${info.availableSlots}",
-                        style = MaterialTheme.typography.displayMedium.copy(fontSize = 48.sp),
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = if (info.availableSlots > 0) {
                             slotColors.available.content
@@ -245,12 +249,10 @@ private fun HeroActivityCard(
                             MaterialTheme.colorScheme.error
                         },
                     )
-                    Spacer(Modifier.width(AgoraSpacing.sm))
                     Text(
-                        text = if (info.availableSlots == 1) "plaza libre" else "plazas libres",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = pluralStringResource(Res.plurals.dashboard_slots_available, info.availableSlots),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = AgoraSpacing.sm),
                     )
                 }
             }
@@ -268,7 +270,7 @@ private fun CompactActivityCard(
     val localDt = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
     val slotColors = MaterialTheme.slotStatusColors
 
-    StoneCard(
+    MarbleCard(
         modifier = modifier,
         elevation = AgoraElevation.none,
         onClick = onClick,
@@ -307,14 +309,14 @@ private fun CompactActivityCard(
 
             // Status chip
             val (chipColorPair, chipText) = when {
-                info.isUserReserved -> slotColors.reservedByMe to "Reservado"
+                info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
                 info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
-                    slotColors.reservedByOther to "Lleno"
+                    slotColors.reservedByOther to stringResource(Res.string.dashboard_status_full)
                 }
                 activity.slotMode == SlotMode.UNLIMITED -> {
-                    slotColors.available to "Abierto"
+                    slotColors.available to stringResource(Res.string.dashboard_status_open)
                 }
-                else -> slotColors.available to "${info.availableSlots} plazas"
+                else -> slotColors.available to stringResource(Res.string.dashboard_status_slots, info.availableSlots)
             }
 
             SlotStatusBadge(
@@ -328,7 +330,7 @@ private fun CompactActivityCard(
 
 @Composable
 private fun EmptyDashboard(modifier: Modifier = Modifier) {
-    GreekFrame(
+    IonicFrame(
         modifier = modifier
             .fillMaxSize()
             .padding(AgoraSpacing.xxl),
@@ -339,13 +341,13 @@ private fun EmptyDashboard(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Tu \u00e1gora est\u00e1 vac\u00eda",
+                text = stringResource(Res.string.dashboard_empty_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(AgoraSpacing.sm))
             Text(
-                text = "\u00danete a una comunidad para ver actividades.",
+                text = stringResource(Res.string.dashboard_empty_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -353,24 +355,26 @@ private fun EmptyDashboard(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
 private fun dayOfWeekName(dow: kotlinx.datetime.DayOfWeek): String = when (dow) {
-    kotlinx.datetime.DayOfWeek.MONDAY -> "Lunes"
-    kotlinx.datetime.DayOfWeek.TUESDAY -> "Martes"
-    kotlinx.datetime.DayOfWeek.WEDNESDAY -> "Mi\u00e9rcoles"
-    kotlinx.datetime.DayOfWeek.THURSDAY -> "Jueves"
-    kotlinx.datetime.DayOfWeek.FRIDAY -> "Viernes"
-    kotlinx.datetime.DayOfWeek.SATURDAY -> "S\u00e1bado"
-    kotlinx.datetime.DayOfWeek.SUNDAY -> "Domingo"
+    kotlinx.datetime.DayOfWeek.MONDAY -> stringResource(Res.string.day_mon)
+    kotlinx.datetime.DayOfWeek.TUESDAY -> stringResource(Res.string.day_tue)
+    kotlinx.datetime.DayOfWeek.WEDNESDAY -> stringResource(Res.string.day_wed)
+    kotlinx.datetime.DayOfWeek.THURSDAY -> stringResource(Res.string.day_thu)
+    kotlinx.datetime.DayOfWeek.FRIDAY -> stringResource(Res.string.day_fri)
+    kotlinx.datetime.DayOfWeek.SATURDAY -> stringResource(Res.string.day_sat)
+    kotlinx.datetime.DayOfWeek.SUNDAY -> stringResource(Res.string.day_sun)
     else -> dow.name
 }
 
+@Composable
 private fun dayOfWeekAbbr(dow: kotlinx.datetime.DayOfWeek): String = when (dow) {
-    kotlinx.datetime.DayOfWeek.MONDAY -> "Lun"
-    kotlinx.datetime.DayOfWeek.TUESDAY -> "Mar"
-    kotlinx.datetime.DayOfWeek.WEDNESDAY -> "Mi\u00e9"
-    kotlinx.datetime.DayOfWeek.THURSDAY -> "Jue"
-    kotlinx.datetime.DayOfWeek.FRIDAY -> "Vie"
-    kotlinx.datetime.DayOfWeek.SATURDAY -> "S\u00e1b"
-    kotlinx.datetime.DayOfWeek.SUNDAY -> "Dom"
+    kotlinx.datetime.DayOfWeek.MONDAY -> stringResource(Res.string.day_mon_abbr)
+    kotlinx.datetime.DayOfWeek.TUESDAY -> stringResource(Res.string.day_tue_abbr)
+    kotlinx.datetime.DayOfWeek.WEDNESDAY -> stringResource(Res.string.day_wed_abbr)
+    kotlinx.datetime.DayOfWeek.THURSDAY -> stringResource(Res.string.day_thu_abbr)
+    kotlinx.datetime.DayOfWeek.FRIDAY -> stringResource(Res.string.day_fri_abbr)
+    kotlinx.datetime.DayOfWeek.SATURDAY -> stringResource(Res.string.day_sat_abbr)
+    kotlinx.datetime.DayOfWeek.SUNDAY -> stringResource(Res.string.day_sun_abbr)
     else -> dow.name.take(3)
 }

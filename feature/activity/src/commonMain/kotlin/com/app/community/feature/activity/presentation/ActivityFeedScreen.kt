@@ -12,13 +12,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,11 +35,14 @@ import com.app.community.core.model.Activity
 import com.app.community.core.model.SlotMode
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
-import com.app.community.core.ui.components.GreekFrame
+import com.app.community.core.ui.components.IonicFrame
 import com.app.community.core.ui.components.LoadingScreen
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
+import agora.feature.activity.generated.resources.Res
+import agora.feature.activity.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -48,30 +54,74 @@ class ActivityFeedScreen : Screen {
         val screenModel = koinScreenModel<ActivityFeedScreenModel>()
         val state by screenModel.state.collectAsState()
 
+        LaunchedEffect(Unit) { screenModel.load() }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
-                    title = { Text("Actividades") },
-                    actions = {
-                        IconButton(onClick = screenModel::load) {
-                            Icon(Icons.Default.Refresh, "Refrescar")
-                        }
-                    },
+                    title = { Text(stringResource(Res.string.feed_title)) },
                 )
+            },
+            floatingActionButton = {
+                if (state is ActivityFeedUiState.Content) {
+                    FloatingActionButton(
+                        onClick = {
+                            val content = state as ActivityFeedUiState.Content
+                            if (content.communities.size == 1) {
+                                navigator.push(CreateActivityScreen(content.communities.first().id))
+                            } else {
+                                screenModel.showCommunityPicker()
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.feed_create_activity))
+                    }
+                }
             },
         ) { padding ->
             when (val s = state) {
                 is ActivityFeedUiState.Loading -> LoadingScreen(Modifier.padding(padding))
                 is ActivityFeedUiState.Error -> ErrorScreen(s.message, onRetry = screenModel::load, modifier = Modifier.padding(padding))
                 is ActivityFeedUiState.Content -> {
+                    if (s.showCommunityPicker && s.communities.size > 1) {
+                        AlertDialog(
+                            onDismissRequest = screenModel::hideCommunityPicker,
+                            title = { Text(stringResource(Res.string.feed_select_community)) },
+                            text = {
+                                Column {
+                                    s.communities.forEach { community ->
+                                        TextButton(
+                                            onClick = {
+                                                screenModel.hideCommunityPicker()
+                                                navigator.push(CreateActivityScreen(community.id))
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            Text(
+                                                community.name,
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            confirmButton = {},
+                            dismissButton = {
+                                TextButton(onClick = screenModel::hideCommunityPicker) {
+                                    Text(stringResource(Res.string.label_cancel))
+                                }
+                            },
+                        )
+                    }
                     if (s.activities.isEmpty()) {
                         Box(
                             Modifier.fillMaxSize().padding(padding),
                             contentAlignment = Alignment.Center,
                         ) {
-                            GreekFrame {
+                            IonicFrame {
                                 Text(
-                                    "No hay actividades proximas en tu agora",
+                                    stringResource(Res.string.feed_empty),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.outline,
                                     modifier = Modifier.padding(AgoraSpacing.lg),
@@ -106,7 +156,7 @@ class ActivityFeedScreen : Screen {
 private fun ActivityFeedCard(activity: Activity, onClick: () -> Unit) {
     val localDateTime = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
 
-    StoneCard(
+    MarbleCard(
         elevation = AgoraElevation.subtle,
         onClick = onClick,
     ) {
@@ -121,10 +171,12 @@ private fun ActivityFeedCard(activity: Activity, onClick: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
+                val unlimitedLabel = stringResource(Res.string.slot_mode_unlimited)
+                val limitedCountLabel = stringResource(Res.string.slot_mode_limited_count, activity.maxSlots ?: 0)
                 val modeLabel = when (activity.slotMode) {
-                    SlotMode.UNLIMITED -> "Sin limite"
-                    SlotMode.LIMITED -> "${activity.maxSlots ?: 0} plazas"
-                    SlotMode.LIMITED_WITH_POSITIONS -> "${activity.maxSlots ?: 0} plazas"
+                    SlotMode.UNLIMITED -> unlimitedLabel
+                    SlotMode.LIMITED -> limitedCountLabel
+                    SlotMode.LIMITED_WITH_POSITIONS -> limitedCountLabel
                 }
                 Text(
                     text = modeLabel,

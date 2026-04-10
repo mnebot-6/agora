@@ -20,11 +20,5 @@ fun LoadingScreen(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AgoraLoadingIndicator()
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "Agora",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.outline,
-        )
     }
 }

@@ -12,9 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.app.community.core.ui.theme.NavBarShape
 
 /**
- * Barra de navegacion inferior con estetica de base de columnata:
- * linea dorada en el borde superior (estilobato) y forma
- * con esquinas superiores redondeadas.
+ * Barra de navegacion inferior con estetica de base de columnata jonica:
+ * linea dorada sutil en el borde superior y forma
+ * con esquinas superiores elegantemente redondeadas.
  */
 @Composable
 fun AgoraNavigationBar(
@@ -22,7 +22,7 @@ fun AgoraNavigationBar(
     content: @Composable RowScope.() -> Unit,
 ) {
     val lineColor = MaterialTheme.colorScheme.tertiary
-    val lineHeight = 2.dp
+    val lineHeight = 1.dp
 
     NavigationBar(
         modifier = modifier

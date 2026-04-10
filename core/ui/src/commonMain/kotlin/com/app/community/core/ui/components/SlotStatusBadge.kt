@@ -12,7 +12,7 @@ import com.app.community.core.ui.theme.SlotColorPair
 
 /**
  * Badge de estado de plaza con colores de la paleta de slots.
- * Forma de tableta de piedra con el par de colores container/content.
+ * Forma de panel de marmol jonico con el par de colores container/content.
  */
 @Composable
 fun SlotStatusBadge(

@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.model.Profile
+import com.app.community.core.ui.theme.ThemeManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,11 +19,13 @@ data class ProfileUiState(
     val editDisplayName: String = "",
     val isSaving: Boolean = false,
     val actionMessage: String? = null,
+    val isDarkMode: Boolean = false,
 )
 
 class ProfileScreenModel(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
+    private val themeManager: ThemeManager,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -41,10 +44,13 @@ class ProfileScreenModel(
             }
             profileRepository.getProfile(userId)
                 .onSuccess { profile ->
+                    val darkMode = profile.darkMode == true
+                    themeManager.setDarkMode(darkMode)
                     _state.value = _state.value.copy(
                         profile = profile,
                         isLoading = false,
                         editDisplayName = profile.displayName,
+                        isDarkMode = darkMode,
                     )
                 }
                 .onError { msg, _ ->
@@ -97,6 +103,16 @@ class ProfileScreenModel(
     fun signOut() {
         screenModelScope.launch {
             authRepository.signOut()
+        }
+    }
+
+    fun toggleDarkMode() {
+        val newValue = !_state.value.isDarkMode
+        _state.value = _state.value.copy(isDarkMode = newValue)
+        themeManager.setDarkMode(newValue)
+        val userId = authRepository.currentUserId() ?: return
+        screenModelScope.launch {
+            profileRepository.updateDarkMode(userId, newValue)
         }
     }
 

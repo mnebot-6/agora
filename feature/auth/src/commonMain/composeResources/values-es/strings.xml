@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared auth strings -->
+    <string name="email">Email</string>
+    <string name="password">Contrasena</string>
+    <string name="password_toggle_hide">Ocultar</string>
+    <string name="password_toggle_show">Ver</string>
+    <string name="name">Nombre</string>
+    <string name="cancel">Cancelar</string>
+    <string name="go_back">Volver</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">Tu punto de encuentro</string>
+    <string name="login_submit">Iniciar sesion</string>
+    <string name="login_forgot_password">Olvidaste tu contrasena?</string>
+    <string name="login_no_account">No tienes cuenta? Registrate</string>
+
+    <!-- Register screen -->
+    <string name="register_title">Crear cuenta</string>
+    <string name="register_confirm_password">Confirmar contrasena</string>
+    <string name="register_submit">Registrate</string>
+    <string name="register_has_account">Ya tienes cuenta? Inicia sesion</string>
+
+    <!-- Profile screen -->
+    <string name="profile_title">Perfil</string>
+    <string name="profile_edit">Editar</string>
+    <string name="profile_dark_mode">Modo oscuro</string>
+    <string name="profile_sign_out">Cerrar sesion</string>
+    <string name="profile_sign_out_confirm">Seguro que quieres cerrar sesion?</string>
+    <string name="profile_edit_title">Editar perfil</string>
+    <string name="profile_save">Guardar</string>
+
+    <!-- Forgot password screen -->
+    <string name="forgot_title">Restablecer contrasena</string>
+    <string name="forgot_instruction">Introduce tu email y te enviaremos un enlace para restablecerla.</string>
+    <string name="forgot_success">Te hemos enviado un enlace a tu email.</string>
+    <string name="forgot_submit">Enviar enlace</string>
+</resources>

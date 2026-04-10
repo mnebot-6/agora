@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Tabs -->
+    <string name="tab_agora">\u00c1gora</string>
+    <string name="tab_communities">Comunidades</string>
+    <string name="tab_activities">Actividades</string>
+    <string name="tab_notifications">Notificaciones</string>
+    <string name="tab_profile">Perfil</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_upcoming_activities">Pr\u00f3ximas actividades</string>
+    <string name="dashboard_status_reserved">Reservado</string>
+    <string name="dashboard_status_in_queue">En cola #%1$d</string>
+    <string name="dashboard_status_not_reserved">No reservado</string>
+    <string name="dashboard_status_full">Lleno</string>
+    <string name="dashboard_status_open">Abierto</string>
+    <string name="dashboard_status_slots">%1$d plazas</string>
+    <string name="dashboard_empty_title">Tu \u00e1gora est\u00e1 vac\u00eda</string>
+    <string name="dashboard_empty_subtitle">\u00danete a una comunidad para ver actividades.</string>
+
+    <!-- Slot counter plurals -->
+    <plurals name="dashboard_slots_available">
+        <item quantity="one">plaza\nlibre</item>
+        <item quantity="other">plazas\nlibres</item>
+    </plurals>
+
+    <!-- Day of week abbreviations -->
+    <string name="day_mon_abbr">Lun</string>
+    <string name="day_tue_abbr">Mar</string>
+    <string name="day_wed_abbr">Mi\u00e9</string>
+    <string name="day_thu_abbr">Jue</string>
+    <string name="day_fri_abbr">Vie</string>
+    <string name="day_sat_abbr">S\u00e1b</string>
+    <string name="day_sun_abbr">Dom</string>
+
+    <!-- Day of week full names -->
+    <string name="day_mon">Lunes</string>
+    <string name="day_tue">Martes</string>
+    <string name="day_wed">Mi\u00e9rcoles</string>
+    <string name="day_thu">Jueves</string>
+    <string name="day_fri">Viernes</string>
+    <string name="day_sat">S\u00e1bado</string>
+    <string name="day_sun">Domingo</string>
+</resources>

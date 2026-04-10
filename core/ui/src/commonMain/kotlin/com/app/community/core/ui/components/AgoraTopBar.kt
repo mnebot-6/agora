@@ -12,8 +12,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 
 /**
- * Barra superior con una linea de architrave dorada en el borde inferior,
- * como la banda decorativa que corona el entablamento de un templo.
+ * Barra superior compacta con linea dentil sutil en el borde inferior,
+ * evocando la cornisa refinada del entablamento jonico.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +25,7 @@ fun AgoraTopBar(
     showArchitrave: Boolean = true,
 ) {
     val architraveColor = MaterialTheme.colorScheme.tertiary
-    val architraveHeight = 2.dp
+    val architraveHeight = 1.5.dp
 
     TopAppBar(
         title = title,
@@ -44,10 +44,14 @@ fun AgoraTopBar(
                 Modifier
             },
         ),
+        expandedHeight = 48.dp,
         navigationIcon = navigationIcon,
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
         ),
     )
 }

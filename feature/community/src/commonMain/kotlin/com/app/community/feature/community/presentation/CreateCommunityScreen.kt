@@ -31,9 +31,12 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.PedimentHeader
+import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.community.generated.resources.Res
+import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class CreateCommunityScreen : Screen {
 
@@ -60,13 +63,13 @@ class CreateCommunityScreen : Screen {
                 AgoraTopBar(
                     title = {
                         Text(
-                            "Crear comunidad",
+                            stringResource(Res.string.create_community_title),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -85,7 +88,7 @@ class CreateCommunityScreen : Screen {
                 ) {
                     Spacer(Modifier.height(AgoraSpacing.xl))
 
-                    PedimentHeader(title = "Nueva comunidad")
+                    IonicVoluteHeader(title = stringResource(Res.string.create_community_header))
 
                     Spacer(Modifier.height(AgoraSpacing.xxl))
 
@@ -95,7 +98,7 @@ class CreateCommunityScreen : Screen {
                             name = it
                             screenModel.onNameChange(it)
                         },
-                        label = { Text("Nombre *") },
+                        label = { Text(stringResource(Res.string.create_community_name_label)) },
                         singleLine = true,
                         enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
@@ -109,7 +112,7 @@ class CreateCommunityScreen : Screen {
                             description = it
                             screenModel.onDescriptionChange(it)
                         },
-                        label = { Text("Descripcion") },
+                        label = { Text(stringResource(Res.string.create_community_description_label)) },
                         minLines = 3,
                         maxLines = 5,
                         enabled = !isLoading,
@@ -129,7 +132,7 @@ class CreateCommunityScreen : Screen {
                     }
 
                     AgoraButton(
-                        text = "Crear",
+                        text = stringResource(Res.string.create_community_button),
                         onClick = { screenModel.create() },
                         variant = AgoraButtonVariant.Primary,
                         enabled = !isLoading && name.isNotBlank(),

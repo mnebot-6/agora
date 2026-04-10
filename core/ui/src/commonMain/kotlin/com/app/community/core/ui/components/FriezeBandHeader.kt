@@ -17,10 +17,11 @@ import androidx.compose.ui.unit.dp
 import com.app.community.core.ui.theme.agoraColors
 
 /**
- * Banda horizontal de friso — evoca las bandas pintadas
- * en el entablamento de un templo dorico.
+ * Banda horizontal de friso continuo — evoca las bandas
+ * narrativas del friso jonico, una superficie continua
+ * sin las interrupciones de triglifos del orden dorico.
  *
- * Fondo tintado con el color secundario (cinabrio),
+ * Fondo tintado con el color secundario (patina bronce),
  * bordes finos arriba y abajo, titulo en secondary.
  */
 @Composable

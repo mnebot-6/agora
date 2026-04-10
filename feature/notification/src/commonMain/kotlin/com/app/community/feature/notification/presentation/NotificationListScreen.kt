@@ -16,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,14 +31,17 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import com.app.community.core.model.Notification
 import com.app.community.core.model.NotificationType
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.ColumnDivider
+import com.app.community.core.ui.components.FlutedColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
-import com.app.community.core.ui.components.GreekKeyDivider
+import com.app.community.core.ui.components.DentilDivider
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.notification.generated.resources.Res
+import agora.feature.notification.generated.resources.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 
 class NotificationListScreen : Screen {
 
@@ -46,14 +50,16 @@ class NotificationListScreen : Screen {
         val screenModel = koinScreenModel<NotificationListScreenModel>()
         val state by screenModel.state.collectAsState()
 
+        LaunchedEffect(Unit) { screenModel.load() }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
-                    title = { Text("Notificaciones") },
+                    title = { Text(stringResource(Res.string.notifications_title)) },
                     actions = {
                         if (state.unreadCount > 0) {
                             TextButton(onClick = screenModel::markAllAsRead) {
-                                Text("Leer todo")
+                                Text(stringResource(Res.string.mark_all_read), color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
                     },
@@ -76,17 +82,17 @@ class NotificationListScreen : Screen {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg),
                         ) {
-                            GreekKeyDivider(
+                            DentilDivider(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = AgoraSpacing.xxl),
                             )
                             Text(
-                                "Sin novedades por ahora",
+                                stringResource(Res.string.no_notifications),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.outline,
                             )
-                            GreekKeyDivider(
+                            DentilDivider(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = AgoraSpacing.xxl),
@@ -107,7 +113,7 @@ class NotificationListScreen : Screen {
                                     }
                                 },
                             )
-                            ColumnDivider()
+                            FlutedColumnDivider()
                         }
                     }
                 }
@@ -143,9 +149,9 @@ private fun NotificationRow(
     }
 
     val typeIcon = when (notification.type) {
-        NotificationType.NEW_ACTIVITY -> "Nueva actividad"
-        NotificationType.SLOT_RELEASED -> "Plaza liberada"
-        NotificationType.SUBSTITUTE_PROMOTED -> "Promocionado"
+        NotificationType.NEW_ACTIVITY -> stringResource(Res.string.type_new_activity)
+        NotificationType.SLOT_RELEASED -> stringResource(Res.string.type_slot_released)
+        NotificationType.SUBSTITUTE_PROMOTED -> stringResource(Res.string.type_substitute_promoted)
     }
 
     Row(

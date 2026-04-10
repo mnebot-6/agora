@@ -5,12 +5,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Tipografia epigrafica inspirada en inscripciones griegas.
+ * Tipografia del orden jonico — elegante y refinada.
  *
- * Headlines con letter-spacing positivo evocan las mayusculas
- * deliberadamente espaciadas inscritas en piedra pentelica.
- * Labels anchos como las marcas en ceramica atica.
+ * Headlines con peso ligero y spacing sutil evocan inscripciones
+ * en marmol pario pulido, no piedra tallada a cincel.
+ * Titles con peso medio para equilibrio entre elegancia y legibilidad.
  * Body con line-height generoso como rollos de papiro.
+ * Labels refinados, no pesados.
  */
 val AgoraTypography: Typography
     get() {
@@ -29,30 +30,30 @@ val AgoraTypography: Typography
                 fontWeight = FontWeight.W300,
                 letterSpacing = 0.sp,
             ),
-            // Headlines — inscripcion en el friso, spacing positivo
+            // Headlines — inscripcion elegante en friso continuo jonico
             headlineLarge = base.headlineLarge.copy(
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 0.5.sp,
+                fontWeight = FontWeight.W300,
+                letterSpacing = 0.4.sp,
             ),
             headlineMedium = base.headlineMedium.copy(
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 0.3.sp,
+                fontWeight = FontWeight.W300,
+                letterSpacing = 0.25.sp,
             ),
             headlineSmall = base.headlineSmall.copy(
-                fontWeight = FontWeight.Normal,
-                letterSpacing = 0.2.sp,
+                fontWeight = FontWeight.W300,
+                letterSpacing = 0.15.sp,
             ),
-            // Titles — nombre de seccion grabado en piedra
+            // Titles — seccion de marmol pulido
             titleLarge = base.titleLarge.copy(
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 letterSpacing = 0.25.sp,
             ),
             titleMedium = base.titleMedium.copy(
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 letterSpacing = 0.15.sp,
             ),
             titleSmall = base.titleSmall.copy(
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 letterSpacing = 0.1.sp,
             ),
             // Body — papiro legible
@@ -65,18 +66,18 @@ val AgoraTypography: Typography
             bodySmall = base.bodySmall.copy(
                 lineHeight = 18.sp,
             ),
-            // Labels — marcas de ceramica, spacing amplio
+            // Labels — marcas refinadas, no pesadas
             labelLarge = base.labelLarge.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp,
-            ),
-            labelMedium = base.labelMedium.copy(
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp,
             ),
+            labelMedium = base.labelMedium.copy(
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.4.sp,
+            ),
             labelSmall = base.labelSmall.copy(
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.6.sp,
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.5.sp,
             ),
         )
     }

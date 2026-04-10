@@ -77,6 +77,37 @@ class ActivityRepository {
                 .decodeSingle<Activity>()
         }
 
+    suspend fun updateActivity(
+        activityId: String,
+        name: String,
+        description: String?,
+        datetime: Instant,
+        durationMinutes: Int,
+        locationName: String?,
+        costDescription: String?,
+    ): AppResult<Activity> =
+        safeCall {
+            postgrest.from("activities")
+                .update(buildJsonObject {
+                    put("name", name)
+                    put("description", description)
+                    put("datetime", datetime.toString())
+                    put("duration_minutes", durationMinutes)
+                    put("location_name", locationName)
+                    put("cost_description", costDescription)
+                }) {
+                    filter { eq("id", activityId) }
+                    select()
+                }
+                .decodeSingle<Activity>()
+        }
+
+    suspend fun deleteActivity(activityId: String): AppResult<Unit> =
+        safeCall {
+            postgrest.from("activities")
+                .delete { filter { eq("id", activityId) } }
+        }
+
     suspend fun updateActivityStatus(activityId: String, status: ActivityStatus): AppResult<Unit> =
         safeCall {
             postgrest.from("activities")

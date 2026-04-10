@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="back_cd">Back</string>
+
+    <!-- CommunityListScreen -->
+    <string name="community_list_title">Communities</string>
+    <string name="community_list_create_cd">Create community</string>
+    <string name="community_list_empty_title">Your agora is empty</string>
+    <string name="community_list_empty_subtitle">Create a community or join with an invite code.</string>
+    <string name="community_list_join_button">Join with invite code</string>
+
+    <!-- CommunityDetailScreen -->
+    <string name="community_detail_default_title">Community</string>
+    <string name="community_detail_create_activity_cd">Create activity</string>
+    <string name="community_detail_invite_prefix">Invite: %1$s</string>
+    <string name="community_detail_copy_code_cd">Copy code</string>
+    <string name="community_detail_members_header">Members (%1$d)</string>
+    <string name="community_detail_manage">Manage</string>
+    <string name="community_detail_activities_header">Activities (%1$d)</string>
+    <string name="community_detail_no_activities">No activities yet. Create the first one.</string>
+    <string name="community_detail_slots">%1$d slots</string>
+    <string name="community_detail_no_limit">No limit</string>
+
+    <!-- CreateCommunityScreen -->
+    <string name="create_community_title">Create community</string>
+    <string name="create_community_header">New community</string>
+    <string name="create_community_name_label">Name *</string>
+    <string name="create_community_description_label">Description</string>
+    <string name="create_community_button">Create</string>
+
+    <!-- JoinCommunityScreen -->
+    <string name="join_title">Join community</string>
+    <string name="join_header">Join community</string>
+    <string name="join_instructions">Enter the 8-character code to join.</string>
+    <string name="join_code_label">Invite code</string>
+    <string name="join_success">You are now in \"%1$s\"!</string>
+    <string name="join_button">Join</string>
+
+    <!-- MemberManagementScreen -->
+    <string name="member_title">Members</string>
+    <string name="member_default_name">User</string>
+    <string name="member_you_suffix">%1$s (you)</string>
+    <string name="member_role_admin">Admin</string>
+    <string name="member_role_user">User</string>
+    <string name="member_admins_header">Administrators (%1$d)</string>
+    <string name="member_users_header">Users (%1$d)</string>
+    <string name="member_demote_admin">Remove admin</string>
+    <string name="member_promote_admin">Make admin</string>
+    <string name="member_remove_button">Remove</string>
+    <string name="member_remove_dialog_title">Remove member</string>
+    <string name="member_remove_dialog_text">Are you sure you want to remove %1$s from the community?</string>
+    <string name="member_remove_confirm">Remove</string>
+    <string name="member_remove_cancel">Cancel</string>
+</resources>

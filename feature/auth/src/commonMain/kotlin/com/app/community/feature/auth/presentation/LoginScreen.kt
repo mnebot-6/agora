@@ -32,11 +32,14 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
-import com.app.community.core.ui.components.GreekFrame
-import com.app.community.core.ui.components.GreekKeyDivider
-import com.app.community.core.ui.components.PedimentHeader
+import com.app.community.core.ui.components.IonicFrame
+import com.app.community.core.ui.components.DentilDivider
+import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.auth.generated.resources.Res
+import agora.feature.auth.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class LoginScreen : Screen {
 
@@ -57,16 +60,16 @@ class LoginScreen : Screen {
         ) {
             Spacer(Modifier.height(AgoraSpacing.xxl))
 
-            PedimentHeader(
+            IonicVoluteHeader(
                 title = "Agora",
-                subtitle = "Tu punto de encuentro",
+                subtitle = stringResource(Res.string.login_subtitle),
             )
 
             Spacer(Modifier.height(AgoraSpacing.xl))
 
-            GreekFrame(
+            IonicFrame(
                 modifier = Modifier.fillMaxWidth(),
-                borderColor = MaterialTheme.agoraColors.goldLeaf,
+                borderColor = MaterialTheme.agoraColors.gildedVolute,
             ) {
                 Column(
                     modifier = Modifier
@@ -77,7 +80,7 @@ class LoginScreen : Screen {
                     OutlinedTextField(
                         value = uiState.email,
                         onValueChange = screenModel::onEmailChange,
-                        label = { Text("Email") },
+                        label = { Text(stringResource(Res.string.email)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -90,7 +93,7 @@ class LoginScreen : Screen {
                     OutlinedTextField(
                         value = uiState.password,
                         onValueChange = screenModel::onPasswordChange,
-                        label = { Text("Contrasena") },
+                        label = { Text(stringResource(Res.string.password)) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) {
                             VisualTransformation.None
@@ -100,7 +103,7 @@ class LoginScreen : Screen {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
                             TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Text(if (passwordVisible) "Ocultar" else "Ver")
+                                Text(if (passwordVisible) stringResource(Res.string.password_toggle_hide) else stringResource(Res.string.password_toggle_show))
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -119,14 +122,14 @@ class LoginScreen : Screen {
 
                     Spacer(modifier = Modifier.height(AgoraSpacing.sm))
 
-                    GreekKeyDivider(
-                        color = MaterialTheme.agoraColors.goldLeaf,
+                    DentilDivider(
+                        color = MaterialTheme.agoraColors.gildedVolute,
                     )
 
                     Spacer(modifier = Modifier.height(AgoraSpacing.lg))
 
                     AgoraButton(
-                        text = "Iniciar sesion",
+                        text = stringResource(Res.string.login_submit),
                         onClick = screenModel::onSignIn,
                         variant = AgoraButtonVariant.Primary,
                         enabled = uiState.status !is LoginStatus.Loading,
@@ -138,14 +141,14 @@ class LoginScreen : Screen {
 
                     TextButton(onClick = { navigator.push(ForgotPasswordScreen()) }) {
                         Text(
-                            text = "Olvidaste tu contrasena?",
+                            text = stringResource(Res.string.login_forgot_password),
                             color = MaterialTheme.colorScheme.secondary,
                         )
                     }
 
                     TextButton(onClick = { navigator.push(RegisterScreen()) }) {
                         Text(
-                            text = "No tienes cuenta? Registrate",
+                            text = stringResource(Res.string.login_no_account),
                             color = MaterialTheme.colorScheme.secondary,
                         )
                     }

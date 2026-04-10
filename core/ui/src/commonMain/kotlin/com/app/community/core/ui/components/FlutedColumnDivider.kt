@@ -13,17 +13,19 @@ import androidx.compose.ui.unit.dp
 import com.app.community.core.ui.theme.agoraColors
 
 /**
- * Divisor de tres lineas paralelas que evoca
- * las estriaduras de una columna dorica.
+ * Divisor de cinco lineas finas paralelas que evoca
+ * las 24 estriaduras esbeltas de una columna jonica.
+ * Mas delicado y refinado que el estriado dorico de 3 lineas.
  */
 @Composable
-fun ColumnDivider(
+fun FlutedColumnDivider(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.agoraColors.columnStone,
-    lineThickness: Dp = 1.dp,
-    lineSpacing: Dp = 2.dp,
+    color: Color = MaterialTheme.agoraColors.marbleRelief,
+    lineThickness: Dp = 0.5.dp,
+    lineSpacing: Dp = 1.5.dp,
 ) {
-    val totalHeight = lineThickness * 3 + lineSpacing * 2
+    val lineCount = 5
+    val totalHeight = lineThickness * lineCount + lineSpacing * (lineCount - 1)
     Canvas(
         modifier = modifier
             .fillMaxWidth()
@@ -33,12 +35,9 @@ fun ColumnDivider(
         val ls = lineSpacing.toPx()
         val w = size.width
 
-        val y1 = lt / 2f
-        val y2 = lt + ls + lt / 2f
-        val y3 = (lt + ls) * 2 + lt / 2f
-
-        drawLine(color, Offset(0f, y1), Offset(w, y1), lt)
-        drawLine(color, Offset(0f, y2), Offset(w, y2), lt)
-        drawLine(color, Offset(0f, y3), Offset(w, y3), lt)
+        for (i in 0 until lineCount) {
+            val y = i * (lt + ls) + lt / 2f
+            drawLine(color, Offset(0f, y), Offset(w, y), lt)
+        }
     }
 }

@@ -21,39 +21,39 @@ data class SlotStatusColors(
     val paid: SlotColorPair,
 )
 
-// Light mode slot colors — policromia arquitectonica griega
+// Light mode slot colors — orden jonico refinado
 val LightSlotStatusColors = SlotStatusColors(
     available = SlotColorPair(
         container = Color(0xFFD0F0D4),  // Malaquita wash
         content = Color(0xFF2E6B3A),    // Verde malaquita
     ),
     reservedByMe = SlotColorPair(
-        container = Color(0xFFCEDEF5),  // Azul Egeo wash
-        content = Color(0xFF1A4D8C),    // Azul Egeo
+        container = Color(0xFFCCECEB),  // Teal Egeo wash
+        content = Color(0xFF1A7D7A),    // Teal Egeo
     ),
     reservedByOther = SlotColorPair(
-        container = Color(0xFFEDE7DC),  // Caliza erosionada
-        content = Color(0xFF78746E),    // Gris piedra
+        container = Color(0xFFEDE9E2),  // Caliza relieve
+        content = Color(0xFF7A7770),    // Marmol erosionado
     ),
     paid = SlotColorPair(
-        container = Color(0xFFFFEDB8),  // Ocre dorado claro
-        content = Color(0xFFC49008),    // Ocre dorado
+        container = Color(0xFFFFF2D6),  // Oro palido
+        content = Color(0xFFD4A855),    // Oro refinado
     ),
 )
 
-// Dark mode slot colors — templo a la luz de antorchas
+// Dark mode slot colors — templo jonico a la luz de la luna
 val DarkSlotStatusColors = SlotStatusColors(
     available = SlotColorPair(
         container = Color(0xFF1E4028),  // Malaquita profundo
         content = Color(0xFF8FD49B),    // Malaquita brillante
     ),
     reservedByMe = SlotColorPair(
-        container = Color(0xFF103F74),  // Azul Egeo nocturno
-        content = Color(0xFFA8CCFE),    // Azul Egeo suave
+        container = Color(0xFF0A5C5A),  // Teal Egeo nocturno
+        content = Color(0xFF8ED4D2),    // Teal Egeo suave
     ),
     reservedByOther = SlotColorPair(
         container = Color(0xFF48453E),  // Piedra oscura
-        content = Color(0xFFC8C2B8),    // Piedra clara
+        content = Color(0xFFC8C4BC),    // Piedra clara
     ),
     paid = SlotColorPair(
         container = Color(0xFF654F00),  // Oro brunido profundo

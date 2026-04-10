@@ -10,18 +10,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -36,12 +35,15 @@ import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
-import com.app.community.core.ui.components.GreekFrame
-import com.app.community.core.ui.components.GreekKeyDivider
+import com.app.community.core.ui.components.IonicFrame
+import com.app.community.core.ui.components.DentilDivider
 import com.app.community.core.ui.components.LoadingScreen
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
+import agora.feature.community.generated.resources.Res
+import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class CommunityListScreen : Screen {
 
@@ -52,19 +54,16 @@ class CommunityListScreen : Screen {
         val screenModel = koinScreenModel<CommunityListScreenModel>()
         val uiState by screenModel.uiState.collectAsState()
 
+        LaunchedEffect(Unit) { screenModel.refresh() }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
                     title = {
                         Text(
-                            "Comunidades",
+                            stringResource(Res.string.community_list_title),
                             style = MaterialTheme.typography.titleLarge,
                         )
-                    },
-                    actions = {
-                        IconButton(onClick = { screenModel.refresh() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
-                        }
                     },
                 )
             },
@@ -73,9 +72,9 @@ class CommunityListScreen : Screen {
                     onClick = { navigator.push(CreateCommunityScreen()) },
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear comunidad")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_list_create_cd))
                 }
             },
         ) { padding ->
@@ -122,24 +121,24 @@ private fun CommunityListContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
-            GreekFrame {
+            IonicFrame {
                 Column(
                     modifier = Modifier.padding(AgoraSpacing.xl),
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Tu agora esta vacia",
+                        text = stringResource(Res.string.community_list_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(Modifier.height(AgoraSpacing.sm))
                     Text(
-                        text = "Crea una comunidad o unete con un codigo de invitacion.",
+                        text = stringResource(Res.string.community_list_empty_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(AgoraSpacing.lg))
                     AgoraButton(
-                        text = "Unirse con codigo de invitacion",
+                        text = stringResource(Res.string.community_list_join_button),
                         onClick = onJoinClick,
                         variant = AgoraButtonVariant.Secondary,
                     )
@@ -153,11 +152,11 @@ private fun CommunityListContent(
             verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
         ) {
             item {
-                GreekKeyDivider()
+                DentilDivider()
             }
             item {
                 AgoraButton(
-                    text = "Unirse con codigo de invitacion",
+                    text = stringResource(Res.string.community_list_join_button),
                     onClick = onJoinClick,
                     variant = AgoraButtonVariant.Secondary,
                     modifier = Modifier.fillMaxWidth(),
@@ -179,7 +178,7 @@ private fun CommunityCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    StoneCard(
+    MarbleCard(
         modifier = modifier,
         elevation = AgoraElevation.subtle,
         onClick = onClick,

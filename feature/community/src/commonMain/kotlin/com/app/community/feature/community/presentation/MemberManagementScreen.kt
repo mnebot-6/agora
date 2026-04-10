@@ -40,11 +40,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.MemberRole
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.ColumnDivider
+import com.app.community.core.ui.components.FlutedColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AgoraSpacing
+import agora.feature.community.generated.resources.Res
+import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 
@@ -71,13 +74,13 @@ data class MemberManagementScreen(val communityId: String) : Screen {
                 AgoraTopBar(
                     title = {
                         Text(
-                            "Miembros",
+                            stringResource(Res.string.member_title),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -123,7 +126,7 @@ private fun MemberList(
         verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
     ) {
         item {
-            FriezeBandHeader(title = "Administradores (${admins.size})")
+            FriezeBandHeader(title = stringResource(Res.string.member_admins_header, admins.size))
         }
         items(admins, key = { it.userId }) { member ->
             MemberRow(
@@ -133,11 +136,11 @@ private fun MemberList(
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
             )
-            ColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
+            FlutedColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
 
         item {
-            FriezeBandHeader(title = "Usuarios (${users.size})")
+            FriezeBandHeader(title = stringResource(Res.string.member_users_header, users.size))
         }
         items(users, key = { it.userId }) { member ->
             MemberRow(
@@ -147,7 +150,7 @@ private fun MemberList(
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
             )
-            ColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
+            FlutedColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
     }
 }
@@ -161,7 +164,8 @@ private fun MemberRow(
     onRemove: (CommunityMember) -> Unit,
 ) {
     val isMe = member.userId == currentUserId
-    val displayName = member.profiles?.displayName ?: "Usuario"
+    val defaultName = stringResource(Res.string.member_default_name)
+    val displayName = member.profiles?.displayName ?: defaultName
     var showRemoveDialog by remember { mutableStateOf(false) }
 
     Row(
@@ -171,12 +175,12 @@ private fun MemberRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isMe) "$displayName (tu)" else displayName,
+                text = if (isMe) stringResource(Res.string.member_you_suffix, displayName) else displayName,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
             )
             Text(
-                text = if (member.role == MemberRole.ADMIN) "Admin" else "Usuario",
+                text = if (member.role == MemberRole.ADMIN) stringResource(Res.string.member_role_admin) else stringResource(Res.string.member_role_user),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (member.role == MemberRole.ADMIN) {
                     MaterialTheme.colorScheme.primary
@@ -190,13 +194,13 @@ private fun MemberRow(
             Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
                 TextButton(onClick = { onToggleRole(member) }) {
                     Text(
-                        if (member.role == MemberRole.ADMIN) "Quitar admin" else "Hacer admin",
+                        if (member.role == MemberRole.ADMIN) stringResource(Res.string.member_demote_admin) else stringResource(Res.string.member_promote_admin),
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
                 TextButton(onClick = { showRemoveDialog = true }) {
                     Text(
-                        "Expulsar",
+                        stringResource(Res.string.member_remove_button),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -208,19 +212,19 @@ private fun MemberRow(
     if (showRemoveDialog) {
         AlertDialog(
             onDismissRequest = { showRemoveDialog = false },
-            title = { Text("Expulsar miembro") },
-            text = { Text("Seguro que quieres expulsar a $displayName de la comunidad?") },
+            title = { Text(stringResource(Res.string.member_remove_dialog_title)) },
+            text = { Text(stringResource(Res.string.member_remove_dialog_text, displayName)) },
             confirmButton = {
                 TextButton(onClick = {
                     showRemoveDialog = false
                     onRemove(member)
                 }) {
-                    Text("Expulsar", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(Res.string.member_remove_confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRemoveDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(Res.string.member_remove_cancel))
                 }
             },
         )

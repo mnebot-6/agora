@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared across activity screens -->
+    <string name="back_cd">Back</string>
+    <string name="slots_header">Slots</string>
+    <string name="slot_mode_unlimited">Unlimited</string>
+    <string name="slot_mode_limited_count">%1$d slots</string>
+    <string name="slot_available">Available</string>
+    <string name="slot_reserve">Reserve</string>
+    <string name="slot_release">Release</string>
+    <string name="slot_paid">Paid</string>
+    <string name="unknown_user">User</string>
+    <string name="name_is_me">%1$s (you)</string>
+    <string name="no_position">No position</string>
+    <string name="label_name_required">Name *</string>
+    <string name="label_description">Description</string>
+    <string name="placeholder_markdown">Supports Markdown format</string>
+    <string name="label_date_required">Date *</string>
+    <string name="label_time_required">Time *</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_location">Location</string>
+    <string name="label_cost">Cost</string>
+    <string name="label_delete">Delete</string>
+    <string name="label_cancel">Cancel</string>
+    <string name="slot_type_header">Slot type</string>
+    <string name="slot_mode_limited">Limited</string>
+    <string name="slot_mode_positions">Positions</string>
+
+    <!-- Feed screen -->
+    <string name="feed_title">Activities</string>
+    <string name="feed_empty">No upcoming activities in your agora</string>
+    <string name="feed_create_activity">Create activity</string>
+    <string name="feed_select_community">Select community</string>
+
+    <!-- Detail screen -->
+    <string name="detail_title_fallback">Activity</string>
+    <string name="detail_duration_hours_minutes">Duration: %1$dh %2$dmin</string>
+    <string name="detail_duration_hours">Duration: %1$dh</string>
+    <string name="detail_location">Location: %1$s</string>
+    <string name="detail_cost">Cost: %1$s</string>
+    <string name="detail_location_cd">Open location in maps</string>
+    <string name="detail_status_cancelled">Cancelled</string>
+    <string name="detail_status_completed">Completed</string>
+    <string name="detail_status_label">Status: %1$s</string>
+    <string name="detail_edit">Edit</string>
+    <string name="detail_complete">Complete</string>
+    <string name="detail_cancel">Cancel</string>
+    <string name="detail_delete">Delete</string>
+    <string name="detail_signed_up_count">%1$d signed up</string>
+    <string name="detail_slots_count">%1$d / %2$d</string>
+    <string name="detail_leave">Leave</string>
+    <string name="detail_join">Join</string>
+    <string name="detail_slot_index">Slot %1$d</string>
+    <string name="detail_position_slot_index">Slot %1$d</string>
+    <string name="detail_delete_dialog_title">Delete activity</string>
+    <string name="detail_delete_dialog_message">This action cannot be undone. All slots and reservations will be deleted.</string>
+    <string name="detail_substitute_queue_header">Substitute queue</string>
+    <string name="detail_no_substitutes">No substitutes in queue</string>
+    <string name="detail_substitute_entry">%1$d. %2$s</string>
+    <string name="detail_substitute_entry_position">%1$d. %2$s (%3$s)</string>
+    <string name="detail_substitute_me">You</string>
+    <string name="detail_leave_queue">Leave queue</string>
+    <string name="detail_join_substitute_for">Sign up as substitute for:</string>
+    <string name="detail_any_position">Any position</string>
+    <string name="detail_join_substitute">Sign up as substitute</string>
+
+    <!-- Create screen -->
+    <string name="create_title">New Activity</string>
+    <string name="create_name_placeholder">E.g.: Mixed Volleyball</string>
+    <string name="create_date_placeholder">DD/MM/YYYY</string>
+    <string name="create_time_placeholder">HH:MM</string>
+    <string name="create_location_placeholder">E.g.: La Fuensanta Pavilion</string>
+    <string name="create_cost_placeholder">E.g.: Bizum of 6.5 euros per person</string>
+    <string name="create_max_slots_label">Number of slots *</string>
+    <string name="create_max_slots_placeholder">E.g.: 12</string>
+    <string name="create_button">Create Activity</string>
+    <string name="create_step1_title">1. Define positions</string>
+    <string name="create_step1_description">Available positions (e.g.: Middle Blocker, Libero, Setter...)</string>
+    <string name="create_position_placeholder">Position name</string>
+    <string name="create_delete_position_cd">Delete</string>
+    <string name="create_add_position">Add position</string>
+    <string name="create_step2_title">2. Define groups and slots</string>
+    <string name="create_step2_description">Each group has slots. Each slot accepts one or more positions.</string>
+    <string name="create_group_name_label">Group name</string>
+    <string name="create_delete_group_cd">Delete group</string>
+    <string name="create_slot_index">Slot %1$d</string>
+    <string name="create_delete_slot_cd">Delete slot</string>
+    <string name="create_add_slot">Add slot</string>
+    <string name="create_add_group">Add group</string>
+    <string name="create_preview_title">Preview</string>
+    <string name="create_preview_summary">%1$d slots in %2$d group(s)</string>
+    <string name="create_group_fallback">Group</string>
+
+    <!-- Templates -->
+    <string name="create_templates_header">Templates</string>
+    <string name="create_templates_description">Select a template to auto-fill positions and groups</string>
+    <string name="create_save_template">Save as template</string>
+    <string name="create_save_template_title">Save template</string>
+    <string name="create_save_template_confirm">Save</string>
+    <string name="create_template_name_label">Template name</string>
+
+    <!-- Edit screen -->
+    <string name="edit_title">Edit Activity</string>
+    <string name="edit_save">Save</string>
+</resources>

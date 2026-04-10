@@ -5,15 +5,21 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.SlotRepository
+import com.app.community.core.data.repository.SlotTemplateRepository
 import com.app.community.core.model.SlotMode
+import com.app.community.core.model.SlotTemplate
+import com.app.community.core.model.TemplateConfig
+import com.app.community.core.model.GroupTemplate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 
 // --- Position configurator models ---
 
@@ -36,8 +42,9 @@ data class SlotConfig(
 data class CreateActivityUiState(
     val name: String = "",
     val description: String = "",
-    val date: String = "",
-    val time: String = "",
+    val dateMillis: Long? = null,
+    val timeHour: Int = 20,
+    val timeMinute: Int = 0,
     val durationHours: Int = 2,
     val durationMinutes: Int = 0,
     val locationName: String = "",
@@ -48,6 +55,10 @@ data class CreateActivityUiState(
     val positions: List<PositionConfig> = listOf(PositionConfig(name = "")),
     val groups: List<GroupConfig> = listOf(GroupConfig(name = "Equipo 1")),
     val status: CreateActivityStatus = CreateActivityStatus.Idle,
+    // Templates
+    val templates: List<SlotTemplate> = emptyList(),
+    val showSaveTemplateDialog: Boolean = false,
+    val saveTemplateName: String = "",
 ) {
     val totalSlotCount: Int
         get() = groups.sumOf { it.slots.size }
@@ -65,18 +76,37 @@ class CreateActivityScreenModel(
     private val activityRepository: ActivityRepository,
     private val slotRepository: SlotRepository,
     private val authRepository: AuthRepository,
+    private val slotTemplateRepository: SlotTemplateRepository,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(CreateActivityUiState())
     val state: StateFlow<CreateActivityUiState> = _state.asStateFlow()
 
+    init {
+        loadTemplates()
+    }
+
+    private fun loadTemplates() {
+        screenModelScope.launch {
+            val defaults = slotTemplateRepository.getDefaultTemplates()
+            val userId = authRepository.currentUserId()
+            val userTemplates = if (userId != null) {
+                slotTemplateRepository.getUserTemplates(userId).let { result ->
+                    var list = emptyList<SlotTemplate>()
+                    result.onSuccess { list = it }
+                    list
+                }
+            } else emptyList()
+            _state.update { it.copy(templates = defaults + userTemplates) }
+        }
+    }
+
     // --- Basic fields ---
     fun onNameChange(value: String) = _state.update { it.copy(name = value) }
     fun onDescriptionChange(value: String) = _state.update { it.copy(description = value) }
-    fun onDateChange(value: String) = _state.update { it.copy(date = value) }
-    fun onTimeChange(value: String) = _state.update { it.copy(time = value) }
-    fun onDurationHoursChange(value: Int) = _state.update { it.copy(durationHours = value) }
-    fun onDurationMinutesChange(value: Int) = _state.update { it.copy(durationMinutes = value) }
+    fun onDateSelected(millis: Long?) = _state.update { it.copy(dateMillis = millis) }
+    fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
+    fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
     fun onCostDescriptionChange(value: String) = _state.update { it.copy(costDescription = value) }
     fun onSlotModeChange(value: SlotMode) = _state.update { it.copy(slotMode = value) }
@@ -154,6 +184,82 @@ class CreateActivityScreenModel(
         })
     }
 
+    // --- Templates ---
+    fun applyTemplate(template: SlotTemplate) {
+        val config = template.config
+        val newPositions = config.positions.map { PositionConfig(name = it) }
+        val newGroups = config.groups.map { groupTemplate ->
+            GroupConfig(
+                name = groupTemplate.name,
+                slots = groupTemplate.slots.map { entry ->
+                    val positionIds = entry.positionIndices.mapNotNull { idx ->
+                        newPositions.getOrNull(idx)?.id
+                    }.toSet()
+                    SlotConfig(acceptedPositionIds = positionIds)
+                },
+            )
+        }
+        _state.update {
+            it.copy(
+                slotMode = if (config.positions.isNotEmpty()) SlotMode.LIMITED_WITH_POSITIONS else SlotMode.LIMITED,
+                positions = newPositions.ifEmpty { listOf(PositionConfig(name = "")) },
+                groups = newGroups.ifEmpty { listOf(GroupConfig(name = "Equipo 1")) },
+            )
+        }
+    }
+
+    fun showSaveTemplateDialog() = _state.update { it.copy(showSaveTemplateDialog = true) }
+    fun hideSaveTemplateDialog() = _state.update { it.copy(showSaveTemplateDialog = false, saveTemplateName = "") }
+    fun onSaveTemplateNameChange(value: String) = _state.update { it.copy(saveTemplateName = value) }
+
+    fun saveAsTemplate() {
+        val s = _state.value
+        val name = s.saveTemplateName.trim()
+        if (name.isBlank()) return
+        val userId = authRepository.currentUserId() ?: return
+
+        val validPositions = s.positions.filter { it.name.isNotBlank() }
+        val config = TemplateConfig(
+            positions = validPositions.map { it.name },
+            groups = s.groups.map { group ->
+                GroupTemplate(
+                    name = group.name,
+                    slots = group.slots.map { slot ->
+                        com.app.community.core.model.SlotTemplateEntry(
+                            positionIndices = slot.acceptedPositionIds.mapNotNull { pid ->
+                                validPositions.indexOfFirst { it.id == pid }.takeIf { it >= 0 }
+                            }.toSet(),
+                        )
+                    },
+                )
+            },
+        )
+
+        screenModelScope.launch {
+            slotTemplateRepository.saveTemplate(userId, name, config)
+                .onSuccess { saved ->
+                    _state.update {
+                        it.copy(
+                            templates = it.templates + saved,
+                            showSaveTemplateDialog = false,
+                            saveTemplateName = "",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun deleteTemplate(templateId: String) {
+        screenModelScope.launch {
+            slotTemplateRepository.deleteTemplate(templateId)
+                .onSuccess {
+                    _state.update { state ->
+                        state.copy(templates = state.templates.filter { it.id != templateId })
+                    }
+                }
+        }
+    }
+
     // --- Create ---
     fun create() {
         val s = _state.value
@@ -161,8 +267,8 @@ class CreateActivityScreenModel(
             _state.update { it.copy(status = CreateActivityStatus.Error("El nombre es obligatorio")) }
             return
         }
-        if (s.date.isBlank() || s.time.isBlank()) {
-            _state.update { it.copy(status = CreateActivityStatus.Error("Fecha y hora son obligatorios")) }
+        if (s.dateMillis == null) {
+            _state.update { it.copy(status = CreateActivityStatus.Error("Selecciona una fecha")) }
             return
         }
         if (s.slotMode == SlotMode.LIMITED && (s.maxSlots.toIntOrNull() ?: 0) <= 0) {
@@ -193,10 +299,7 @@ class CreateActivityScreenModel(
         }
 
         val userId = authRepository.currentUserId() ?: return
-        val datetime = parseDateTime(s.date, s.time) ?: run {
-            _state.update { it.copy(status = CreateActivityStatus.Error("Formato de fecha/hora inválido. Usa DD/MM/YYYY y HH:MM")) }
-            return
-        }
+        val datetime = buildDatetime(s.dateMillis, s.timeHour, s.timeMinute)
         val durationMinutes = s.durationHours * 60 + s.durationMinutes
 
         _state.update { it.copy(status = CreateActivityStatus.Loading) }
@@ -277,24 +380,13 @@ class CreateActivityScreenModel(
         }
     }
 
-    private fun parseDateTime(date: String, time: String): Instant? {
-        return try {
-            val dateParts = date.split("/")
-            if (dateParts.size != 3) return null
-            val day = dateParts[0].toInt()
-            val month = dateParts[1].toInt()
-            val year = dateParts[2].toInt()
-
-            val timeCleaned = time.replace("h", ":").replace("H", ":")
-            val timeParts = timeCleaned.split(":")
-            if (timeParts.size != 2) return null
-            val hour = timeParts[0].toInt()
-            val minute = timeParts[1].toInt()
-
-            val localDateTime = kotlinx.datetime.LocalDateTime(year, month, day, hour, minute)
-            localDateTime.toInstant(TimeZone.currentSystemDefault())
-        } catch (e: Exception) {
-            null
-        }
+    private fun buildDatetime(dateMillis: Long, timeHour: Int, timeMinute: Int): Instant {
+        val utcDate = Instant.fromEpochMilliseconds(dateMillis)
+            .toLocalDateTime(TimeZone.UTC).date
+        val localDateTime = LocalDateTime(
+            utcDate.year, utcDate.monthNumber, utcDate.dayOfMonth,
+            timeHour, timeMinute,
+        )
+        return localDateTime.toInstant(TimeZone.currentSystemDefault())
     }
 }

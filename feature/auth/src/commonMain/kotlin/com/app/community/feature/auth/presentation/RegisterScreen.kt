@@ -31,11 +31,14 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
-import com.app.community.core.ui.components.GreekFrame
-import com.app.community.core.ui.components.GreekKeyDivider
-import com.app.community.core.ui.components.PedimentHeader
+import com.app.community.core.ui.components.IonicFrame
+import com.app.community.core.ui.components.DentilDivider
+import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.auth.generated.resources.Res
+import agora.feature.auth.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class RegisterScreen : Screen {
 
@@ -55,15 +58,15 @@ class RegisterScreen : Screen {
         ) {
             Spacer(Modifier.height(AgoraSpacing.xxl))
 
-            PedimentHeader(
-                title = "Crear cuenta",
+            IonicVoluteHeader(
+                title = stringResource(Res.string.register_title),
             )
 
             Spacer(Modifier.height(AgoraSpacing.xl))
 
-            GreekFrame(
+            IonicFrame(
                 modifier = Modifier.fillMaxWidth(),
-                borderColor = MaterialTheme.agoraColors.goldLeaf,
+                borderColor = MaterialTheme.agoraColors.gildedVolute,
             ) {
                 Column(
                     modifier = Modifier
@@ -74,7 +77,7 @@ class RegisterScreen : Screen {
                     OutlinedTextField(
                         value = uiState.displayName,
                         onValueChange = screenModel::onDisplayNameChange,
-                        label = { Text("Nombre") },
+                        label = { Text(stringResource(Res.string.name)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -84,7 +87,7 @@ class RegisterScreen : Screen {
                     OutlinedTextField(
                         value = uiState.email,
                         onValueChange = screenModel::onEmailChange,
-                        label = { Text("Email") },
+                        label = { Text(stringResource(Res.string.email)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -97,7 +100,7 @@ class RegisterScreen : Screen {
                     OutlinedTextField(
                         value = uiState.password,
                         onValueChange = screenModel::onPasswordChange,
-                        label = { Text("Contrasena") },
+                        label = { Text(stringResource(Res.string.password)) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) {
                             VisualTransformation.None
@@ -107,7 +110,7 @@ class RegisterScreen : Screen {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
                             TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Text(if (passwordVisible) "Ocultar" else "Ver")
+                                Text(if (passwordVisible) stringResource(Res.string.password_toggle_hide) else stringResource(Res.string.password_toggle_show))
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -120,7 +123,7 @@ class RegisterScreen : Screen {
                     OutlinedTextField(
                         value = uiState.confirmPassword,
                         onValueChange = screenModel::onConfirmPasswordChange,
-                        label = { Text("Confirmar contrasena") },
+                        label = { Text(stringResource(Res.string.register_confirm_password)) },
                         singleLine = true,
                         visualTransformation = if (confirmPasswordVisible) {
                             VisualTransformation.None
@@ -130,7 +133,7 @@ class RegisterScreen : Screen {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
                             TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                                Text(if (confirmPasswordVisible) "Ocultar" else "Ver")
+                                Text(if (confirmPasswordVisible) stringResource(Res.string.password_toggle_hide) else stringResource(Res.string.password_toggle_show))
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -149,14 +152,14 @@ class RegisterScreen : Screen {
 
                     Spacer(modifier = Modifier.height(AgoraSpacing.sm))
 
-                    GreekKeyDivider(
-                        color = MaterialTheme.agoraColors.goldLeaf,
+                    DentilDivider(
+                        color = MaterialTheme.agoraColors.gildedVolute,
                     )
 
                     Spacer(modifier = Modifier.height(AgoraSpacing.lg))
 
                     AgoraButton(
-                        text = "Registrate",
+                        text = stringResource(Res.string.register_submit),
                         onClick = screenModel::onRegister,
                         variant = AgoraButtonVariant.Primary,
                         enabled = uiState.status !is RegisterStatus.Loading,
@@ -168,7 +171,7 @@ class RegisterScreen : Screen {
 
                     TextButton(onClick = { navigator.pop() }) {
                         Text(
-                            text = "Ya tienes cuenta? Inicia sesion",
+                            text = stringResource(Res.string.register_has_account),
                             color = MaterialTheme.colorScheme.secondary,
                         )
                     }

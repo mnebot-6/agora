@@ -18,6 +18,6 @@ object AgoraSpacing {
 
     val screenHorizontal: Dp = 16.dp
     val cardInternal: Dp = 16.dp
-    val heroCardInternal: Dp = 20.dp
-    val listItemSpacing: Dp = 12.dp
+    val heroCardInternal: Dp = 24.dp
+    val listItemSpacing: Dp = 8.dp
 }

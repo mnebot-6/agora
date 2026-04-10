@@ -32,10 +32,13 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.GreekFrame
-import com.app.community.core.ui.components.PedimentHeader
+import com.app.community.core.ui.components.IonicFrame
+import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.community.generated.resources.Res
+import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.delay
 
 data class JoinCommunityScreen(val initialCode: String = "") : Screen {
@@ -70,13 +73,13 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
                 AgoraTopBar(
                     title = {
                         Text(
-                            "Unirse a comunidad",
+                            stringResource(Res.string.join_title),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -95,19 +98,19 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
                 ) {
                     Spacer(Modifier.height(AgoraSpacing.xl))
 
-                    PedimentHeader(title = "Unirse a comunidad")
+                    IonicVoluteHeader(title = stringResource(Res.string.join_header))
 
                     Spacer(Modifier.height(AgoraSpacing.xxl))
 
                     Text(
-                        text = "Introduce el codigo de 8 caracteres para unirte.",
+                        text = stringResource(Res.string.join_instructions),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     Spacer(Modifier.height(AgoraSpacing.xl))
 
-                    GreekFrame {
+                    IonicFrame {
                         OutlinedTextField(
                             value = inviteCode,
                             onValueChange = { value ->
@@ -115,7 +118,7 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
                                 inviteCode = filtered
                                 screenModel.onInviteCodeChange(filtered)
                             },
-                            label = { Text("Codigo de invitacion") },
+                            label = { Text(stringResource(Res.string.join_code_label)) },
                             singleLine = true,
                             enabled = !isLoading && successState == null,
                             modifier = Modifier.fillMaxWidth(),
@@ -140,13 +143,13 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
 
                     if (successState != null) {
                         Text(
-                            text = "Ya estas en \"${successState.community.name}\"!",
+                            text = stringResource(Res.string.join_success, successState.community.name),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     } else {
                         AgoraButton(
-                            text = "Unirse",
+                            text = stringResource(Res.string.join_button),
                             onClick = { screenModel.join() },
                             variant = AgoraButtonVariant.Primary,
                             enabled = !isLoading && inviteCode.length == 8,

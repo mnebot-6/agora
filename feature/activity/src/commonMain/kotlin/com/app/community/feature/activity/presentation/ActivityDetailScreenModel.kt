@@ -67,6 +67,9 @@ class ActivityDetailScreenModel(
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
+    private val _deleted = MutableStateFlow(false)
+    val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
+
     init {
         load()
     }
@@ -325,6 +328,19 @@ class ActivityDetailScreenModel(
                 .onSuccess {
                     _actionMessage.value = "Actividad completada"
                     load()
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
+        }
+    }
+
+    fun deleteActivity() {
+        screenModelScope.launch {
+            activityRepository.deleteActivity(activityId)
+                .onSuccess {
+                    _actionMessage.value = "Actividad eliminada"
+                    _deleted.value = true
                 }
                 .onError { msg, _ ->
                     _actionMessage.value = "Error: $msg"

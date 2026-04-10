@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- Tabs -->
+    <string name="tab_agora">Agora</string>
+    <string name="tab_communities">Communities</string>
+    <string name="tab_activities">Activities</string>
+    <string name="tab_notifications">Notifications</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_upcoming_activities">Upcoming activities</string>
+    <string name="dashboard_status_reserved">Reserved</string>
+    <string name="dashboard_status_in_queue">In queue #%1$d</string>
+    <string name="dashboard_status_not_reserved">Not reserved</string>
+    <string name="dashboard_status_full">Full</string>
+    <string name="dashboard_status_open">Open</string>
+    <string name="dashboard_status_slots">%1$d slots</string>
+    <string name="dashboard_empty_title">Your agora is empty</string>
+    <string name="dashboard_empty_subtitle">Join a community to see activities.</string>
+
+    <!-- Slot counter plurals -->
+    <plurals name="dashboard_slots_available">
+        <item quantity="one">slot\navailable</item>
+        <item quantity="other">slots\navailable</item>
+    </plurals>
+
+    <!-- Day of week abbreviations -->
+    <string name="day_mon_abbr">Mon</string>
+    <string name="day_tue_abbr">Tue</string>
+    <string name="day_wed_abbr">Wed</string>
+    <string name="day_thu_abbr">Thu</string>
+    <string name="day_fri_abbr">Fri</string>
+    <string name="day_sat_abbr">Sat</string>
+    <string name="day_sun_abbr">Sun</string>
+
+    <!-- Day of week full names -->
+    <string name="day_mon">Monday</string>
+    <string name="day_tue">Tuesday</string>
+    <string name="day_wed">Wednesday</string>
+    <string name="day_thu">Thursday</string>
+    <string name="day_fri">Friday</string>
+    <string name="day_sat">Saturday</string>
+    <string name="day_sun">Sunday</string>
+</resources>

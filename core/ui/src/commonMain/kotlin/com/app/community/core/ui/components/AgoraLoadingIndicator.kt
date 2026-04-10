@@ -9,8 +9,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Indicador de carga con extremos cuadrados —
- * geometria rectilinea como trazos tallados en piedra.
+ * Indicador de carga con extremos redondeados —
+ * curvas fluidas inspiradas en las volutas jonicas.
  */
 @Composable
 fun AgoraLoadingIndicator(
@@ -22,6 +22,6 @@ fun AgoraLoadingIndicator(
         color = MaterialTheme.colorScheme.primary,
         trackColor = MaterialTheme.colorScheme.surfaceVariant,
         strokeWidth = strokeWidth,
-        strokeCap = StrokeCap.Square,
+        strokeCap = StrokeCap.Round,
     )
 }

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,13 +48,16 @@ import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
-import com.app.community.core.ui.theme.StoneTabletShape
+import com.app.community.core.ui.theme.MarblePanelShape
 import com.app.community.core.ui.theme.agoraColors
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.CreateActivityScreen
+import agora.feature.community.generated.resources.Res
+import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
@@ -69,9 +73,11 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
         val screenModel = koinScreenModel<CommunityDetailScreenModel> { parametersOf(communityId) }
         val uiState by screenModel.uiState.collectAsState()
 
+        LaunchedEffect(Unit) { screenModel.refresh() }
+
         val title = when (val state = uiState) {
             is CommunityDetailScreenModel.UiState.Content -> state.community.name
-            else -> "Comunidad"
+            else -> stringResource(Res.string.community_detail_default_title)
         }
 
         Scaffold(
@@ -87,7 +93,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -97,9 +103,9 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                     onClick = { navigator.push(CreateActivityScreen(communityId)) },
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear actividad")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_detail_create_activity_cd))
                 }
             },
         ) { padding ->
@@ -154,7 +160,7 @@ private fun CommunityDetailContent(
             item {
                 Surface(
                     color = MaterialTheme.agoraColors.parchment,
-                    shape = StoneTabletShape,
+                    shape = MarblePanelShape,
                 ) {
                     Text(
                         text = community.description.orEmpty(),
@@ -168,9 +174,9 @@ private fun CommunityDetailContent(
 
         // Invite code chip
         item {
-            StoneCard(
+            MarbleCard(
                 elevation = AgoraElevation.none,
-                borderColor = MaterialTheme.agoraColors.goldLeaf,
+                borderColor = MaterialTheme.agoraColors.gildedVolute,
                 onClick = {
                     clipboardManager.setText(AnnotatedString(community.inviteCode))
                 },
@@ -183,17 +189,17 @@ private fun CommunityDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Invite: ${community.inviteCode}",
+                        text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode),
                         style = MaterialTheme.typography.labelLarge.copy(
                             letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
                         ),
-                        color = MaterialTheme.agoraColors.goldLeaf,
+                        color = MaterialTheme.agoraColors.gildedVolute,
                     )
                     Icon(
                         Icons.Default.Share,
-                        contentDescription = "Copiar codigo",
+                        contentDescription = stringResource(Res.string.community_detail_copy_code_cd),
                         modifier = Modifier.height(16.dp),
-                        tint = MaterialTheme.agoraColors.goldLeaf,
+                        tint = MaterialTheme.agoraColors.gildedVolute,
                     )
                 }
             }
@@ -202,11 +208,11 @@ private fun CommunityDetailContent(
         // Members section header
         item {
             FriezeBandHeader(
-                title = "Miembros (${members.size})",
+                title = stringResource(Res.string.community_detail_members_header, members.size),
                 trailingContent = if (isAdmin) {
                     {
                         TextButton(onClick = onManageMembers) {
-                            Text("Gestionar")
+                            Text(stringResource(Res.string.community_detail_manage))
                         }
                     }
                 } else {
@@ -218,14 +224,14 @@ private fun CommunityDetailContent(
         // Activities section header
         item {
             FriezeBandHeader(
-                title = "Actividades (${activities.size})",
+                title = stringResource(Res.string.community_detail_activities_header, activities.size),
             )
         }
 
         if (activities.isEmpty()) {
             item {
                 Text(
-                    text = "Aun no hay actividades. Crea la primera.",
+                    text = stringResource(Res.string.community_detail_no_activities),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = AgoraSpacing.sm),
@@ -252,7 +258,7 @@ private fun ActivityCard(
     val dateText = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
     val timeText = "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}"
 
-    StoneCard(
+    MarbleCard(
         modifier = modifier,
         elevation = AgoraElevation.none,
         onClick = onClick,
@@ -273,8 +279,8 @@ private fun ActivityCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 val slotText = when {
-                    activity.maxSlots != null -> "${activity.maxSlots} plazas"
-                    else -> "Sin limite"
+                    activity.maxSlots != null -> stringResource(Res.string.community_detail_slots, activity.maxSlots!!)
+                    else -> stringResource(Res.string.community_detail_no_limit)
                 }
                 Text(
                     text = slotText,

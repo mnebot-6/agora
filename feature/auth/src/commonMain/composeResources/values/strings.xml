@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared auth strings -->
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="password_toggle_hide">Hide</string>
+    <string name="password_toggle_show">Show</string>
+    <string name="name">Name</string>
+    <string name="cancel">Cancel</string>
+    <string name="go_back">Go back</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">Your meeting point</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_forgot_password">Forgot your password?</string>
+    <string name="login_no_account">Don\'t have an account? Sign up</string>
+
+    <!-- Register screen -->
+    <string name="register_title">Create account</string>
+    <string name="register_confirm_password">Confirm password</string>
+    <string name="register_submit">Sign up</string>
+    <string name="register_has_account">Already have an account? Sign in</string>
+
+    <!-- Profile screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_edit">Edit</string>
+    <string name="profile_dark_mode">Dark mode</string>
+    <string name="profile_sign_out">Sign out</string>
+    <string name="profile_sign_out_confirm">Are you sure you want to sign out?</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_save">Save</string>
+
+    <!-- Forgot password screen -->
+    <string name="forgot_title">Reset password</string>
+    <string name="forgot_instruction">Enter your email and we\'ll send you a link to reset it.</string>
+    <string name="forgot_success">We\'ve sent a link to your email.</string>
+    <string name="forgot_submit">Send link</string>
+</resources>

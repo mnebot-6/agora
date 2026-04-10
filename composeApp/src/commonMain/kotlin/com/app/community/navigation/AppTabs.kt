@@ -17,9 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import agora.composeapp.generated.resources.Res
+import agora.composeapp.generated.resources.*
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import org.jetbrains.compose.resources.stringResource
 import com.app.community.DeepLinkHandler
 import com.app.community.feature.activity.presentation.ActivityFeedScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
@@ -33,7 +36,8 @@ object AgoraTab : Tab {
         @Composable
         get() {
             val icon = rememberVectorPainter(Icons.Default.Home)
-            return remember { TabOptions(index = 0u, title = "\u00c1gora", icon = icon) }
+            val title = stringResource(Res.string.tab_agora)
+            return remember(title) { TabOptions(index = 0u, title = title, icon = icon) }
         }
 
     @Composable
@@ -47,7 +51,8 @@ object CommunitiesTab : Tab {
         @Composable
         get() {
             val icon = rememberVectorPainter(Icons.AutoMirrored.Filled.List)
-            return remember { TabOptions(index = 1u, title = "Comunidades", icon = icon) }
+            val title = stringResource(Res.string.tab_communities)
+            return remember(title) { TabOptions(index = 1u, title = title, icon = icon) }
         }
 
     @Composable
@@ -70,7 +75,8 @@ object ActivitiesTab : Tab {
         @Composable
         get() {
             val icon = rememberVectorPainter(Icons.Default.DateRange)
-            return remember { TabOptions(index = 2u, title = "Actividades", icon = icon) }
+            val title = stringResource(Res.string.tab_activities)
+            return remember(title) { TabOptions(index = 2u, title = title, icon = icon) }
         }
 
     @Composable
@@ -84,7 +90,8 @@ object NotificationsTab : Tab {
         @Composable
         get() {
             val icon = rememberVectorPainter(Icons.Default.Notifications)
-            return remember { TabOptions(index = 3u, title = "Notificaciones", icon = icon) }
+            val title = stringResource(Res.string.tab_notifications)
+            return remember(title) { TabOptions(index = 3u, title = title, icon = icon) }
         }
 
     @Composable
@@ -98,7 +105,8 @@ object ProfileTab : Tab {
         @Composable
         get() {
             val icon = rememberVectorPainter(Icons.Default.Person)
-            return remember { TabOptions(index = 4u, title = "Perfil", icon = icon) }
+            val title = stringResource(Res.string.tab_profile)
+            return remember(title) { TabOptions(index = 4u, title = title, icon = icon) }
         }
 
     @Composable

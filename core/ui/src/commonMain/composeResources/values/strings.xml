@@ -1,0 +1,5 @@
+<resources>
+    <string name="retry">Retry</string>
+    <string name="picker_confirm">OK</string>
+    <string name="picker_dismiss">Cancel</string>
+</resources>

@@ -33,10 +33,13 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.GreekFrame
-import com.app.community.core.ui.components.PedimentHeader
+import com.app.community.core.ui.components.IonicFrame
+import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import agora.feature.auth.generated.resources.Res
+import agora.feature.auth.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 class ForgotPasswordScreen : Screen {
 
@@ -49,12 +52,12 @@ class ForgotPasswordScreen : Screen {
         Scaffold(
             topBar = {
                 AgoraTopBar(
-                    title = { Text("Restablecer contrasena") },
+                    title = { Text(stringResource(Res.string.forgot_title)) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
+                                contentDescription = stringResource(Res.string.go_back),
                             )
                         }
                     },
@@ -72,14 +75,14 @@ class ForgotPasswordScreen : Screen {
             ) {
                 Spacer(Modifier.height(AgoraSpacing.xxl))
 
-                PedimentHeader(
-                    title = "Restablecer contrasena",
+                IonicVoluteHeader(
+                    title = stringResource(Res.string.forgot_title),
                 )
 
                 Spacer(Modifier.height(AgoraSpacing.sm))
 
                 Text(
-                    text = "Introduce tu email y te enviaremos un enlace para restablecerla.",
+                    text = stringResource(Res.string.forgot_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.agoraColors.onParchment,
@@ -89,7 +92,7 @@ class ForgotPasswordScreen : Screen {
                 Spacer(Modifier.height(AgoraSpacing.xl))
 
                 if (uiState.status is ForgotPasswordStatus.Success) {
-                    GreekFrame(
+                    IonicFrame(
                         modifier = Modifier.fillMaxWidth(),
                         borderColor = MaterialTheme.agoraColors.malachiteGreen,
                     ) {
@@ -100,7 +103,7 @@ class ForgotPasswordScreen : Screen {
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                text = "Te hemos enviado un enlace a tu email.",
+                                text = stringResource(Res.string.forgot_success),
                                 color = MaterialTheme.agoraColors.malachiteGreen,
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
@@ -109,16 +112,16 @@ class ForgotPasswordScreen : Screen {
                             Spacer(modifier = Modifier.height(AgoraSpacing.xl))
 
                             AgoraButton(
-                                text = "Volver",
+                                text = stringResource(Res.string.go_back),
                                 onClick = { navigator.pop() },
                                 variant = AgoraButtonVariant.Secondary,
                             )
                         }
                     }
                 } else {
-                    GreekFrame(
+                    IonicFrame(
                         modifier = Modifier.fillMaxWidth(),
-                        borderColor = MaterialTheme.agoraColors.goldLeaf,
+                        borderColor = MaterialTheme.agoraColors.gildedVolute,
                     ) {
                         Column(
                             modifier = Modifier
@@ -129,7 +132,7 @@ class ForgotPasswordScreen : Screen {
                             OutlinedTextField(
                                 value = uiState.email,
                                 onValueChange = screenModel::onEmailChange,
-                                label = { Text("Email") },
+                                label = { Text(stringResource(Res.string.email)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -149,7 +152,7 @@ class ForgotPasswordScreen : Screen {
                             Spacer(modifier = Modifier.height(AgoraSpacing.lg))
 
                             AgoraButton(
-                                text = "Enviar enlace",
+                                text = stringResource(Res.string.forgot_submit),
                                 onClick = screenModel::onSendResetLink,
                                 variant = AgoraButtonVariant.Primary,
                                 enabled = uiState.status !is ForgotPasswordStatus.Loading,
@@ -161,7 +164,7 @@ class ForgotPasswordScreen : Screen {
 
                             TextButton(onClick = { navigator.pop() }) {
                                 Text(
-                                    text = "Volver",
+                                    text = stringResource(Res.string.go_back),
                                     color = MaterialTheme.colorScheme.secondary,
                                 )
                             }

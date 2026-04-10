@@ -1,5 +1,6 @@
 package com.app.community.feature.activity.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,12 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,23 +25,26 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
 import com.app.community.core.model.Position
 import com.app.community.core.model.SlotMode
@@ -47,16 +53,22 @@ import com.app.community.core.model.SubstituteEntry
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.ColumnDivider
+import com.app.community.core.ui.components.FlutedColumnDivider
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.SlotStatusBadge
-import com.app.community.core.ui.components.StoneCard
+import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
-import com.app.community.core.ui.theme.StoneTabletShape
+import com.app.community.core.ui.theme.MarblePanelShape
 import com.app.community.core.ui.theme.slotStatusColors
+import agora.feature.activity.generated.resources.Res
+import agora.feature.activity.generated.resources.*
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.ui.platform.LocalUriHandler
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
@@ -71,7 +83,14 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
         val screenModel = koinScreenModel<ActivityDetailScreenModel> { parametersOf(activityId) }
         val state by screenModel.state.collectAsState()
         val actionMessage by screenModel.actionMessage.collectAsState()
+        val deleted by screenModel.deleted.collectAsState()
         val snackbarHostState = remember { SnackbarHostState() }
+
+        LaunchedEffect(Unit) { screenModel.load() }
+
+        LaunchedEffect(deleted) {
+            if (deleted) navigator.pop()
+        }
 
         LaunchedEffect(actionMessage) {
             actionMessage?.let {
@@ -84,15 +103,16 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
             topBar = {
                 AgoraTopBar(
                     title = {
+                        val fallback = stringResource(Res.string.detail_title_fallback)
                         val title = when (val s = state) {
                             is ActivityDetailUiState.Content -> s.activity.name
-                            else -> "Actividad"
+                            else -> fallback
                         }
                         Text(title)
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back_cd))
                         }
                     },
                 )
@@ -105,6 +125,7 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
                 is ActivityDetailUiState.Content -> ActivityDetailContent(
                     state = s,
                     screenModel = screenModel,
+                    onEdit = { navigator.push(EditActivityScreen(activityId)) },
                     modifier = Modifier.padding(padding),
                 )
             }
@@ -116,8 +137,10 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
 private fun ActivityDetailContent(
     state: ActivityDetailUiState.Content,
     screenModel: ActivityDetailScreenModel,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val activity = state.activity
     val localDateTime = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
 
@@ -129,10 +152,10 @@ private fun ActivityDetailContent(
     ) {
         item { Spacer(Modifier.height(AgoraSpacing.sm)) }
 
-        // Activity info header in a StoneCard with Greek border
+        // Activity info header in a MarbleCard with dentil border
         item {
-            StoneCard(
-                showGreekBorder = true,
+            MarbleCard(
+                showDentilBorder = true,
                 elevation = AgoraElevation.raised,
             ) {
                 Column(
@@ -157,15 +180,15 @@ private fun ActivityDetailContent(
 
                     val hours = activity.durationMinutes / 60
                     val mins = activity.durationMinutes % 60
-                    val durationText = if (mins > 0) "${hours}h ${mins}min" else "${hours}h"
-                    Text("Duracion: $durationText", style = MaterialTheme.typography.bodyMedium)
+                    val durationText = if (mins > 0) stringResource(Res.string.detail_duration_hours_minutes, hours, mins) else stringResource(Res.string.detail_duration_hours, hours)
+                    Text(durationText, style = MaterialTheme.typography.bodyMedium)
 
                     activity.location?.let { loc ->
-                        Text("Lugar: ${loc.name}", style = MaterialTheme.typography.bodyMedium)
+                        LocationLink(activity = activity)
                     }
 
                     activity.costDescription?.let { cost ->
-                        Text("Coste: $cost", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(Res.string.detail_cost, cost), style = MaterialTheme.typography.bodyMedium)
                     }
 
                     activity.description?.let { desc ->
@@ -183,52 +206,73 @@ private fun ActivityDetailContent(
         // Activity status badge (if not active)
         if (activity.status != ActivityStatus.ACTIVE) {
             item {
+                val cancelledLabel = stringResource(Res.string.detail_status_cancelled)
+                val completedLabel = stringResource(Res.string.detail_status_completed)
                 val (label, colorPair) = when (activity.status) {
-                    ActivityStatus.CANCELLED -> "Cancelada" to MaterialTheme.slotStatusColors.reservedByOther
-                    ActivityStatus.COMPLETED -> "Completada" to MaterialTheme.slotStatusColors.paid
+                    ActivityStatus.CANCELLED -> cancelledLabel to MaterialTheme.slotStatusColors.reservedByOther
+                    ActivityStatus.COMPLETED -> completedLabel to MaterialTheme.slotStatusColors.paid
                     else -> "" to MaterialTheme.slotStatusColors.available
                 }
                 SlotStatusBadge(
-                    text = "Estado: $label",
+                    text = stringResource(Res.string.detail_status_label, label),
                     colorPair = colorPair,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
 
-        // Admin controls: cancel/complete activity
+        // Admin controls: edit/complete/cancel/delete activity
         if (state.isAdmin && activity.status == ActivityStatus.ACTIVE) {
             item {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
-                ) {
-                    AgoraButton(
-                        text = "Completar",
-                        onClick = screenModel::completeActivity,
-                        variant = AgoraButtonVariant.Secondary,
-                        modifier = Modifier.weight(1f),
-                    )
-                    AgoraButton(
-                        text = "Cancelar",
-                        onClick = screenModel::cancelActivity,
-                        variant = AgoraButtonVariant.Danger,
-                        modifier = Modifier.weight(1f),
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                    ) {
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_edit),
+                            onClick = onEdit,
+                            variant = AgoraButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_complete),
+                            onClick = screenModel::completeActivity,
+                            variant = AgoraButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                    ) {
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_cancel),
+                            onClick = screenModel::cancelActivity,
+                            variant = AgoraButtonVariant.Tertiary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_delete),
+                            onClick = { showDeleteDialog = true },
+                            variant = AgoraButtonVariant.Danger,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
 
-        item { ColumnDivider() }
+        item { FlutedColumnDivider() }
 
         // Slots section header with FriezeBandHeader
         item {
             FriezeBandHeader(
-                title = "Plazas",
+                title = stringResource(Res.string.slots_header),
                 trailingContent = {
                     when (activity.slotMode) {
                         SlotMode.UNLIMITED -> Text(
-                            "${state.participantCount} apuntados",
+                            stringResource(Res.string.detail_signed_up_count, state.participantCount),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary,
                         )
@@ -236,7 +280,7 @@ private fun ActivityDetailContent(
                             val total = state.slots.size
                             val occupied = state.slots.count { it.slot.status != SlotStatus.AVAILABLE }
                             Text(
-                                "$occupied / $total",
+                                stringResource(Res.string.detail_slots_count, occupied, total),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.secondary,
                             )
@@ -251,14 +295,14 @@ private fun ActivityDetailContent(
             item {
                 if (state.isUserJoined) {
                     AgoraButton(
-                        text = "Salir",
+                        text = stringResource(Res.string.detail_leave),
                         onClick = screenModel::leaveUnlimited,
                         variant = AgoraButtonVariant.Danger,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
                     AgoraButton(
-                        text = "Unirse",
+                        text = stringResource(Res.string.detail_join),
                         onClick = screenModel::joinUnlimited,
                         variant = AgoraButtonVariant.Primary,
                         modifier = Modifier.fillMaxWidth(),
@@ -280,6 +324,7 @@ private fun ActivityDetailContent(
                     slotWithProfile = slotWithProfile,
                     currentUserId = state.currentUserId,
                     isAdmin = state.isAdmin,
+                    hasReservation = state.isUserJoined,
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                     onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
@@ -289,7 +334,7 @@ private fun ActivityDetailContent(
             // Substitute queue section
             val allOccupied = state.slots.all { it.slot.status != SlotStatus.AVAILABLE }
             if (allOccupied) {
-                item { ColumnDivider() }
+                item { FlutedColumnDivider() }
                 item {
                     SubstituteQueueSection(
                         queue = state.substituteQueue,
@@ -323,6 +368,7 @@ private fun ActivityDetailContent(
                         slotWithProfile = slotWithProfile,
                         currentUserId = state.currentUserId,
                         isAdmin = state.isAdmin,
+                        hasReservation = state.isUserJoined,
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                         onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
@@ -333,7 +379,7 @@ private fun ActivityDetailContent(
             // Substitute queue with position filter
             val allOccupied = state.slots.all { it.slot.status != SlotStatus.AVAILABLE }
             if (allOccupied) {
-                item { ColumnDivider() }
+                item { FlutedColumnDivider() }
                 item {
                     SubstituteQueueSection(
                         queue = state.substituteQueue,
@@ -348,20 +394,72 @@ private fun ActivityDetailContent(
 
         item { Spacer(Modifier.height(AgoraSpacing.sm)) }
     }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(Res.string.detail_delete_dialog_title)) },
+            text = { Text(stringResource(Res.string.detail_delete_dialog_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    screenModel.deleteActivity()
+                }) {
+                    Text(stringResource(Res.string.label_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(Res.string.label_cancel))
+                }
+            },
+        )
+    }
 }
 
 @Composable
 private fun ParticipantRow(slotWithProfile: SlotWithProfile, currentUserId: String) {
-    val name = slotWithProfile.profile?.displayName ?: "Usuario"
+    val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
     val isMe = slotWithProfile.slot.reservedBy == currentUserId
     Row(
         Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = if (isMe) "$name (tu)" else name,
+            text = if (isMe) stringResource(Res.string.name_is_me, name) else name,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
+@Composable
+private fun LocationLink(activity: Activity) {
+    val uriHandler = LocalUriHandler.current
+    val loc = activity.location ?: return
+    val mapsUrl = if (loc.lat != null && loc.lng != null) {
+        "https://maps.google.com/?q=${loc.lat},${loc.lng}"
+    } else {
+        "https://maps.google.com/maps?q=${loc.name.replace(" ", "+")}"
+    }
+
+    Row(
+        modifier = Modifier
+            .clickable { uriHandler.openUri(mapsUrl) },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+    ) {
+        Icon(
+            Icons.Default.LocationOn,
+            contentDescription = stringResource(Res.string.detail_location_cd),
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = loc.name,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textDecoration = TextDecoration.Underline,
         )
     }
 }
@@ -372,6 +470,7 @@ private fun SlotCard(
     slotWithProfile: SlotWithProfile,
     currentUserId: String,
     isAdmin: Boolean,
+    hasReservation: Boolean,
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
@@ -386,20 +485,11 @@ private fun SlotCard(
         SlotStatus.PAID -> slotColors.paid
     }
 
-    val barColor = slotColorPair.content
-
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                drawRect(
-                    color = barColor,
-                    topLeft = Offset.Zero,
-                    size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height),
-                )
-            },
-        shape = StoneTabletShape,
-        colors = CardDefaults.outlinedCardColors(containerColor = slotColorPair.container),
+        modifier = Modifier.fillMaxWidth(),
+        shape = MarblePanelShape,
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(2.dp, slotColorPair.content),
     ) {
         Row(
             modifier = Modifier.padding(AgoraSpacing.md).fillMaxWidth(),
@@ -407,55 +497,52 @@ private fun SlotCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Plaza $index", style = MaterialTheme.typography.titleSmall, color = slotColorPair.content)
                 when (slot.status) {
                     SlotStatus.AVAILABLE -> {
-                        Text("Libre", style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
+                        Text(stringResource(Res.string.detail_slot_index, index), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
-
-                    SlotStatus.RESERVED -> {
-                        val name = slotWithProfile.profile?.displayName ?: "Usuario"
-                        Text(
-                            text = if (isMySlot) "$name (tu) - Reservado" else "$name - Reservado",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = slotColorPair.content,
-                        )
-                    }
-
-                    SlotStatus.PAID -> {
-                        val name = slotWithProfile.profile?.displayName ?: "Usuario"
-                        Text(
-                            text = if (isMySlot) "$name (tu) - Pagado" else "$name - Pagado",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = slotColorPair.content,
-                        )
+                    SlotStatus.RESERVED, SlotStatus.PAID -> {
+                        val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            if (isAdmin && slot.status == SlotStatus.PAID) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = stringResource(Res.string.slot_paid),
+                                    modifier = Modifier.size(16.dp),
+                                    tint = slotColors.paid.content,
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            // Actions
             when {
-                slot.status == SlotStatus.AVAILABLE -> {
+                slot.status == SlotStatus.AVAILABLE && !hasReservation -> {
                     AgoraButton(
-                        text = "Reservar",
+                        text = stringResource(Res.string.slot_reserve),
                         onClick = onReserve,
                         variant = AgoraButtonVariant.Primary,
                     )
                 }
-
                 isMySlot -> {
                     TextButton(onClick = onRelease) {
-                        Text("Liberar", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
                     }
                 }
-
                 isAdmin && slot.status == SlotStatus.RESERVED -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
                         TextButton(onClick = onMarkPaid) {
-                            Text("Pagado", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
                         }
                         TextButton(onClick = onRelease) {
-                            Text("Liberar", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -470,13 +557,15 @@ private fun PositionSlotCard(
     slotWithProfile: SlotWithProfile,
     currentUserId: String,
     isAdmin: Boolean,
+    hasReservation: Boolean,
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
 ) {
     val slot = slotWithProfile.slot
     val isMySlot = slot.reservedBy == currentUserId
-    val positionLabel = slotWithProfile.positionNames.joinToString(" / ").ifEmpty { "Sin posicion" }
+    val noPositionLabel = stringResource(Res.string.no_position)
+    val positionLabel = slotWithProfile.positionNames.joinToString(" / ").ifEmpty { noPositionLabel }
     val slotColors = MaterialTheme.slotStatusColors
 
     val slotColorPair = when (slot.status) {
@@ -485,78 +574,66 @@ private fun PositionSlotCard(
         SlotStatus.PAID -> slotColors.paid
     }
 
-    val barColor = slotColorPair.content
-
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                drawRect(
-                    color = barColor,
-                    topLeft = Offset.Zero,
-                    size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height),
-                )
-            },
-        shape = StoneTabletShape,
-        colors = CardDefaults.outlinedCardColors(containerColor = slotColorPair.container),
+        modifier = Modifier.fillMaxWidth(),
+        shape = MarblePanelShape,
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(2.dp, slotColorPair.content),
     ) {
-        Column(modifier = Modifier.padding(AgoraSpacing.md)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Hueco $index", style = MaterialTheme.typography.titleSmall, color = slotColorPair.content)
-                    Text(
-                        text = positionLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = slotColorPair.content,
-                    )
-                    when (slot.status) {
-                        SlotStatus.AVAILABLE -> {
-                            Text("Libre", style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
-                        }
-                        SlotStatus.RESERVED -> {
-                            val name = slotWithProfile.profile?.displayName ?: "Usuario"
+        Row(
+            modifier = Modifier.padding(AgoraSpacing.md).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                when (slot.status) {
+                    SlotStatus.AVAILABLE -> {
+                        Text(stringResource(Res.string.detail_position_slot_index, index), style = MaterialTheme.typography.titleSmall)
+                        Text(positionLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
+                    }
+                    SlotStatus.RESERVED, SlotStatus.PAID -> {
+                        val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (isMySlot) "$name (tu) - Reservado" else "$name - Reservado",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = slotColorPair.content,
+                                text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
+                                style = MaterialTheme.typography.titleSmall,
                             )
+                            if (isAdmin && slot.status == SlotStatus.PAID) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = stringResource(Res.string.slot_paid),
+                                    modifier = Modifier.size(16.dp),
+                                    tint = slotColors.paid.content,
+                                )
+                            }
                         }
-                        SlotStatus.PAID -> {
-                            val name = slotWithProfile.profile?.displayName ?: "Usuario"
-                            Text(
-                                text = if (isMySlot) "$name (tu) - Pagado" else "$name - Pagado",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = slotColorPair.content,
-                            )
-                        }
+                        Text(positionLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
 
-                when {
-                    slot.status == SlotStatus.AVAILABLE -> {
-                        AgoraButton(
-                            text = "Reservar",
-                            onClick = onReserve,
-                            variant = AgoraButtonVariant.Primary,
-                        )
+            when {
+                slot.status == SlotStatus.AVAILABLE && !hasReservation -> {
+                    AgoraButton(
+                        text = stringResource(Res.string.slot_reserve),
+                        onClick = onReserve,
+                        variant = AgoraButtonVariant.Primary,
+                    )
+                }
+                isMySlot -> {
+                    TextButton(onClick = onRelease) {
+                        Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
                     }
-                    isMySlot -> {
-                        TextButton(onClick = onRelease) {
-                            Text("Liberar", color = MaterialTheme.colorScheme.error)
+                }
+                isAdmin && slot.status == SlotStatus.RESERVED -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                        TextButton(onClick = onMarkPaid) {
+                            Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
                         }
-                    }
-                    isAdmin && slot.status == SlotStatus.RESERVED -> {
-                        Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                            TextButton(onClick = onMarkPaid) {
-                                Text("Pagado", style = MaterialTheme.typography.labelMedium)
-                            }
-                            TextButton(onClick = onRelease) {
-                                Text("Liberar", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
-                            }
+                        TextButton(onClick = onRelease) {
+                            Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -576,12 +653,15 @@ private fun SubstituteQueueSection(
     val isInQueue = queue.any { it.userId == currentUserId }
     val positionMap = positions.associateBy { it.id }
 
+    val substituteMeLabel = stringResource(Res.string.detail_substitute_me)
+    val unknownUserLabel = stringResource(Res.string.unknown_user)
+
     Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
-        FriezeBandHeader(title = "Cola de suplentes")
+        FriezeBandHeader(title = stringResource(Res.string.detail_substitute_queue_header))
 
         if (queue.isEmpty()) {
             Text(
-                "No hay suplentes en cola",
+                stringResource(Res.string.detail_no_substitutes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(horizontal = AgoraSpacing.lg),
@@ -590,10 +670,11 @@ private fun SubstituteQueueSection(
             queue.forEachIndexed { index, entry ->
                 val isMe = entry.userId == currentUserId
                 val posName = entry.positionId?.let { positionMap[it]?.name }
-                val label = buildString {
-                    append("${index + 1}. ")
-                    append(if (isMe) "Tu" else "Usuario")
-                    if (posName != null) append(" ($posName)")
+                val personLabel = if (isMe) substituteMeLabel else unknownUserLabel
+                val label = if (posName != null) {
+                    stringResource(Res.string.detail_substitute_entry_position, index + 1, personLabel, posName)
+                } else {
+                    stringResource(Res.string.detail_substitute_entry, index + 1, personLabel)
                 }
                 Text(
                     text = label,
@@ -606,7 +687,7 @@ private fun SubstituteQueueSection(
 
         if (isInQueue) {
             AgoraButton(
-                text = "Salir de la cola",
+                text = stringResource(Res.string.detail_leave_queue),
                 onClick = onLeaveQueue,
                 variant = AgoraButtonVariant.Danger,
                 modifier = Modifier.fillMaxWidth(),
@@ -614,12 +695,12 @@ private fun SubstituteQueueSection(
         } else {
             if (positions.isNotEmpty()) {
                 Text(
-                    "Apuntarme de suplente para:",
+                    stringResource(Res.string.detail_join_substitute_for),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = AgoraSpacing.lg),
                 )
                 AgoraButton(
-                    text = "Cualquier posicion",
+                    text = stringResource(Res.string.detail_any_position),
                     onClick = { onJoinQueue(null) },
                     variant = AgoraButtonVariant.Primary,
                     modifier = Modifier.fillMaxWidth(),
@@ -634,7 +715,7 @@ private fun SubstituteQueueSection(
                 }
             } else {
                 AgoraButton(
-                    text = "Apuntarme de suplente",
+                    text = stringResource(Res.string.detail_join_substitute),
                     onClick = { onJoinQueue(null) },
                     variant = AgoraButtonVariant.Primary,
                     modifier = Modifier.fillMaxWidth(),

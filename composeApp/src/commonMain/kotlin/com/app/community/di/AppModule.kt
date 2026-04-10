@@ -1,11 +1,13 @@
 package com.app.community.di
 
+import com.app.community.core.ui.theme.ThemeManager
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
+import com.app.community.core.data.repository.SlotTemplateRepository
 import com.app.community.core.domain.auth.GetAuthStateUseCase
 import com.app.community.core.domain.auth.SignInUseCase
 import com.app.community.core.domain.auth.SignUpUseCase
@@ -15,6 +17,7 @@ import com.app.community.core.domain.community.JoinCommunityUseCase
 import com.app.community.feature.activity.presentation.ActivityDetailScreenModel
 import com.app.community.feature.activity.presentation.ActivityFeedScreenModel
 import com.app.community.feature.activity.presentation.CreateActivityScreenModel
+import com.app.community.feature.activity.presentation.EditActivityScreenModel
 import com.app.community.feature.auth.presentation.ForgotPasswordScreenModel
 import com.app.community.feature.auth.presentation.LoginScreenModel
 import com.app.community.feature.auth.presentation.ProfileScreenModel
@@ -29,12 +32,14 @@ import com.app.community.dashboard.DashboardScreenModel
 import org.koin.dsl.module
 
 val repositoryModule = module {
+    single { ThemeManager() }
     single { AuthRepository() }
     single { ProfileRepository() }
     single { CommunityRepository() }
     single { ActivityRepository() }
     single { SlotRepository() }
     single { NotificationRepository() }
+    single { SlotTemplateRepository() }
 }
 
 val useCaseModule = module {
@@ -60,6 +65,13 @@ val screenModelModule = module {
             activityRepository = get(),
             slotRepository = get(),
             authRepository = get(),
+            slotTemplateRepository = get(),
+        )
+    }
+    factory { params ->
+        EditActivityScreenModel(
+            activityId = params.get(),
+            activityRepository = get(),
         )
     }
     factory { params ->
@@ -76,6 +88,7 @@ val screenModelModule = module {
         ActivityFeedScreenModel(
             activityRepository = get(),
             authRepository = get(),
+            communityRepository = get(),
         )
     }
     factory { params ->
@@ -111,7 +124,7 @@ val screenModelModule = module {
     factory { LoginScreenModel(signInUseCase = get()) }
     factory { RegisterScreenModel(signUpUseCase = get()) }
     factory { ForgotPasswordScreenModel(authRepository = get()) }
-    factory { ProfileScreenModel(authRepository = get(), profileRepository = get()) }
+    factory { ProfileScreenModel(authRepository = get(), profileRepository = get(), themeManager = get()) }
     factory {
         NotificationListScreenModel(
             notificationRepository = get(),

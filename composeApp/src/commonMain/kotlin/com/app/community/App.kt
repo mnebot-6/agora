@@ -7,9 +7,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.ProfileRepository
+import com.app.community.core.ui.theme.ThemeManager
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -28,10 +32,27 @@ import org.koin.compose.koinInject
 
 @Composable
 fun App() {
-    AppTheme {
-        val getAuthState = koinInject<GetAuthStateUseCase>()
-        val isAuthenticated by getAuthState().collectAsState(initial = false)
+    val themeManager = koinInject<ThemeManager>()
+    val isDarkMode by themeManager.isDarkMode.collectAsState()
+    val getAuthState = koinInject<GetAuthStateUseCase>()
+    val isAuthenticated by getAuthState().collectAsState(initial = false)
 
+    // Load theme preference from profile when authenticated
+    val authRepository = koinInject<AuthRepository>()
+    val profileRepository = koinInject<ProfileRepository>()
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated) {
+            val userId = authRepository.currentUserId() ?: return@LaunchedEffect
+            profileRepository.getProfile(userId).onSuccess { profile ->
+                themeManager.setDarkMode(profile.darkMode == true)
+            }
+            fetchPushToken()?.let { token ->
+                profileRepository.updateFcmToken(userId, token)
+            }
+        }
+    }
+
+    AppTheme(darkTheme = isDarkMode) {
         if (isAuthenticated) {
             MainContent()
         } else {
