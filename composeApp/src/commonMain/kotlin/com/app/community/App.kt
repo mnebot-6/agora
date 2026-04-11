@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -53,6 +54,11 @@ fun App() {
     }
 
     AppTheme(darkTheme = isDarkMode) {
+        // Status bar matches TopBar's primary color
+        StatusBarEffect(
+            statusBarColor = MaterialTheme.colorScheme.primary,
+            darkIcons = isDarkMode, // dark mode primary is light → dark icons
+        )
         if (isAuthenticated) {
             MainContent()
         } else {
