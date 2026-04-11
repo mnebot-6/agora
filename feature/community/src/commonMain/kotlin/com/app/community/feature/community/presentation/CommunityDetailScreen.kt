@@ -17,12 +17,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -44,6 +49,8 @@ import com.app.community.core.model.Activity
 import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.MemberRole
+import com.app.community.core.ui.components.AgoraButton
+import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
@@ -72,8 +79,22 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = koinScreenModel<CommunityDetailScreenModel> { parametersOf(communityId) }
         val uiState by screenModel.uiState.collectAsState()
+        val deleted by screenModel.deleted.collectAsState()
+        val actionMessage by screenModel.actionMessage.collectAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
 
-        LaunchedEffect(Unit) { screenModel.refresh() }
+        // Navigate back on delete
+        LaunchedEffect(deleted) {
+            if (deleted) navigator.pop()
+        }
+
+        // Show snackbar on action
+        LaunchedEffect(actionMessage) {
+            actionMessage?.let {
+                snackbarHostState.showSnackbar(it)
+                screenModel.clearActionMessage()
+            }
+        }
 
         val title = when (val state = uiState) {
             is CommunityDetailScreenModel.UiState.Content -> state.community.name
@@ -98,6 +119,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                     },
                 )
             },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { navigator.push(CreateActivityScreen(communityId)) },
@@ -124,10 +146,8 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
 
                 is CommunityDetailScreenModel.UiState.Content -> {
                     CommunityDetailContent(
-                        community = state.community,
-                        members = state.members,
-                        activities = state.activities,
-                        isAdmin = state.isAdmin,
+                        state = state,
+                        screenModel = screenModel,
                         onActivityClick = { activityId -> navigator.push(ActivityDetailScreen(activityId)) },
                         onManageMembers = { navigator.push(MemberManagementScreen(communityId)) },
                         modifier = Modifier.padding(padding),
@@ -140,15 +160,78 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
 
 @Composable
 private fun CommunityDetailContent(
-    community: Community,
-    members: List<CommunityMember>,
-    activities: List<Activity>,
-    isAdmin: Boolean,
+    state: CommunityDetailScreenModel.UiState.Content,
+    screenModel: CommunityDetailScreenModel,
     onActivityClick: (String) -> Unit,
     onManageMembers: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val community = state.community
+    val members = state.members
+    val activities = state.activities
     val clipboardManager = LocalClipboardManager.current
+
+    // Edit dialog
+    if (state.showEditDialog) {
+        AlertDialog(
+            onDismissRequest = screenModel::dismissEditDialog,
+            title = { Text(stringResource(Res.string.community_detail_edit_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+                    OutlinedTextField(
+                        value = state.editName,
+                        onValueChange = screenModel::onEditNameChange,
+                        label = { Text(stringResource(Res.string.community_detail_edit_name_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = state.editDescription,
+                        onValueChange = screenModel::onEditDescriptionChange,
+                        label = { Text(stringResource(Res.string.community_detail_edit_description_label)) },
+                        minLines = 2,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = screenModel::saveCommunity,
+                    enabled = state.editName.isNotBlank(),
+                ) {
+                    Text(stringResource(Res.string.community_detail_edit_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = screenModel::dismissEditDialog) {
+                    Text(stringResource(Res.string.community_detail_edit_cancel))
+                }
+            },
+        )
+    }
+
+    // Delete confirmation dialog
+    if (state.showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = screenModel::dismissDeleteDialog,
+            title = { Text(stringResource(Res.string.community_detail_delete_title)) },
+            text = { Text(stringResource(Res.string.community_detail_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = screenModel::deleteCommunity) {
+                    Text(
+                        stringResource(Res.string.community_detail_delete_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = screenModel::dismissDeleteDialog) {
+                    Text(stringResource(Res.string.community_detail_delete_cancel))
+                }
+            },
+        )
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -168,6 +251,31 @@ private fun CommunityDetailContent(
                         color = MaterialTheme.agoraColors.onParchment,
                         modifier = Modifier.padding(AgoraSpacing.cardInternal),
                     )
+                }
+            }
+        }
+
+        // Admin controls: edit / delete
+        if (state.isAdmin) {
+            item {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                ) {
+                    AgoraButton(
+                        text = stringResource(Res.string.community_detail_edit),
+                        onClick = screenModel::showEditDialog,
+                        variant = AgoraButtonVariant.Secondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (state.isCreator) {
+                        AgoraButton(
+                            text = stringResource(Res.string.community_detail_delete),
+                            onClick = screenModel::showDeleteDialog,
+                            variant = AgoraButtonVariant.Danger,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
@@ -209,7 +317,7 @@ private fun CommunityDetailContent(
         item {
             FriezeBandHeader(
                 title = stringResource(Res.string.community_detail_members_header, members.size),
-                trailingContent = if (isAdmin) {
+                trailingContent = if (state.isAdmin) {
                     {
                         TextButton(onClick = onManageMembers) {
                             Text(stringResource(Res.string.community_detail_manage))

@@ -47,20 +47,14 @@ class CommunityRepository {
                 .decodeSingle<Community>()
         }
 
-    suspend fun joinByInviteCode(inviteCode: String, userId: String): AppResult<Community> =
+    suspend fun joinByInviteCode(inviteCode: String): AppResult<Community> =
         safeCall {
-            val community = postgrest.from("communities")
-                .select { filter { eq("invite_code", inviteCode) } }
-                .decodeSingle<Community>()
-
-            postgrest.from("community_members")
-                .insert(buildJsonObject {
-                    put("community_id", community.id)
-                    put("user_id", userId)
-                    put("role", "user")
-                })
-
-            community
+            // Server-side RPC handles lookup + membership insert atomically
+            // using auth.uid() — no userId parameter needed
+            postgrest.rpc(
+                function = "join_community_by_invite",
+                parameters = buildJsonObject { put("p_invite_code", inviteCode) },
+            ).decodeSingle<Community>()
         }
 
     suspend fun getMembers(communityId: String): AppResult<List<CommunityMember>> =
@@ -92,6 +86,21 @@ class CommunityRepository {
                         eq("user_id", userId)
                     }
                 }
+        }
+
+    suspend fun updateCommunity(id: String, name: String, description: String?): AppResult<Unit> =
+        safeCall {
+            postgrest.from("communities")
+                .update({
+                    set("name", name)
+                    set("description", description)
+                }) { filter { eq("id", id) } }
+        }
+
+    suspend fun deleteCommunity(id: String): AppResult<Unit> =
+        safeCall {
+            postgrest.from("communities")
+                .delete { filter { eq("id", id) } }
         }
 
     private fun generateInviteCode(): String {

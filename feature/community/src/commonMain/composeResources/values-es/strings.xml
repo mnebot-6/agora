@@ -21,6 +21,17 @@
     <string name="community_detail_no_activities">Aun no hay actividades. Crea la primera.</string>
     <string name="community_detail_slots">%1$d plazas</string>
     <string name="community_detail_no_limit">Sin limite</string>
+    <string name="community_detail_edit">Editar</string>
+    <string name="community_detail_delete">Eliminar</string>
+    <string name="community_detail_edit_title">Editar comunidad</string>
+    <string name="community_detail_edit_name_label">Nombre *</string>
+    <string name="community_detail_edit_description_label">Descripcion</string>
+    <string name="community_detail_edit_save">Guardar</string>
+    <string name="community_detail_edit_cancel">Cancelar</string>
+    <string name="community_detail_delete_title">Eliminar comunidad</string>
+    <string name="community_detail_delete_message">Esta accion no se puede deshacer. Se eliminaran todas las actividades, plazas y miembros.</string>
+    <string name="community_detail_delete_confirm">Eliminar</string>
+    <string name="community_detail_delete_cancel">Cancelar</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Crear comunidad</string>

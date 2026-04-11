@@ -10,8 +10,9 @@ class JoinCommunityUseCase(
     private val authRepository: AuthRepository,
 ) {
     suspend operator fun invoke(inviteCode: String): AppResult<Community> {
-        val userId = authRepository.currentUserId()
+        authRepository.currentUserId()
             ?: return AppResult.Error("Not authenticated")
-        return communityRepository.joinByInviteCode(inviteCode, userId)
+        // Server-side RPC uses auth.uid() from JWT — no userId needed
+        return communityRepository.joinByInviteCode(inviteCode)
     }
 }

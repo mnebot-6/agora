@@ -43,7 +43,7 @@ class ActivityFeedScreenModel(
                 return@launch
             }
 
-            activityRepository.getUpcomingActivities(userId)
+            activityRepository.getUpcomingActivities()
                 .onSuccess { activities ->
                     var communities = emptyList<Community>()
                     communityRepository.getMyCommunities(userId)

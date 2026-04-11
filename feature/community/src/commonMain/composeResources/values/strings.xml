@@ -21,6 +21,17 @@
     <string name="community_detail_no_activities">No activities yet. Create the first one.</string>
     <string name="community_detail_slots">%1$d slots</string>
     <string name="community_detail_no_limit">No limit</string>
+    <string name="community_detail_edit">Edit</string>
+    <string name="community_detail_delete">Delete</string>
+    <string name="community_detail_edit_title">Edit community</string>
+    <string name="community_detail_edit_name_label">Name *</string>
+    <string name="community_detail_edit_description_label">Description</string>
+    <string name="community_detail_edit_save">Save</string>
+    <string name="community_detail_edit_cancel">Cancel</string>
+    <string name="community_detail_delete_title">Delete community</string>
+    <string name="community_detail_delete_message">This action cannot be undone. All activities, slots and members will be deleted.</string>
+    <string name="community_detail_delete_confirm">Delete</string>
+    <string name="community_detail_delete_cancel">Cancel</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Create community</string>

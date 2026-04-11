@@ -14,6 +14,7 @@ CREATE TABLE profiles (
     display_name TEXT NOT NULL,
     avatar_url TEXT,
     fcm_token TEXT,
+    dark_mode BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -89,7 +90,7 @@ CREATE TABLE activities (
     slot_mode TEXT NOT NULL CHECK (slot_mode IN ('unlimited', 'limited', 'limited_with_positions')),
     max_slots INT,
     created_by UUID NOT NULL REFERENCES profiles(id),
-    status TEXT NOT NULL CHECK (status IN ('active', 'cancelled', 'completed')) DEFAULT 'active',
+    status TEXT NOT NULL CHECK (status IN ('active', 'archived')) DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

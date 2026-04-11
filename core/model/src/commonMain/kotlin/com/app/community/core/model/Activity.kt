@@ -14,8 +14,7 @@ enum class SlotMode {
 @Serializable
 enum class ActivityStatus {
     @SerialName("active") ACTIVE,
-    @SerialName("cancelled") CANCELLED,
-    @SerialName("completed") COMPLETED,
+    @SerialName("archived") ARCHIVED,
 }
 
 @Serializable

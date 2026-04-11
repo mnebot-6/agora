@@ -70,38 +70,34 @@ class SlotRepository {
 
     // --- Atomic RPC Operations ---
 
-    suspend fun reserveSlot(slotId: String, userId: String): AppResult<Boolean> =
+    suspend fun reserveSlot(slotId: String): AppResult<Boolean> =
         safeCall {
             val result = postgrest.rpc(
                 function = "reserve_slot",
                 parameters = buildJsonObject {
                     put("p_slot_id", slotId)
-                    put("p_user_id", userId)
                 },
             ).data
             result.trim().toBoolean()
         }
 
-    suspend fun releaseSlot(slotId: String, userId: String, isAdmin: Boolean): AppResult<Boolean> =
+    suspend fun releaseSlot(slotId: String): AppResult<Boolean> =
         safeCall {
             val result = postgrest.rpc(
                 function = "release_slot",
                 parameters = buildJsonObject {
                     put("p_slot_id", slotId)
-                    put("p_user_id", userId)
-                    put("p_is_admin", isAdmin)
                 },
             ).data
             result.trim().toBoolean()
         }
 
-    suspend fun markSlotPaid(slotId: String, adminUserId: String): AppResult<Boolean> =
+    suspend fun markSlotPaid(slotId: String): AppResult<Boolean> =
         safeCall {
             val result = postgrest.rpc(
                 function = "mark_slot_paid",
                 parameters = buildJsonObject {
                     put("p_slot_id", slotId)
-                    put("p_admin_user_id", adminUserId)
                 },
             ).data
             result.trim().toBoolean()
@@ -109,7 +105,6 @@ class SlotRepository {
 
     suspend fun joinSubstituteQueue(
         activityId: String,
-        userId: String,
         positionId: String?,
     ): AppResult<Unit> =
         safeCall {
@@ -117,7 +112,6 @@ class SlotRepository {
                 function = "join_substitute_queue",
                 parameters = buildJsonObject {
                     put("p_activity_id", activityId)
-                    put("p_user_id", userId)
                     positionId?.let { put("p_position_id", it) }
                 },
             )
@@ -126,7 +120,6 @@ class SlotRepository {
 
     suspend fun leaveSubstituteQueue(
         activityId: String,
-        userId: String,
         positionId: String?,
     ): AppResult<Unit> =
         safeCall {
@@ -134,7 +127,6 @@ class SlotRepository {
                 function = "leave_substitute_queue",
                 parameters = buildJsonObject {
                     put("p_activity_id", activityId)
-                    put("p_user_id", userId)
                     positionId?.let { put("p_position_id", it) }
                 },
             )

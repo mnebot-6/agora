@@ -206,11 +206,9 @@ private fun ActivityDetailContent(
         // Activity status badge (if not active)
         if (activity.status != ActivityStatus.ACTIVE) {
             item {
-                val cancelledLabel = stringResource(Res.string.detail_status_cancelled)
-                val completedLabel = stringResource(Res.string.detail_status_completed)
+                val archivedLabel = stringResource(Res.string.detail_status_archived)
                 val (label, colorPair) = when (activity.status) {
-                    ActivityStatus.CANCELLED -> cancelledLabel to MaterialTheme.slotStatusColors.reservedByOther
-                    ActivityStatus.COMPLETED -> completedLabel to MaterialTheme.slotStatusColors.paid
+                    ActivityStatus.ARCHIVED -> archivedLabel to MaterialTheme.slotStatusColors.reservedByOther
                     else -> "" to MaterialTheme.slotStatusColors.available
                 }
                 SlotStatusBadge(
@@ -221,44 +219,31 @@ private fun ActivityDetailContent(
             }
         }
 
-        // Admin controls: edit/complete/cancel/delete activity
+        // Admin controls: edit/archive/delete activity
         if (state.isAdmin && activity.status == ActivityStatus.ACTIVE) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
-                    ) {
-                        AgoraButton(
-                            text = stringResource(Res.string.detail_edit),
-                            onClick = onEdit,
-                            variant = AgoraButtonVariant.Secondary,
-                            modifier = Modifier.weight(1f),
-                        )
-                        AgoraButton(
-                            text = stringResource(Res.string.detail_complete),
-                            onClick = screenModel::completeActivity,
-                            variant = AgoraButtonVariant.Secondary,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
-                    ) {
-                        AgoraButton(
-                            text = stringResource(Res.string.detail_cancel),
-                            onClick = screenModel::cancelActivity,
-                            variant = AgoraButtonVariant.Tertiary,
-                            modifier = Modifier.weight(1f),
-                        )
-                        AgoraButton(
-                            text = stringResource(Res.string.detail_delete),
-                            onClick = { showDeleteDialog = true },
-                            variant = AgoraButtonVariant.Danger,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                ) {
+                    AgoraButton(
+                        text = stringResource(Res.string.detail_edit),
+                        onClick = onEdit,
+                        variant = AgoraButtonVariant.Secondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    AgoraButton(
+                        text = stringResource(Res.string.detail_archive),
+                        onClick = screenModel::archiveActivity,
+                        variant = AgoraButtonVariant.Tertiary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    AgoraButton(
+                        text = stringResource(Res.string.detail_delete),
+                        onClick = { showDeleteDialog = true },
+                        variant = AgoraButtonVariant.Danger,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -324,6 +309,7 @@ private fun ActivityDetailContent(
                     slotWithProfile = slotWithProfile,
                     currentUserId = state.currentUserId,
                     isAdmin = state.isAdmin,
+                    hasCost = activity.costDescription != null,
                     hasReservation = state.isUserJoined,
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
@@ -368,6 +354,7 @@ private fun ActivityDetailContent(
                         slotWithProfile = slotWithProfile,
                         currentUserId = state.currentUserId,
                         isAdmin = state.isAdmin,
+                        hasCost = activity.costDescription != null,
                         hasReservation = state.isUserJoined,
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
@@ -470,6 +457,7 @@ private fun SlotCard(
     slotWithProfile: SlotWithProfile,
     currentUserId: String,
     isAdmin: Boolean,
+    hasCost: Boolean,
     hasReservation: Boolean,
     onReserve: () -> Unit,
     onRelease: () -> Unit,
@@ -538,8 +526,10 @@ private fun SlotCard(
                 }
                 isAdmin && slot.status == SlotStatus.RESERVED -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        TextButton(onClick = onMarkPaid) {
-                            Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                        if (hasCost) {
+                            TextButton(onClick = onMarkPaid) {
+                                Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                         TextButton(onClick = onRelease) {
                             Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
@@ -557,6 +547,7 @@ private fun PositionSlotCard(
     slotWithProfile: SlotWithProfile,
     currentUserId: String,
     isAdmin: Boolean,
+    hasCost: Boolean,
     hasReservation: Boolean,
     onReserve: () -> Unit,
     onRelease: () -> Unit,
@@ -629,8 +620,10 @@ private fun PositionSlotCard(
                 }
                 isAdmin && slot.status == SlotStatus.RESERVED -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        TextButton(onClick = onMarkPaid) {
-                            Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                        if (hasCost) {
+                            TextButton(onClick = onMarkPaid) {
+                                Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                         TextButton(onClick = onRelease) {
                             Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)

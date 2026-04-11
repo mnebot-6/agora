@@ -1,4 +1,14 @@
 -- ============================================================================
+-- SAFETY GUARD: Abort if accidentally run against production
+-- ============================================================================
+DO $$
+BEGIN
+    IF current_setting('app.environment', true) = 'production' THEN
+        RAISE EXCEPTION 'ABORT: This destructive reset script must NOT run in production!';
+    END IF;
+END $$;
+
+-- ============================================================================
 -- NUCLEAR RESET: Drop everything in public schema
 -- ============================================================================
 
@@ -14,11 +24,18 @@ DROP FUNCTION IF EXISTS notify_substitute_promoted(uuid, uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS promote_substitute(uuid) CASCADE;
 DROP FUNCTION IF EXISTS promote_substitute(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS reserve_slot(uuid, uuid) CASCADE;
+DROP FUNCTION IF EXISTS reserve_slot(uuid) CASCADE;
 DROP FUNCTION IF EXISTS release_slot(uuid, uuid, boolean) CASCADE;
+DROP FUNCTION IF EXISTS release_slot(uuid) CASCADE;
 DROP FUNCTION IF EXISTS mark_slot_paid(uuid, uuid) CASCADE;
+DROP FUNCTION IF EXISTS mark_slot_paid(uuid) CASCADE;
 DROP FUNCTION IF EXISTS join_substitute_queue(uuid, uuid, uuid) CASCADE;
+DROP FUNCTION IF EXISTS join_substitute_queue(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS leave_substitute_queue(uuid, uuid, uuid) CASCADE;
+DROP FUNCTION IF EXISTS leave_substitute_queue(uuid, uuid) CASCADE;
 DROP FUNCTION IF EXISTS get_upcoming_activities(uuid) CASCADE;
+DROP FUNCTION IF EXISTS get_upcoming_activities() CASCADE;
+DROP FUNCTION IF EXISTS join_community_by_invite(text) CASCADE;
 DROP FUNCTION IF EXISTS get_my_community_ids() CASCADE;
 DROP FUNCTION IF EXISTS get_my_admin_community_ids() CASCADE;
 DROP FUNCTION IF EXISTS handle_new_community() CASCADE;
@@ -47,6 +64,7 @@ CREATE TABLE profiles (
     display_name TEXT NOT NULL,
     avatar_url TEXT,
     fcm_token TEXT,
+    dark_mode BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -112,7 +130,7 @@ CREATE TABLE activities (
     slot_mode TEXT NOT NULL CHECK (slot_mode IN ('unlimited', 'limited', 'limited_with_positions')),
     max_slots INT,
     created_by UUID NOT NULL REFERENCES profiles(id),
-    status TEXT NOT NULL CHECK (status IN ('active', 'cancelled', 'completed')) DEFAULT 'active',
+    status TEXT NOT NULL CHECK (status IN ('active', 'archived')) DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -176,14 +194,16 @@ CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id) WHERE NOT read;
 
 -- ============================================================================
--- MIGRATION 002: RPC Functions
+-- MIGRATION 002: RPC Functions (secured with auth.uid())
 -- ============================================================================
-CREATE OR REPLACE FUNCTION reserve_slot(p_slot_id UUID, p_user_id UUID)
+CREATE OR REPLACE FUNCTION reserve_slot(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
     v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
     IF v_slot IS NULL THEN RAISE EXCEPTION 'Slot not found'; END IF;
     IF v_slot.status != 'available' THEN RETURN FALSE; END IF;
@@ -191,34 +211,46 @@ BEGIN
     SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
     IF NOT EXISTS (
         SELECT 1 FROM community_members
-        WHERE community_id = v_activity.community_id AND user_id = p_user_id
+        WHERE community_id = v_activity.community_id AND user_id = v_user_id
     ) THEN
         RAISE EXCEPTION 'User is not a member of this community';
     END IF;
 
     UPDATE slots
-    SET status = 'reserved', reserved_by = p_user_id, reserved_at = now()
+    SET status = 'reserved', reserved_by = v_user_id, reserved_at = now()
     WHERE id = p_slot_id;
 
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION release_slot(p_slot_id UUID, p_user_id UUID, p_is_admin BOOLEAN)
+CREATE OR REPLACE FUNCTION release_slot(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
+    v_activity RECORD;
+    v_user_id UUID := auth.uid();
+    v_is_admin BOOLEAN;
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
     IF v_slot IS NULL THEN RAISE EXCEPTION 'Slot not found'; END IF;
     IF v_slot.status = 'available' THEN RETURN FALSE; END IF;
 
+    -- Query admin status from DB instead of trusting client
+    SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
+    SELECT EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_activity.community_id
+          AND user_id = v_user_id AND role = 'admin'
+    ) INTO v_is_admin;
+
     IF v_slot.status = 'paid' THEN
-        IF v_slot.reserved_by != p_user_id THEN
+        IF v_slot.reserved_by != v_user_id THEN
             RAISE EXCEPTION 'Only the user who reserved this slot can release a paid reservation';
         END IF;
     ELSIF v_slot.status = 'reserved' THEN
-        IF v_slot.reserved_by != p_user_id AND NOT p_is_admin THEN
+        IF v_slot.reserved_by != v_user_id AND NOT v_is_admin THEN
             RAISE EXCEPTION 'Only the reserved user or an admin can release this slot';
         END IF;
     END IF;
@@ -227,18 +259,20 @@ BEGIN
     SET status = 'available', reserved_by = NULL, reserved_at = NULL
     WHERE id = p_slot_id;
 
-    PERFORM promote_substitute(p_slot_id, v_slot.activity_id);
+    PERFORM promote_substitute(p_slot_id, v_activity.id);
 
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION mark_slot_paid(p_slot_id UUID, p_admin_user_id UUID)
+CREATE OR REPLACE FUNCTION mark_slot_paid(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
     v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
     IF v_slot IS NULL THEN RAISE EXCEPTION 'Slot not found'; END IF;
     IF v_slot.status != 'reserved' THEN RETURN FALSE; END IF;
@@ -247,7 +281,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM community_members
         WHERE community_id = v_activity.community_id
-          AND user_id = p_admin_user_id AND role = 'admin'
+          AND user_id = v_user_id AND role = 'admin'
     ) THEN
         RAISE EXCEPTION 'Only community admins can mark slots as paid';
     END IF;
@@ -258,39 +292,59 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION join_substitute_queue(
-    p_activity_id UUID, p_user_id UUID, p_position_id UUID DEFAULT NULL
+    p_activity_id UUID, p_position_id UUID DEFAULT NULL
 )
 RETURNS VOID AS $$
+DECLARE
+    v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+
+    SELECT * INTO v_activity FROM activities WHERE id = p_activity_id;
+    IF v_activity IS NULL THEN RAISE EXCEPTION 'Activity not found'; END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_activity.community_id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'User is not a member of this community';
+    END IF;
+
     INSERT INTO substitute_queue (activity_id, user_id, position_id)
-    VALUES (p_activity_id, p_user_id, p_position_id)
+    VALUES (p_activity_id, v_user_id, p_position_id)
     ON CONFLICT (activity_id, user_id, position_id) DO NOTHING;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION leave_substitute_queue(
-    p_activity_id UUID, p_user_id UUID, p_position_id UUID DEFAULT NULL
+    p_activity_id UUID, p_position_id UUID DEFAULT NULL
 )
 RETURNS VOID AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
     IF p_position_id IS NULL THEN
         DELETE FROM substitute_queue
-        WHERE activity_id = p_activity_id AND user_id = p_user_id AND position_id IS NULL;
+        WHERE activity_id = p_activity_id AND user_id = v_user_id AND position_id IS NULL;
     ELSE
         DELETE FROM substitute_queue
-        WHERE activity_id = p_activity_id AND user_id = p_user_id AND position_id = p_position_id;
+        WHERE activity_id = p_activity_id AND user_id = v_user_id AND position_id = p_position_id;
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION get_upcoming_activities(p_user_id UUID)
+CREATE OR REPLACE FUNCTION get_upcoming_activities()
 RETURNS SETOF activities AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
     RETURN QUERY
     SELECT a.*
     FROM activities a
     INNER JOIN community_members cm ON cm.community_id = a.community_id
-    WHERE cm.user_id = p_user_id
+    WHERE cm.user_id = v_user_id
       AND a.status = 'active'
       AND a.datetime >= now()
     ORDER BY a.datetime ASC;
@@ -323,21 +377,33 @@ ALTER TABLE slot_positions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE substitute_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Profiles
-CREATE POLICY "Profiles are viewable by authenticated users"
-    ON profiles FOR SELECT TO authenticated USING (true);
+-- Profiles (protected: no global SELECT, only own + community members)
+CREATE POLICY "Users can view own profile"
+    ON profiles FOR SELECT TO authenticated
+    USING (id = auth.uid());
+CREATE POLICY "Users can view community member profiles"
+    ON profiles FOR SELECT TO authenticated
+    USING (id IN (
+        SELECT cm2.user_id FROM community_members cm2
+        WHERE cm2.community_id IN (SELECT get_my_community_ids())
+    ));
 CREATE POLICY "Users can update their own profile"
     ON profiles FOR UPDATE TO authenticated
     USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 
--- Communities
+-- Communities (no global SELECT — join by invite uses RPC)
 CREATE POLICY "Communities are viewable by members"
     ON communities FOR SELECT TO authenticated
     USING (id IN (SELECT get_my_community_ids()));
-CREATE POLICY "Communities are viewable by invite code"
-    ON communities FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Authenticated users can create communities"
     ON communities FOR INSERT TO authenticated WITH CHECK (created_by = auth.uid());
+CREATE POLICY "Community admins can update communities"
+    ON communities FOR UPDATE TO authenticated
+    USING (id IN (SELECT get_my_admin_community_ids()))
+    WITH CHECK (id IN (SELECT get_my_admin_community_ids()));
+CREATE POLICY "Community creator can delete communities"
+    ON communities FOR DELETE TO authenticated
+    USING (created_by = auth.uid());
 
 -- Community members (use helper functions to avoid self-referencing recursion)
 CREATE POLICY "Members can view their community's membership"
@@ -363,6 +429,9 @@ CREATE POLICY "Community admins can create activities"
 CREATE POLICY "Community admins can update activities"
     ON activities FOR UPDATE TO authenticated
     USING (community_id IN (SELECT get_my_admin_community_ids()));
+CREATE POLICY "Community admins can delete activities"
+    ON activities FOR DELETE TO authenticated
+    USING (community_id IN (SELECT get_my_admin_community_ids()));
 
 -- Slot groups, positions, slots, slot_positions (SELECT for members, INSERT for admins)
 CREATE POLICY "Slot groups viewable by community members"
@@ -371,6 +440,12 @@ CREATE POLICY "Slot groups viewable by community members"
 CREATE POLICY "Admins can create slot groups"
     ON slot_groups FOR INSERT TO authenticated
     WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can update slot groups"
+    ON slot_groups FOR UPDATE TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can delete slot groups"
+    ON slot_groups FOR DELETE TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Positions viewable by community members"
     ON positions FOR SELECT TO authenticated
@@ -378,6 +453,12 @@ CREATE POLICY "Positions viewable by community members"
 CREATE POLICY "Admins can create positions"
     ON positions FOR INSERT TO authenticated
     WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can update positions"
+    ON positions FOR UPDATE TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can delete positions"
+    ON positions FOR DELETE TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Slots viewable by community members"
     ON slots FOR SELECT TO authenticated
@@ -392,6 +473,9 @@ CREATE POLICY "Slot positions viewable by community members"
 CREATE POLICY "Admins can create slot positions"
     ON slot_positions FOR INSERT TO authenticated
     WITH CHECK (slot_id IN (SELECT s.id FROM slots s WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids()))));
+CREATE POLICY "Admins can delete slot positions"
+    ON slot_positions FOR DELETE TO authenticated
+    USING (slot_id IN (SELECT s.id FROM slots s WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids()))));
 
 -- Substitute queue
 CREATE POLICY "Substitute queue viewable by community members"
@@ -408,6 +492,9 @@ CREATE POLICY "Users can view their own notifications"
 CREATE POLICY "Users can update their own notifications"
     ON notifications FOR UPDATE TO authenticated
     USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete their own notifications"
+    ON notifications FOR DELETE TO authenticated
+    USING (user_id = auth.uid());
 
 -- ============================================================================
 -- MIGRATION 004: Notification Triggers
@@ -496,8 +583,45 @@ CREATE POLICY "Users can view own templates"
     ON slot_templates FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own templates"
     ON slot_templates FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own templates"
+    ON slot_templates FOR UPDATE
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own templates"
     ON slot_templates FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- MIGRATION 007: Security Hardening
+-- ============================================================================
+
+-- Join community by invite code (SECURITY DEFINER bypasses RLS for lookup)
+CREATE OR REPLACE FUNCTION join_community_by_invite(p_invite_code TEXT)
+RETURNS communities AS $$
+DECLARE
+    v_community communities%ROWTYPE;
+    v_user_id UUID := auth.uid();
+BEGIN
+    IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+
+    SELECT * INTO v_community FROM communities WHERE invite_code = p_invite_code;
+    IF v_community IS NULL THEN RAISE EXCEPTION 'Invalid invite code'; END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_community.id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'Already a member of this community';
+    END IF;
+
+    INSERT INTO community_members (community_id, user_id, role)
+    VALUES (v_community.id, v_user_id, 'user');
+
+    RETURN v_community;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Invite code format constraint
+ALTER TABLE communities ADD CONSTRAINT invite_code_format
+    CHECK (length(invite_code) = 8 AND invite_code ~ '^[A-Z0-9]+$');
 
 -- ============================================================================
 -- DONE: Re-insert profiles for existing auth users (if any)

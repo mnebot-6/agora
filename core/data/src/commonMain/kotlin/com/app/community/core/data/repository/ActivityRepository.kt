@@ -28,12 +28,11 @@ class ActivityRepository {
                 .decodeList<Activity>()
         }
 
-    suspend fun getUpcomingActivities(userId: String): AppResult<List<Activity>> =
+    suspend fun getUpcomingActivities(): AppResult<List<Activity>> =
         safeCall {
-            // Get activities from all communities the user belongs to
+            // Server uses auth.uid() from JWT — no userId parameter needed
             postgrest.rpc(
                 function = "get_upcoming_activities",
-                parameters = kotlinx.serialization.json.buildJsonObject { put("p_user_id", kotlinx.serialization.json.JsonPrimitive(userId)) },
             ).decodeList<Activity>()
         }
 

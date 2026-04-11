@@ -47,7 +47,7 @@ class DashboardScreenModel(
                 return@launch
             }
 
-            when (val result = activityRepository.getUpcomingActivities(userId)) {
+            when (val result = activityRepository.getUpcomingActivities()) {
                 is AppResult.Success -> {
                     val activities = result.data
                     if (activities.isEmpty()) {

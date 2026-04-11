@@ -198,9 +198,8 @@ class ActivityDetailScreenModel(
     }
 
     fun reserveSlot(slotId: String) {
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
-            slotRepository.reserveSlot(slotId, userId)
+            slotRepository.reserveSlot(slotId)
                 .onSuccess { success ->
                     if (success) {
                         _actionMessage.value = "Plaza reservada"
@@ -216,10 +215,8 @@ class ActivityDetailScreenModel(
     }
 
     fun releaseSlot(slotId: String) {
-        val currentState = _state.value as? ActivityDetailUiState.Content ?: return
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
-            slotRepository.releaseSlot(slotId, userId, currentState.isAdmin)
+            slotRepository.releaseSlot(slotId)
                 .onSuccess { success ->
                     if (success) {
                         _actionMessage.value = "Plaza liberada"
@@ -235,9 +232,8 @@ class ActivityDetailScreenModel(
     }
 
     fun markSlotPaid(slotId: String) {
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
-            slotRepository.markSlotPaid(slotId, userId)
+            slotRepository.markSlotPaid(slotId)
                 .onSuccess { success ->
                     if (success) {
                         _actionMessage.value = "Marcado como pagado"
@@ -253,7 +249,6 @@ class ActivityDetailScreenModel(
     }
 
     fun joinUnlimited() {
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
             // For unlimited mode, create a new slot and reserve it
             slotRepository.createSlots(activityId, 1)
@@ -262,7 +257,7 @@ class ActivityDetailScreenModel(
                     val slots = slotRepository.getSlots(activityId).getOrNull() ?: return@onSuccess
                     val availableSlot = slots.lastOrNull { it.isAvailable }
                     if (availableSlot != null) {
-                        slotRepository.reserveSlot(availableSlot.id, userId)
+                        slotRepository.reserveSlot(availableSlot.id)
                     }
                     load()
                 }
@@ -282,9 +277,8 @@ class ActivityDetailScreenModel(
     }
 
     fun joinSubstituteQueue(positionId: String? = null) {
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
-            slotRepository.joinSubstituteQueue(activityId, userId, positionId)
+            slotRepository.joinSubstituteQueue(activityId, positionId)
                 .onSuccess {
                     _actionMessage.value = "Te has apuntado como suplente"
                     load()
@@ -296,9 +290,8 @@ class ActivityDetailScreenModel(
     }
 
     fun leaveSubstituteQueue(positionId: String? = null) {
-        val userId = authRepository.currentUserId() ?: return
         screenModelScope.launch {
-            slotRepository.leaveSubstituteQueue(activityId, userId, positionId)
+            slotRepository.leaveSubstituteQueue(activityId, positionId)
                 .onSuccess {
                     _actionMessage.value = "Has salido de la cola de suplentes"
                     load()
@@ -309,24 +302,11 @@ class ActivityDetailScreenModel(
         }
     }
 
-    fun cancelActivity() {
+    fun archiveActivity() {
         screenModelScope.launch {
-            activityRepository.updateActivityStatus(activityId, ActivityStatus.CANCELLED)
+            activityRepository.updateActivityStatus(activityId, ActivityStatus.ARCHIVED)
                 .onSuccess {
-                    _actionMessage.value = "Actividad cancelada"
-                    load()
-                }
-                .onError { msg, _ ->
-                    _actionMessage.value = "Error: $msg"
-                }
-        }
-    }
-
-    fun completeActivity() {
-        screenModelScope.launch {
-            activityRepository.updateActivityStatus(activityId, ActivityStatus.COMPLETED)
-                .onSuccess {
-                    _actionMessage.value = "Actividad completada"
+                    _actionMessage.value = "Actividad archivada"
                     load()
                 }
                 .onError { msg, _ ->

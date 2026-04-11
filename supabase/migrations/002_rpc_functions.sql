@@ -1,19 +1,23 @@
 -- ============================================================================
 -- Migration 002: RPC Functions for Atomic Slot Operations
--- All slot state transitions go through these functions to guarantee atomicity
+-- All functions use auth.uid() for identity — never trust client parameters
 -- ============================================================================
 
 -- ============================================================================
 -- RESERVE SLOT
--- Atomically reserves a slot for a user if it's available
--- Returns true on success, false if slot was already taken
+-- Atomically reserves a slot for the authenticated user if available
 -- ============================================================================
-CREATE OR REPLACE FUNCTION reserve_slot(p_slot_id UUID, p_user_id UUID)
+CREATE OR REPLACE FUNCTION reserve_slot(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
     v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
     -- Lock the slot row to prevent concurrent reservations
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
 
@@ -29,14 +33,14 @@ BEGIN
     SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
     IF NOT EXISTS (
         SELECT 1 FROM community_members
-        WHERE community_id = v_activity.community_id AND user_id = p_user_id
+        WHERE community_id = v_activity.community_id AND user_id = v_user_id
     ) THEN
         RAISE EXCEPTION 'User is not a member of this community';
     END IF;
 
     -- Reserve the slot
     UPDATE slots
-    SET status = 'reserved', reserved_by = p_user_id, reserved_at = now()
+    SET status = 'reserved', reserved_by = v_user_id, reserved_at = now()
     WHERE id = p_slot_id;
 
     RETURN TRUE;
@@ -48,14 +52,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Releases a slot with permission checks:
 --   - PAID slots: only the reserved user can release
 --   - RESERVED slots: reserved user OR community admin can release
+-- Admin status is queried from DB, never trusted from client
 -- After releasing, auto-promotes first matching substitute
 -- ============================================================================
-CREATE OR REPLACE FUNCTION release_slot(p_slot_id UUID, p_user_id UUID, p_is_admin BOOLEAN)
+CREATE OR REPLACE FUNCTION release_slot(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
     v_activity RECORD;
+    v_user_id UUID := auth.uid();
+    v_is_admin BOOLEAN;
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
     -- Lock the slot
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
 
@@ -67,15 +78,24 @@ BEGIN
         RETURN FALSE; -- Nothing to release
     END IF;
 
+    -- Query admin status from DB instead of trusting client
+    SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
+    SELECT EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_activity.community_id
+          AND user_id = v_user_id
+          AND role = 'admin'
+    ) INTO v_is_admin;
+
     -- Permission check
     IF v_slot.status = 'paid' THEN
         -- Only the user who reserved can release a PAID slot (admins CANNOT)
-        IF v_slot.reserved_by != p_user_id THEN
+        IF v_slot.reserved_by != v_user_id THEN
             RAISE EXCEPTION 'Only the user who reserved this slot can release a paid reservation';
         END IF;
     ELSIF v_slot.status = 'reserved' THEN
         -- Reserved user OR admin can release
-        IF v_slot.reserved_by != p_user_id AND NOT p_is_admin THEN
+        IF v_slot.reserved_by != v_user_id AND NOT v_is_admin THEN
             RAISE EXCEPTION 'Only the reserved user or an admin can release this slot';
         END IF;
     END IF;
@@ -94,14 +114,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
 -- MARK SLOT PAID
--- Admin marks a reserved slot as paid
+-- Admin marks a reserved slot as paid (admin verified from DB)
 -- ============================================================================
-CREATE OR REPLACE FUNCTION mark_slot_paid(p_slot_id UUID, p_admin_user_id UUID)
+CREATE OR REPLACE FUNCTION mark_slot_paid(p_slot_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
     v_slot RECORD;
     v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
 
     IF v_slot IS NULL THEN
@@ -117,7 +142,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM community_members
         WHERE community_id = v_activity.community_id
-          AND user_id = p_admin_user_id
+          AND user_id = v_user_id
           AND role = 'admin'
     ) THEN
         RAISE EXCEPTION 'Only community admins can mark slots as paid';
@@ -189,7 +214,7 @@ BEGIN
         v_substitute.user_id,
         'substitute_promoted',
         'Plaza disponible',
-        'Se te ha asignado automáticamente una plaza en ' || a.name,
+        'Se te ha asignado automaticamente una plaza en ' || a.name,
         jsonb_build_object('activity_id', v_slot.activity_id, 'slot_id', p_slot_id)
     FROM activities a WHERE a.id = v_slot.activity_id;
 END;
@@ -197,16 +222,36 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
 -- JOIN SUBSTITUTE QUEUE
+-- Validates community membership before allowing queue entry
 -- ============================================================================
 CREATE OR REPLACE FUNCTION join_substitute_queue(
     p_activity_id UUID,
-    p_user_id UUID,
     p_position_id UUID DEFAULT NULL
 )
 RETURNS VOID AS $$
+DECLARE
+    v_activity RECORD;
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    -- Validate activity exists and user is a community member
+    SELECT * INTO v_activity FROM activities WHERE id = p_activity_id;
+    IF v_activity IS NULL THEN
+        RAISE EXCEPTION 'Activity not found';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_activity.community_id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'User is not a member of this community';
+    END IF;
+
     INSERT INTO substitute_queue (activity_id, user_id, position_id)
-    VALUES (p_activity_id, p_user_id, p_position_id)
+    VALUES (p_activity_id, v_user_id, p_position_id)
     ON CONFLICT (activity_id, user_id, position_id) DO NOTHING;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -216,36 +261,47 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================================
 CREATE OR REPLACE FUNCTION leave_substitute_queue(
     p_activity_id UUID,
-    p_user_id UUID,
     p_position_id UUID DEFAULT NULL
 )
 RETURNS VOID AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
     IF p_position_id IS NULL THEN
         DELETE FROM substitute_queue
         WHERE activity_id = p_activity_id
-          AND user_id = p_user_id
+          AND user_id = v_user_id
           AND position_id IS NULL;
     ELSE
         DELETE FROM substitute_queue
         WHERE activity_id = p_activity_id
-          AND user_id = p_user_id
+          AND user_id = v_user_id
           AND position_id = p_position_id;
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
--- GET UPCOMING ACTIVITIES (for a user across all communities)
+-- GET UPCOMING ACTIVITIES (for authenticated user across all communities)
 -- ============================================================================
-CREATE OR REPLACE FUNCTION get_upcoming_activities(p_user_id UUID)
+CREATE OR REPLACE FUNCTION get_upcoming_activities()
 RETURNS SETOF activities AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
 BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
     RETURN QUERY
     SELECT a.*
     FROM activities a
     INNER JOIN community_members cm ON cm.community_id = a.community_id
-    WHERE cm.user_id = p_user_id
+    WHERE cm.user_id = v_user_id
       AND a.status = 'active'
       AND a.datetime >= now()
     ORDER BY a.datetime ASC;

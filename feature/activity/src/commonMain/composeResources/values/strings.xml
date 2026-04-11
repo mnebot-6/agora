@@ -39,12 +39,10 @@
     <string name="detail_location">Location: %1$s</string>
     <string name="detail_cost">Cost: %1$s</string>
     <string name="detail_location_cd">Open location in maps</string>
-    <string name="detail_status_cancelled">Cancelled</string>
-    <string name="detail_status_completed">Completed</string>
+    <string name="detail_status_archived">Archived</string>
     <string name="detail_status_label">Status: %1$s</string>
     <string name="detail_edit">Edit</string>
-    <string name="detail_complete">Complete</string>
-    <string name="detail_cancel">Cancel</string>
+    <string name="detail_archive">Archive</string>
     <string name="detail_delete">Delete</string>
     <string name="detail_signed_up_count">%1$d signed up</string>
     <string name="detail_slots_count">%1$d / %2$d</string>

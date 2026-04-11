@@ -28,6 +28,11 @@ class CommunityDetailScreenModel(
             val members: List<CommunityMember>,
             val activities: List<Activity>,
             val isAdmin: Boolean = false,
+            val isCreator: Boolean = false,
+            val showEditDialog: Boolean = false,
+            val editName: String = "",
+            val editDescription: String = "",
+            val showDeleteDialog: Boolean = false,
         ) : UiState()
 
         data class Error(val message: String) : UiState()
@@ -35,6 +40,12 @@ class CommunityDetailScreenModel(
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    private val _deleted = MutableStateFlow(false)
+    val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
+
+    private val _actionMessage = MutableStateFlow<String?>(null)
+    val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
     init {
         loadDetails()
@@ -64,13 +75,90 @@ class CommunityDetailScreenModel(
             val members = communityRepository.getMembers(communityId).getOrNull().orEmpty()
             val activities = activityRepository.getActivities(communityId).getOrNull().orEmpty()
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
+            val isCreator = community.createdBy == userId
 
             _uiState.value = UiState.Content(
                 community = community,
                 members = members,
                 activities = activities,
                 isAdmin = isAdmin,
+                isCreator = isCreator,
             )
         }
+    }
+
+    // --- Edit community ---
+
+    fun showEditDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(
+            showEditDialog = true,
+            editName = current.community.name,
+            editDescription = current.community.description.orEmpty(),
+        )
+    }
+
+    fun dismissEditDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(showEditDialog = false)
+    }
+
+    fun onEditNameChange(name: String) {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(editName = name)
+    }
+
+    fun onEditDescriptionChange(description: String) {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(editDescription = description)
+    }
+
+    fun saveCommunity() {
+        val current = _uiState.value as? UiState.Content ?: return
+        val name = current.editName.trim()
+        if (name.isBlank()) return
+
+        screenModelScope.launch {
+            communityRepository.updateCommunity(
+                id = communityId,
+                name = name,
+                description = current.editDescription.trim().ifBlank { null },
+            ).onSuccess {
+                _actionMessage.value = "Comunidad actualizada"
+                _uiState.value = current.copy(showEditDialog = false)
+                loadDetails()
+            }.onError { msg, _ ->
+                _actionMessage.value = "Error: $msg"
+            }
+        }
+    }
+
+    // --- Delete community ---
+
+    fun showDeleteDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(showDeleteDialog = true)
+    }
+
+    fun dismissDeleteDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(showDeleteDialog = false)
+    }
+
+    fun deleteCommunity() {
+        screenModelScope.launch {
+            communityRepository.deleteCommunity(communityId)
+                .onSuccess {
+                    _actionMessage.value = "Comunidad eliminada"
+                    _deleted.value = true
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
+        }
+    }
+
+    fun clearActionMessage() {
+        _actionMessage.value = null
     }
 }

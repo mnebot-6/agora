@@ -27,12 +27,20 @@ ALTER TABLE substitute_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- PROFILES
+-- PROFILES (protected: only own profile + community members visible)
 -- ============================================================================
-CREATE POLICY "Profiles are viewable by authenticated users"
+CREATE POLICY "Users can view own profile"
     ON profiles FOR SELECT
     TO authenticated
-    USING (true);
+    USING (id = auth.uid());
+
+CREATE POLICY "Users can view community member profiles"
+    ON profiles FOR SELECT
+    TO authenticated
+    USING (id IN (
+        SELECT cm2.user_id FROM community_members cm2
+        WHERE cm2.community_id IN (SELECT get_my_community_ids())
+    ));
 
 CREATE POLICY "Users can update their own profile"
     ON profiles FOR UPDATE
@@ -48,16 +56,23 @@ CREATE POLICY "Communities are viewable by members"
     TO authenticated
     USING (id IN (SELECT get_my_community_ids()));
 
--- Also allow viewing by invite_code (for joining)
-CREATE POLICY "Communities are viewable by invite code"
-    ON communities FOR SELECT
-    TO authenticated
-    USING (true);
+-- NOTE: No global SELECT policy — joining by invite uses RPC join_community_by_invite()
 
 CREATE POLICY "Authenticated users can create communities"
     ON communities FOR INSERT
     TO authenticated
     WITH CHECK (created_by = auth.uid());
+
+CREATE POLICY "Community admins can update communities"
+    ON communities FOR UPDATE
+    TO authenticated
+    USING (id IN (SELECT get_my_admin_community_ids()))
+    WITH CHECK (id IN (SELECT get_my_admin_community_ids()));
+
+CREATE POLICY "Community creator can delete communities"
+    ON communities FOR DELETE
+    TO authenticated
+    USING (created_by = auth.uid());
 
 -- ============================================================================
 -- COMMUNITY MEMBERS (use helper functions to avoid self-referencing recursion)
@@ -106,9 +121,14 @@ CREATE POLICY "Community admins can update activities"
     TO authenticated
     USING (community_id IN (SELECT get_my_admin_community_ids()));
 
+CREATE POLICY "Community admins can delete activities"
+    ON activities FOR DELETE
+    TO authenticated
+    USING (community_id IN (SELECT get_my_admin_community_ids()));
+
 -- ============================================================================
 -- SLOT GROUPS, POSITIONS, SLOTS, SLOT_POSITIONS
--- Read-only for members; mutations via RPC functions (SECURITY DEFINER)
+-- Read for members; INSERT/UPDATE/DELETE for admins; slot state via RPC
 -- ============================================================================
 CREATE POLICY "Slot groups viewable by community members"
     ON slot_groups FOR SELECT
@@ -133,16 +153,32 @@ CREATE POLICY "Slot positions viewable by community members"
         WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_community_ids()))
     ));
 
--- Admin INSERT policies for slot creation (needed for activity setup)
+-- Admin INSERT/UPDATE/DELETE policies for slot management
 CREATE POLICY "Admins can create slot groups"
     ON slot_groups FOR INSERT
     TO authenticated
     WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can update slot groups"
+    ON slot_groups FOR UPDATE
+    TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can delete slot groups"
+    ON slot_groups FOR DELETE
+    TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Admins can create positions"
     ON positions FOR INSERT
     TO authenticated
     WITH CHECK (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can update positions"
+    ON positions FOR UPDATE
+    TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
+CREATE POLICY "Admins can delete positions"
+    ON positions FOR DELETE
+    TO authenticated
+    USING (activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids())));
 
 CREATE POLICY "Admins can create slots"
     ON slots FOR INSERT
@@ -153,6 +189,13 @@ CREATE POLICY "Admins can create slot positions"
     ON slot_positions FOR INSERT
     TO authenticated
     WITH CHECK (slot_id IN (
+        SELECT s.id FROM slots s
+        WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids()))
+    ));
+CREATE POLICY "Admins can delete slot positions"
+    ON slot_positions FOR DELETE
+    TO authenticated
+    USING (slot_id IN (
         SELECT s.id FROM slots s
         WHERE s.activity_id IN (SELECT id FROM activities WHERE community_id IN (SELECT get_my_admin_community_ids()))
     ));
@@ -188,3 +231,8 @@ CREATE POLICY "Users can update their own notifications"
     TO authenticated
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can delete their own notifications"
+    ON notifications FOR DELETE
+    TO authenticated
+    USING (user_id = auth.uid());

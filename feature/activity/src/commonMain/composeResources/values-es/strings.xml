@@ -39,12 +39,10 @@
     <string name="detail_location">Lugar: %1$s</string>
     <string name="detail_cost">Coste: %1$s</string>
     <string name="detail_location_cd">Abrir ubicacion en mapas</string>
-    <string name="detail_status_cancelled">Cancelada</string>
-    <string name="detail_status_completed">Completada</string>
+    <string name="detail_status_archived">Archivada</string>
     <string name="detail_status_label">Estado: %1$s</string>
     <string name="detail_edit">Editar</string>
-    <string name="detail_complete">Completar</string>
-    <string name="detail_cancel">Cancelar</string>
+    <string name="detail_archive">Archivar</string>
     <string name="detail_delete">Eliminar</string>
     <string name="detail_signed_up_count">%1$d apuntados</string>
     <string name="detail_slots_count">%1$d / %2$d</string>
