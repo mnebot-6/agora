@@ -1,7 +1,6 @@
 package com.app.community.core.ui.components
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
@@ -46,7 +45,7 @@ fun AgoraTopBar(
             },
         ),
         expandedHeight = 48.dp,
-        windowInsets = WindowInsets(0, 0, 0, 0),
+        windowInsets = TopAppBarDefaults.windowInsets,
         navigationIcon = navigationIcon,
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(

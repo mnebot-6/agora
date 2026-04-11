@@ -1,6 +1,8 @@
 package com.app.community
 
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
@@ -71,6 +73,7 @@ fun App() {
 private fun MainContent() {
     TabNavigator(AgoraTab) {
         Scaffold(
+            contentWindowInsets = WindowInsets.navigationBars,
             bottomBar = {
                 AgoraNavigationBar {
                     TabNavigationItem(AgoraTab)
