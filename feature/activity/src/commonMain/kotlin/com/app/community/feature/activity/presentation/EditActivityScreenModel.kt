@@ -2,6 +2,7 @@ package com.app.community.feature.activity.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -111,6 +112,7 @@ class EditActivityScreenModel(
                 costDescription = s.costDescription.ifBlank { null },
             )
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.ACTIVITY_DETAIL, RefreshBus.ACTIVITIES)
                     _state.update { it.copy(status = EditActivityStatus.Success) }
                 }
                 .onError { msg, _ ->

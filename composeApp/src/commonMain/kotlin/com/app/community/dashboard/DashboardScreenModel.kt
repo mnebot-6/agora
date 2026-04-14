@@ -3,6 +3,7 @@ package com.app.community.dashboard
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.AppResult
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.SlotRepository
@@ -34,6 +35,11 @@ class DashboardScreenModel(
 
     init {
         load()
+        screenModelScope.launch {
+            RefreshBus.events.collect { tag ->
+                if (tag == RefreshBus.ACTIVITIES || tag == RefreshBus.COMMUNITIES) load()
+            }
+        }
     }
 
     fun refresh() = load()

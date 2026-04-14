@@ -27,35 +27,78 @@ interface NotificationPayload {
 
 Deno.serve(async (req) => {
   try {
-    const payload: NotificationPayload = await req.json();
+    // Step 1: Parse request body
+    const rawBody = await req.text();
+    let payload: NotificationPayload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Failed to parse request body", detail: e.message, bodyPreview: rawBody.substring(0, 100) }),
+        { status: 400 },
+      );
+    }
     const { record } = payload;
 
-    // Create Supabase client to fetch user's FCM token
+    // Step 2: Fetch FCM token from profile
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Get user's FCM token from profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("fcm_token")
       .eq("id", record.user_id)
       .single();
 
-    if (!profile?.fcm_token) {
-      return new Response(JSON.stringify({ message: "No FCM token found" }), {
-        status: 200,
-      });
+    if (profileError) {
+      return new Response(
+        JSON.stringify({ error: "Profile query failed", detail: profileError.message }),
+        { status: 200 },
+      );
     }
 
-    // Get Firebase access token using service account
-    const serviceAccount = JSON.parse(
-      Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!,
-    );
-    const accessToken = await getFirebaseAccessToken(serviceAccount);
+    if (!profile?.fcm_token) {
+      return new Response(
+        JSON.stringify({ message: "No FCM token found", user_id: record.user_id }),
+        { status: 200 },
+      );
+    }
 
-    // Send FCM message
+    // Step 3: Parse Firebase service account
+    const saRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
+    if (!saRaw) {
+      return new Response(
+        JSON.stringify({ error: "FIREBASE_SERVICE_ACCOUNT secret not set" }),
+        { status: 500 },
+      );
+    }
+
+    let serviceAccount: Record<string, string>;
+    try {
+      // Handle case where secret was stored with extra quotes
+      const cleaned = saRaw.startsWith('"') ? JSON.parse(saRaw) : saRaw;
+      serviceAccount = typeof cleaned === "string" ? JSON.parse(cleaned) : cleaned;
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Failed to parse FIREBASE_SERVICE_ACCOUNT", detail: e.message, preview: saRaw.substring(0, 50) }),
+        { status: 500 },
+      );
+    }
+
+    // Step 4: Get Firebase access token
+    let accessToken: string;
+    try {
+      accessToken = await getFirebaseAccessToken(serviceAccount);
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Failed to get Firebase access token", detail: e.message }),
+        { status: 500 },
+      );
+    }
+
+    // Step 5: Send FCM message
     const fcmResponse = await fetch(
       `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
       {
@@ -71,11 +114,15 @@ Deno.serve(async (req) => {
               title: record.title,
               body: record.body,
             },
-            data: record.data ?? {},
+            data: record.data
+              ? Object.fromEntries(
+                  Object.entries(record.data).map(([k, v]) => [k, String(v)])
+                )
+              : {},
             android: {
               priority: "high",
               notification: {
-                click_action: "FLUTTER_NOTIFICATION_CLICK",
+                click_action: "OPEN_ACTIVITY",
                 channel_id: "default",
               },
             },
@@ -85,11 +132,15 @@ Deno.serve(async (req) => {
     );
 
     const result = await fcmResponse.json();
-    return new Response(JSON.stringify(result), { status: 200 });
+    return new Response(
+      JSON.stringify({ success: fcmResponse.ok, fcmStatus: fcmResponse.status, result }),
+      { status: 200 },
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ error: "Unexpected error", detail: error.message }),
+      { status: 500 },
+    );
   }
 });
 

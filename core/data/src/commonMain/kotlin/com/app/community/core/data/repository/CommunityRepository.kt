@@ -9,9 +9,12 @@ import com.app.community.core.model.MemberRole
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.random.Random
+
+private val lenientJson = Json { ignoreUnknownKeys = true }
 
 class CommunityRepository {
 
@@ -22,6 +25,19 @@ class CommunityRepository {
             postgrest.from("community_members")
                 .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("community_id, communities(*)")) {
                     filter { eq("user_id", userId) }
+                }
+                .decodeList<CommunityMemberWithCommunity>()
+                .mapNotNull { it.communities }
+        }
+
+    suspend fun getMyAdminCommunities(userId: String): AppResult<List<Community>> =
+        safeCall {
+            postgrest.from("community_members")
+                .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("community_id, communities(*)")) {
+                    filter {
+                        eq("user_id", userId)
+                        eq("role", "admin")
+                    }
                 }
                 .decodeList<CommunityMemberWithCommunity>()
                 .mapNotNull { it.communities }
@@ -51,10 +67,12 @@ class CommunityRepository {
         safeCall {
             // Server-side RPC handles lookup + membership insert atomically
             // using auth.uid() — no userId parameter needed
-            postgrest.rpc(
+            val result = postgrest.rpc(
                 function = "join_community_by_invite",
                 parameters = buildJsonObject { put("p_invite_code", inviteCode) },
-            ).decodeSingle<Community>()
+            )
+            // RPC returns a single JSON object, not an array
+            lenientJson.decodeFromString<Community>(result.data)
         }
 
     suspend fun getMembers(communityId: String): AppResult<List<CommunityMember>> =

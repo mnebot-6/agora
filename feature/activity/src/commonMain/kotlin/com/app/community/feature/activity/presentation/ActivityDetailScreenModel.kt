@@ -2,6 +2,7 @@ package com.app.community.feature.activity.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 data class SlotWithProfile(
     val slot: Slot,
     val profile: Profile? = null,
+    val positionIds: List<String> = emptyList(),
     val positionNames: List<String> = emptyList(),
 )
 
@@ -72,6 +74,11 @@ class ActivityDetailScreenModel(
 
     init {
         load()
+        screenModelScope.launch {
+            RefreshBus.events.collect { tag ->
+                if (tag == RefreshBus.ACTIVITY_DETAIL) load()
+            }
+        }
     }
 
     fun load() {
@@ -186,12 +193,13 @@ class ActivityDetailScreenModel(
         }
         val profileMap = profiles.associateBy { it.id }
         return slots.map { slot ->
-            val posNames = slotPositionMap[slot.id]
-                ?.mapNotNull { sp -> positionMap[sp.positionId]?.name }
-                ?: emptyList()
+            val slotPositionEntries = slotPositionMap[slot.id] ?: emptyList()
+            val posIds = slotPositionEntries.map { it.positionId }
+            val posNames = slotPositionEntries.mapNotNull { sp -> positionMap[sp.positionId]?.name }
             SlotWithProfile(
                 slot = slot,
                 profile = slot.reservedBy?.let { profileMap[it] },
+                positionIds = posIds,
                 positionNames = posNames,
             )
         }
@@ -306,6 +314,7 @@ class ActivityDetailScreenModel(
         screenModelScope.launch {
             activityRepository.updateActivityStatus(activityId, ActivityStatus.ARCHIVED)
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.ACTIVITIES, RefreshBus.COMMUNITY_DETAIL)
                     _actionMessage.value = "Actividad archivada"
                     load()
                 }
@@ -319,6 +328,7 @@ class ActivityDetailScreenModel(
         screenModelScope.launch {
             activityRepository.deleteActivity(activityId)
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.ACTIVITIES, RefreshBus.COMMUNITY_DETAIL)
                     _actionMessage.value = "Actividad eliminada"
                     _deleted.value = true
                 }

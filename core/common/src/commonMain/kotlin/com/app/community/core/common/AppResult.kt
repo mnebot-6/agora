@@ -36,5 +36,17 @@ sealed class AppResult<out T> {
 inline fun <T> safeCall(block: () -> T): AppResult<T> = try {
     AppResult.Success(block())
 } catch (e: Exception) {
-    AppResult.Error(e.message ?: "Unknown error", e)
+    AppResult.Error(extractUserMessage(e.message), e)
+}
+
+/**
+ * Extracts a clean, user-facing message from Supabase/HTTP exception messages
+ * that may contain URLs, headers, and JWT tokens.
+ */
+fun extractUserMessage(raw: String?): String {
+    if (raw.isNullOrBlank()) return "Error desconocido"
+    // Supabase exceptions format: "message\nURL: ...\nHeaders: ..."
+    // Extract only the first line (the actual error message)
+    val firstLine = raw.lineSequence().first().trim()
+    return firstLine.ifBlank { "Error desconocido" }
 }

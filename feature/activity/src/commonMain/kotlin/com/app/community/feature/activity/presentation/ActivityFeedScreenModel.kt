@@ -2,6 +2,7 @@ package com.app.community.feature.activity.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
@@ -17,6 +18,7 @@ sealed class ActivityFeedUiState {
     data class Content(
         val activities: List<Activity>,
         val communities: List<Community> = emptyList(),
+        val adminCommunities: List<Community> = emptyList(),
         val showCommunityPicker: Boolean = false,
     ) : ActivityFeedUiState()
     data class Error(val message: String) : ActivityFeedUiState()
@@ -33,6 +35,11 @@ class ActivityFeedScreenModel(
 
     init {
         load()
+        screenModelScope.launch {
+            RefreshBus.events.collect { tag ->
+                if (tag == RefreshBus.ACTIVITIES) load()
+            }
+        }
     }
 
     fun load() {
@@ -46,11 +53,15 @@ class ActivityFeedScreenModel(
             activityRepository.getUpcomingActivities()
                 .onSuccess { activities ->
                     var communities = emptyList<Community>()
+                    var adminCommunities = emptyList<Community>()
                     communityRepository.getMyCommunities(userId)
                         .onSuccess { communities = it }
+                    communityRepository.getMyAdminCommunities(userId)
+                        .onSuccess { adminCommunities = it }
                     _state.value = ActivityFeedUiState.Content(
                         activities = activities,
                         communities = communities,
+                        adminCommunities = adminCommunities,
                     )
                 }
                 .onError { msg, _ ->

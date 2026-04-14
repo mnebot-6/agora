@@ -121,13 +121,16 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { navigator.push(CreateActivityScreen(communityId)) },
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary,
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_detail_create_activity_cd))
+                val isAdmin = (uiState as? CommunityDetailScreenModel.UiState.Content)?.isAdmin == true
+                if (isAdmin) {
+                    FloatingActionButton(
+                        onClick = { navigator.push(CreateActivityScreen(communityId)) },
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary,
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_detail_create_activity_cd))
+                    }
                 }
             },
         ) { padding ->

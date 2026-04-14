@@ -2,6 +2,7 @@ package com.app.community.feature.activity.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.SlotRepository
@@ -340,6 +341,7 @@ class CreateActivityScreenModel(
                             createPositionedSlots(activity.id, s)
                         }
                     }
+                    RefreshBus.emit(RefreshBus.ACTIVITIES, RefreshBus.COMMUNITY_DETAIL)
                     _state.update { it.copy(status = CreateActivityStatus.Success) }
                 }
                 .onError { msg, _ ->

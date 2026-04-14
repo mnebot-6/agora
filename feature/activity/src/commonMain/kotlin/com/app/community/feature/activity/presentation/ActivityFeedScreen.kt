@@ -63,17 +63,18 @@ class ActivityFeedScreen : Screen {
                 )
             },
             floatingActionButton = {
-                if (state is ActivityFeedUiState.Content) {
+                val content = state as? ActivityFeedUiState.Content
+                if (content != null && content.adminCommunities.isNotEmpty()) {
                     FloatingActionButton(
                         onClick = {
-                            val content = state as ActivityFeedUiState.Content
-                            if (content.communities.size == 1) {
-                                navigator.push(CreateActivityScreen(content.communities.first().id))
+                            if (content.adminCommunities.size == 1) {
+                                navigator.push(CreateActivityScreen(content.adminCommunities.first().id))
                             } else {
                                 screenModel.showCommunityPicker()
                             }
                         },
-                        containerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary,
                     ) {
                         Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.feed_create_activity))
                     }
@@ -84,13 +85,13 @@ class ActivityFeedScreen : Screen {
                 is ActivityFeedUiState.Loading -> LoadingScreen(Modifier.padding(padding))
                 is ActivityFeedUiState.Error -> ErrorScreen(s.message, onRetry = screenModel::load, modifier = Modifier.padding(padding))
                 is ActivityFeedUiState.Content -> {
-                    if (s.showCommunityPicker && s.communities.size > 1) {
+                    if (s.showCommunityPicker && s.adminCommunities.size > 1) {
                         AlertDialog(
                             onDismissRequest = screenModel::hideCommunityPicker,
                             title = { Text(stringResource(Res.string.feed_select_community)) },
                             text = {
                                 Column {
-                                    s.communities.forEach { community ->
+                                    s.adminCommunities.forEach { community ->
                                         TextButton(
                                             onClick = {
                                                 screenModel.hideCommunityPicker()

@@ -3,11 +3,11 @@ package com.app.community.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +35,7 @@ object AgoraTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val icon = rememberVectorPainter(Icons.Default.Home)
+            val icon = rememberVectorPainter(Icons.Default.AccountBalance)
             val title = stringResource(Res.string.tab_agora)
             return remember(title) { TabOptions(index = 0u, title = title, icon = icon) }
         }
@@ -50,7 +50,7 @@ object CommunitiesTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val icon = rememberVectorPainter(Icons.AutoMirrored.Filled.List)
+            val icon = rememberVectorPainter(Icons.Default.Groups)
             val title = stringResource(Res.string.tab_communities)
             return remember(title) { TabOptions(index = 1u, title = title, icon = icon) }
         }
@@ -74,7 +74,7 @@ object ActivitiesTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val icon = rememberVectorPainter(Icons.Default.DateRange)
+            val icon = rememberVectorPainter(Icons.Default.Event)
             val title = stringResource(Res.string.tab_activities)
             return remember(title) { TabOptions(index = 2u, title = title, icon = icon) }
         }
@@ -89,7 +89,7 @@ object NotificationsTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val icon = rememberVectorPainter(Icons.Default.Notifications)
+            val icon = rememberVectorPainter(Icons.Default.Campaign)
             val title = stringResource(Res.string.tab_notifications)
             return remember(title) { TabOptions(index = 3u, title = title, icon = icon) }
         }
@@ -104,7 +104,7 @@ object ProfileTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val icon = rememberVectorPainter(Icons.Default.Person)
+            val icon = rememberVectorPainter(Icons.Default.AccountCircle)
             val title = stringResource(Res.string.tab_profile)
             return remember(title) { TabOptions(index = 4u, title = title, icon = icon) }
         }

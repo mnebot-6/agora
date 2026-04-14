@@ -2,6 +2,7 @@ package com.app.community.feature.community.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.domain.community.CreateCommunityUseCase
 import com.app.community.core.model.Community
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +50,7 @@ class CreateCommunityScreenModel(
                 description = description.trim().ifBlank { null },
             )
                 .onSuccess { community ->
+                    RefreshBus.emit(RefreshBus.COMMUNITIES)
                     _uiState.value = UiState.Success(community)
                 }
                 .onError { message, _ ->

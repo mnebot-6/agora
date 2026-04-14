@@ -326,6 +326,7 @@ private fun ActivityDetailContent(
                         queue = state.substituteQueue,
                         positions = emptyList(),
                         currentUserId = state.currentUserId,
+                        isUserJoined = state.isUserJoined,
                         onJoinQueue = { screenModel.joinSubstituteQueue() },
                         onLeaveQueue = { screenModel.leaveSubstituteQueue() },
                     )
@@ -363,15 +364,20 @@ private fun ActivityDetailContent(
                 }
             }
 
-            // Substitute queue with position filter
+            // Substitute queue — show when any position has all its slots occupied
+            val fullPositions = state.positions.filter { position ->
+                val slotsForPosition = state.slots.filter { it.positionIds.contains(position.id) }
+                slotsForPosition.isNotEmpty() && slotsForPosition.none { it.slot.status == SlotStatus.AVAILABLE }
+            }
             val allOccupied = state.slots.all { it.slot.status != SlotStatus.AVAILABLE }
-            if (allOccupied) {
+            if (fullPositions.isNotEmpty() || allOccupied) {
                 item { FlutedColumnDivider() }
                 item {
                     SubstituteQueueSection(
                         queue = state.substituteQueue,
-                        positions = state.positions,
+                        positions = fullPositions,
                         currentUserId = state.currentUserId,
+                        isUserJoined = state.isUserJoined,
                         onJoinQueue = { positionId -> screenModel.joinSubstituteQueue(positionId) },
                         onLeaveQueue = { screenModel.leaveSubstituteQueue() },
                     )
@@ -640,6 +646,7 @@ private fun SubstituteQueueSection(
     queue: List<SubstituteEntry>,
     positions: List<Position>,
     currentUserId: String,
+    isUserJoined: Boolean,
     onJoinQueue: (positionId: String?) -> Unit,
     onLeaveQueue: () -> Unit,
 ) {
@@ -685,7 +692,7 @@ private fun SubstituteQueueSection(
                 variant = AgoraButtonVariant.Danger,
                 modifier = Modifier.fillMaxWidth(),
             )
-        } else {
+        } else if (!isUserJoined) {
             if (positions.isNotEmpty()) {
                 Text(
                     stringResource(Res.string.detail_join_substitute_for),

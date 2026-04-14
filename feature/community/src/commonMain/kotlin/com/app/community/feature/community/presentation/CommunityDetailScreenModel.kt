@@ -3,6 +3,7 @@ package com.app.community.feature.community.presentation
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.data.repository.ActivityRepository
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.model.Activity
@@ -49,6 +50,13 @@ class CommunityDetailScreenModel(
 
     init {
         loadDetails()
+        screenModelScope.launch {
+            RefreshBus.events.collect { tag ->
+                if (tag == RefreshBus.COMMUNITY_DETAIL || tag == RefreshBus.ACTIVITIES) {
+                    loadDetails()
+                }
+            }
+        }
     }
 
     fun refresh() {
@@ -124,6 +132,7 @@ class CommunityDetailScreenModel(
                 name = name,
                 description = current.editDescription.trim().ifBlank { null },
             ).onSuccess {
+                RefreshBus.emit(RefreshBus.COMMUNITIES)
                 _actionMessage.value = "Comunidad actualizada"
                 _uiState.value = current.copy(showEditDialog = false)
                 loadDetails()
@@ -149,6 +158,7 @@ class CommunityDetailScreenModel(
         screenModelScope.launch {
             communityRepository.deleteCommunity(communityId)
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.COMMUNITIES)
                     _actionMessage.value = "Comunidad eliminada"
                     _deleted.value = true
                 }

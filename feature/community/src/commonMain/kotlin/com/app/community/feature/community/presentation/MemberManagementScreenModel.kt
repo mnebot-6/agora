@@ -2,6 +2,7 @@ package com.app.community.feature.community.presentation
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.model.CommunityMember
@@ -59,6 +60,7 @@ class MemberManagementScreenModel(
         screenModelScope.launch {
             communityRepository.updateMemberRole(communityId, member.userId, newRole)
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.COMMUNITY_DETAIL)
                     _state.value = _state.value.copy(
                         actionMessage = if (newRole == MemberRole.ADMIN) {
                             "${member.profiles?.displayName ?: "Usuario"} ahora es admin"
@@ -78,6 +80,7 @@ class MemberManagementScreenModel(
         screenModelScope.launch {
             communityRepository.removeMember(communityId, member.userId)
                 .onSuccess {
+                    RefreshBus.emit(RefreshBus.COMMUNITY_DETAIL)
                     _state.value = _state.value.copy(
                         actionMessage = "${member.profiles?.displayName ?: "Usuario"} eliminado",
                     )
