@@ -1,0 +1,74 @@
+# XcodeGen spec — generates iosApp.xcodeproj from this file.
+#
+# Usage (on Mac):
+#   brew install xcodegen
+#   cd iosApp
+#   xcodegen generate
+#   open iosApp.xcodeproj
+#
+# After first open in Xcode:
+#   - Add Firebase SDK via SPM: https://github.com/firebase/firebase-ios-sdk
+#     Products: FirebaseMessaging (required), FirebaseAnalytics (optional)
+#   - Drop GoogleService-Info.plist into iosApp/iosApp/ (downloaded from Firebase Console)
+#   - Enable capabilities: Push Notifications + Background Modes (Remote notifications)
+#   - Set your Apple Developer Team in Signing & Capabilities
+#   - Commit the generated Package.resolved so CI can reproduce the build
+#
+# Regenerate anytime with `xcodegen generate`. SPM additions persist in pbxproj
+# via Package.resolved; XcodeGen leaves SPM-managed packages alone.
+
+name: iosApp
+
+options:
+  bundleIdPrefix: com.app
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    # Required so the Kotlin Gradle Run Script can write into build dirs.
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Kotlin/Native produces the ComposeApp.framework under this path
+    # (matches the output of :composeApp:embedAndSignAppleFrameworkForXcode).
+    FRAMEWORK_SEARCH_PATHS:
+      - $(inherited)
+      - $(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: iosApp
+        excludes:
+          - "**/*.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.app.agora
+        INFOPLIST_FILE: iosApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"    # iPhone + iPad
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Let Xcode manage signing the first time; DEVELOPMENT_TEAM is set in Xcode UI.
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - framework: $(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/ComposeApp.framework
+        embed: true
+        codeSign: true
+    preBuildScripts:
+      - name: "Build Kotlin Multiplatform framework"
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/.."
+          if [ "$(uname)" = "Darwin" ]; then
+            ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
+          else
+            echo "warning: Skipping Gradle framework build (not on macOS)"
+          fi
