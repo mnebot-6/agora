@@ -8,6 +8,7 @@ import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.data.repository.SlotTemplateRepository
+import com.app.community.core.data.repository.TagRepository
 import com.app.community.core.domain.auth.GetAuthStateUseCase
 import com.app.community.core.domain.auth.SignInUseCase
 import com.app.community.core.domain.auth.SignUpUseCase
@@ -40,6 +41,7 @@ val repositoryModule = module {
     single { SlotRepository() }
     single { NotificationRepository() }
     single { SlotTemplateRepository() }
+    single { TagRepository() }
 }
 
 val useCaseModule = module {
