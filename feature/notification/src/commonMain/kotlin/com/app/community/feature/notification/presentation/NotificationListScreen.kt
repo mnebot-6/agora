@@ -152,6 +152,9 @@ private fun NotificationRow(
         NotificationType.NEW_ACTIVITY -> stringResource(Res.string.type_new_activity)
         NotificationType.SLOT_RELEASED -> stringResource(Res.string.type_slot_released)
         NotificationType.SUBSTITUTE_PROMOTED -> stringResource(Res.string.type_substitute_promoted)
+        NotificationType.JOIN_REQUEST_RECEIVED -> stringResource(Res.string.type_join_request_received)
+        NotificationType.JOIN_REQUEST_APPROVED -> stringResource(Res.string.type_join_request_approved)
+        NotificationType.JOIN_REQUEST_REJECTED -> stringResource(Res.string.type_join_request_rejected)
     }
 
     Row(

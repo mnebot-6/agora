@@ -153,6 +153,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                         screenModel = screenModel,
                         onActivityClick = { activityId -> navigator.push(ActivityDetailScreen(activityId)) },
                         onManageMembers = { navigator.push(MemberManagementScreen(communityId)) },
+                        onViewPendingRequests = { navigator.push(JoinRequestsScreen(communityId)) },
                         modifier = Modifier.padding(padding),
                     )
                 }
@@ -167,6 +168,7 @@ private fun CommunityDetailContent(
     screenModel: CommunityDetailScreenModel,
     onActivityClick: (String) -> Unit,
     onManageMembers: () -> Unit,
+    onViewPendingRequests: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val community = state.community
@@ -290,7 +292,7 @@ private fun CommunityDetailContent(
                             Res.string.community_pending_requests_count,
                             state.pendingRequestsCount,
                         ),
-                        onClick = { navigator.push(JoinRequestsScreen(communityId)) },
+                        onClick = onViewPendingRequests,
                         variant = AgoraButtonVariant.Secondary,
                         modifier = Modifier.fillMaxWidth(),
                     )
