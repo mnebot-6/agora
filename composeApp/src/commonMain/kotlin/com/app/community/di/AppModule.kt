@@ -27,6 +27,7 @@ import com.app.community.feature.community.presentation.CommunityDetailScreenMod
 import com.app.community.feature.community.presentation.CommunityListScreenModel
 import com.app.community.feature.community.presentation.CreateCommunityScreenModel
 import com.app.community.feature.community.presentation.JoinCommunityScreenModel
+import com.app.community.feature.community.presentation.JoinRequestsScreenModel
 import com.app.community.feature.community.presentation.MemberManagementScreenModel
 import com.app.community.feature.notification.presentation.NotificationListScreenModel
 import com.app.community.dashboard.DashboardScreenModel
@@ -115,6 +116,12 @@ val screenModelModule = module {
     factory {
         JoinCommunityScreenModel(
             joinCommunityUseCase = get(),
+        )
+    }
+    factory { params ->
+        JoinRequestsScreenModel(
+            communityId = params.get(),
+            communityRepository = get(),
         )
     }
     factory { params ->

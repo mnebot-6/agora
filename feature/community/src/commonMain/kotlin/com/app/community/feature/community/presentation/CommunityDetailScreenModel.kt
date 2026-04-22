@@ -9,6 +9,7 @@ import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
+import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ class CommunityDetailScreenModel(
             val editName: String = "",
             val editDescription: String = "",
             val showDeleteDialog: Boolean = false,
+            val pendingRequestsCount: Int = 0,
         ) : UiState()
 
         data class Error(val message: String) : UiState()
@@ -85,12 +87,20 @@ class CommunityDetailScreenModel(
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
             val isCreator = community.createdBy == userId
 
+            val pendingRequestsCount =
+                if (isAdmin && community.visibility == CommunityVisibility.PUBLIC_APPROVAL) {
+                    communityRepository.getPendingJoinRequests(communityId).getOrNull()?.size ?: 0
+                } else {
+                    0
+                }
+
             _uiState.value = UiState.Content(
                 community = community,
                 members = members,
                 activities = activities,
                 isAdmin = isAdmin,
                 isCreator = isCreator,
+                pendingRequestsCount = pendingRequestsCount,
             )
         }
     }

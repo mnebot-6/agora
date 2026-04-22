@@ -281,6 +281,21 @@ private fun CommunityDetailContent(
                     }
                 }
             }
+
+            if (state.pendingRequestsCount > 0) {
+                item {
+                    Spacer(Modifier.height(AgoraSpacing.sm))
+                    AgoraButton(
+                        text = stringResource(
+                            Res.string.community_pending_requests_count,
+                            state.pendingRequestsCount,
+                        ),
+                        onClick = { navigator.push(JoinRequestsScreen(communityId)) },
+                        variant = AgoraButtonVariant.Secondary,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
 
         // Invite code chip
