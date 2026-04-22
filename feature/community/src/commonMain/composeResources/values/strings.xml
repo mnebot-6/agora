@@ -39,6 +39,23 @@
     <string name="create_community_name_label">Name *</string>
     <string name="create_community_description_label">Description</string>
     <string name="create_community_button">Create</string>
+    <string name="create_community_visibility_label">Visibility</string>
+    <string name="create_community_visibility_public_open">Public</string>
+    <string name="create_community_visibility_public_open_desc">Shown in Explore. Anyone can join.</string>
+    <string name="create_community_visibility_public_approval">Public with approval</string>
+    <string name="create_community_visibility_public_approval_desc">Shown in Explore. You approve each request.</string>
+    <string name="create_community_visibility_private">Private</string>
+    <string name="create_community_visibility_private_desc">Hidden. Invite code only.</string>
+    <string name="create_community_tags_label">Categories (1 to 3)</string>
+    <string name="create_community_tags_error_min">Select at least 1 category</string>
+    <string name="create_community_tags_error_max">Maximum 3 categories</string>
+    <string name="community_pending_requests_badge">Pending requests</string>
+    <string name="community_pending_requests_count">%1$d pending</string>
+    <string name="join_requests_title">Join requests</string>
+    <string name="join_requests_empty">No pending requests</string>
+    <string name="join_requests_approve">Approve</string>
+    <string name="join_requests_reject">Reject</string>
+    <string name="join_request_message_placeholder">Message for admin (optional)</string>
 
     <!-- JoinCommunityScreen -->
     <string name="join_title">Join community</string>

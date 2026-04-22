@@ -109,6 +109,7 @@ val screenModelModule = module {
     factory {
         CreateCommunityScreenModel(
             createCommunityUseCase = get(),
+            tagRepository = get(),
         )
     }
     factory {

@@ -39,6 +39,23 @@
     <string name="create_community_name_label">Nombre *</string>
     <string name="create_community_description_label">Descripcion</string>
     <string name="create_community_button">Crear</string>
+    <string name="create_community_visibility_label">Visibilidad</string>
+    <string name="create_community_visibility_public_open">Pública</string>
+    <string name="create_community_visibility_public_open_desc">Aparece en Explorar. Cualquiera puede unirse.</string>
+    <string name="create_community_visibility_public_approval">Pública con aprobación</string>
+    <string name="create_community_visibility_public_approval_desc">Aparece en Explorar. Tú apruebas cada solicitud.</string>
+    <string name="create_community_visibility_private">Privada</string>
+    <string name="create_community_visibility_private_desc">Oculta. Solo por código de invitación.</string>
+    <string name="create_community_tags_label">Categorías (1 a 3)</string>
+    <string name="create_community_tags_error_min">Selecciona al menos 1 categoría</string>
+    <string name="create_community_tags_error_max">Máximo 3 categorías</string>
+    <string name="community_pending_requests_badge">Solicitudes pendientes</string>
+    <string name="community_pending_requests_count">%1$d pendientes</string>
+    <string name="join_requests_title">Solicitudes de unión</string>
+    <string name="join_requests_empty">No hay solicitudes pendientes</string>
+    <string name="join_requests_approve">Aprobar</string>
+    <string name="join_requests_reject">Rechazar</string>
+    <string name="join_request_message_placeholder">Mensaje para el admin (opcional)</string>
 
     <!-- JoinCommunityScreen -->
     <string name="join_title">Unirse a comunidad</string>
