@@ -10,6 +10,9 @@ enum class NotificationType {
     @SerialName("new_activity") NEW_ACTIVITY,
     @SerialName("slot_released") SLOT_RELEASED,
     @SerialName("substitute_promoted") SUBSTITUTE_PROMOTED,
+    @SerialName("join_request_received") JOIN_REQUEST_RECEIVED,
+    @SerialName("join_request_approved") JOIN_REQUEST_APPROVED,
+    @SerialName("join_request_rejected") JOIN_REQUEST_REJECTED,
 }
 
 @Serializable

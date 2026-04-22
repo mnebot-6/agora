@@ -9,6 +9,10 @@ data class Community(
     val name: String,
     val description: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
-    @SerialName("invite_code") val inviteCode: String,
-    @SerialName("created_by") val createdBy: String,
+    @SerialName("invite_code") val inviteCode: String? = null,
+    @SerialName("created_by") val createdBy: String? = null,
+    val visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
+    val tags: List<Tag> = emptyList(),
+    @SerialName("member_count") val memberCount: Int? = null,
+    @SerialName("activity_count_upcoming") val activityCountUpcoming: Int? = null,
 )

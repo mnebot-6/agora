@@ -289,7 +289,7 @@ private fun CommunityDetailContent(
                 elevation = AgoraElevation.none,
                 borderColor = MaterialTheme.agoraColors.gildedVolute,
                 onClick = {
-                    clipboardManager.setText(AnnotatedString(community.inviteCode))
+                    clipboardManager.setText(AnnotatedString(community.inviteCode.orEmpty()))
                 },
             ) {
                 Row(
@@ -300,7 +300,7 @@ private fun CommunityDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode),
+                        text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode.orEmpty()),
                         style = MaterialTheme.typography.labelLarge.copy(
                             letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
                         ),
