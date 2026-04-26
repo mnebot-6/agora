@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.items
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -65,6 +67,14 @@ class CommunityListScreen : Screen {
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
+                    actions = {
+                        IconButton(onClick = { navigator.push(ExploreCommunitiesScreen()) }) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(Res.string.explore_title),
+                            )
+                        }
+                    },
                 )
             },
             floatingActionButton = {
@@ -98,6 +108,7 @@ class CommunityListScreen : Screen {
                             navigator.push(CommunityDetailScreen(communityId = community.id))
                         },
                         onJoinClick = { navigator.push(JoinCommunityScreen()) },
+                        onExploreClick = { navigator.push(ExploreCommunitiesScreen()) },
                         modifier = Modifier.padding(padding),
                     )
                 }
@@ -111,6 +122,7 @@ private fun CommunityListContent(
     communities: List<Community>,
     onCommunityClick: (Community) -> Unit,
     onJoinClick: () -> Unit,
+    onExploreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (communities.isEmpty()) {
@@ -142,6 +154,12 @@ private fun CommunityListContent(
                         onClick = onJoinClick,
                         variant = AgoraButtonVariant.Secondary,
                     )
+                    Spacer(Modifier.height(AgoraSpacing.sm))
+                    AgoraButton(
+                        text = stringResource(Res.string.explore_title),
+                        onClick = onExploreClick,
+                        variant = AgoraButtonVariant.Secondary,
+                    )
                 }
             }
         }
@@ -158,6 +176,14 @@ private fun CommunityListContent(
                 AgoraButton(
                     text = stringResource(Res.string.community_list_join_button),
                     onClick = onJoinClick,
+                    variant = AgoraButtonVariant.Secondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                AgoraButton(
+                    text = stringResource(Res.string.explore_title),
+                    onClick = onExploreClick,
                     variant = AgoraButtonVariant.Secondary,
                     modifier = Modifier.fillMaxWidth(),
                 )
