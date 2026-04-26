@@ -1,17 +1,23 @@
 package com.app.community.feature.community.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,11 +25,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -48,6 +56,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
+import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
@@ -64,6 +73,7 @@ import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.CreateActivityScreen
 import agora.feature.community.generated.resources.Res
 import agora.feature.community.generated.resources.*
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -178,42 +188,7 @@ private fun CommunityDetailContent(
 
     // Edit dialog
     if (state.showEditDialog) {
-        AlertDialog(
-            onDismissRequest = screenModel::dismissEditDialog,
-            title = { Text(stringResource(Res.string.community_detail_edit_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
-                    OutlinedTextField(
-                        value = state.editName,
-                        onValueChange = screenModel::onEditNameChange,
-                        label = { Text(stringResource(Res.string.community_detail_edit_name_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = state.editDescription,
-                        onValueChange = screenModel::onEditDescriptionChange,
-                        label = { Text(stringResource(Res.string.community_detail_edit_description_label)) },
-                        minLines = 2,
-                        maxLines = 5,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = screenModel::saveCommunity,
-                    enabled = state.editName.isNotBlank(),
-                ) {
-                    Text(stringResource(Res.string.community_detail_edit_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = screenModel::dismissEditDialog) {
-                    Text(stringResource(Res.string.community_detail_edit_cancel))
-                }
-            },
-        )
+        EditCommunityDialog(state = state, screenModel = screenModel)
     }
 
     // Delete confirmation dialog
@@ -374,6 +349,123 @@ private fun CommunityDetailContent(
             }
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EditCommunityDialog(
+    state: CommunityDetailScreenModel.UiState.Content,
+    screenModel: CommunityDetailScreenModel,
+) {
+    AlertDialog(
+        onDismissRequest = screenModel::dismissEditDialog,
+        title = { Text(stringResource(Res.string.community_detail_edit_title)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+            ) {
+                OutlinedTextField(
+                    value = state.editName,
+                    onValueChange = screenModel::onEditNameChange,
+                    label = { Text(stringResource(Res.string.community_detail_edit_name_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = state.editDescription,
+                    onValueChange = screenModel::onEditDescriptionChange,
+                    label = { Text(stringResource(Res.string.community_detail_edit_description_label)) },
+                    minLines = 2,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(AgoraSpacing.xs))
+                Text(
+                    text = stringResource(Res.string.create_community_visibility_label),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                CommunityVisibility.entries.forEach { visibility ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { screenModel.onEditVisibilityChange(visibility) }
+                            .padding(vertical = AgoraSpacing.xs),
+                    ) {
+                        RadioButton(
+                            selected = state.editVisibility == visibility,
+                            onClick = { screenModel.onEditVisibilityChange(visibility) },
+                        )
+                        Spacer(Modifier.width(AgoraSpacing.sm))
+                        Column {
+                            Text(
+                                text = stringResource(visibility.editLabelRes()),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                text = stringResource(visibility.editDescRes()),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(AgoraSpacing.xs))
+                Text(
+                    text = stringResource(Res.string.create_community_tags_label),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                ) {
+                    state.availableTags.forEach { tag ->
+                        val selected = state.editSelectedTagIds.contains(tag.id)
+                        FilterChip(
+                            selected = selected,
+                            onClick = { screenModel.onEditTagToggle(tag.id) },
+                            label = {
+                                val icon = tag.icon?.let { "$it " }.orEmpty()
+                                Text(icon + tag.nameEs)
+                            },
+                            enabled = selected || state.editSelectedTagIds.size < 3,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = screenModel::saveCommunity,
+                enabled = state.editName.isNotBlank(),
+            ) {
+                Text(stringResource(Res.string.community_detail_edit_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = screenModel::dismissEditDialog) {
+                Text(stringResource(Res.string.community_detail_edit_cancel))
+            }
+        },
+    )
+}
+
+private fun CommunityVisibility.editLabelRes(): StringResource = when (this) {
+    CommunityVisibility.PUBLIC_OPEN -> Res.string.create_community_visibility_public_open
+    CommunityVisibility.PUBLIC_APPROVAL -> Res.string.create_community_visibility_public_approval
+    CommunityVisibility.PRIVATE -> Res.string.create_community_visibility_private
+}
+
+private fun CommunityVisibility.editDescRes(): StringResource = when (this) {
+    CommunityVisibility.PUBLIC_OPEN -> Res.string.create_community_visibility_public_open_desc
+    CommunityVisibility.PUBLIC_APPROVAL -> Res.string.create_community_visibility_public_approval_desc
+    CommunityVisibility.PRIVATE -> Res.string.create_community_visibility_private_desc
 }
 
 @Composable

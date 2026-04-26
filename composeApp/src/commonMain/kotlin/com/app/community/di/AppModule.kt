@@ -25,7 +25,9 @@ import com.app.community.feature.auth.presentation.ProfileScreenModel
 import com.app.community.feature.auth.presentation.RegisterScreenModel
 import com.app.community.feature.community.presentation.CommunityDetailScreenModel
 import com.app.community.feature.community.presentation.CommunityListScreenModel
+import com.app.community.feature.community.presentation.CommunityPreviewScreenModel
 import com.app.community.feature.community.presentation.CreateCommunityScreenModel
+import com.app.community.feature.community.presentation.ExploreCommunitiesScreenModel
 import com.app.community.feature.community.presentation.JoinCommunityScreenModel
 import com.app.community.feature.community.presentation.JoinRequestsScreenModel
 import com.app.community.feature.community.presentation.MemberManagementScreenModel
@@ -100,6 +102,7 @@ val screenModelModule = module {
             communityRepository = get(),
             activityRepository = get(),
             authRepository = get(),
+            tagRepository = get(),
         )
     }
     factory {
@@ -122,6 +125,19 @@ val screenModelModule = module {
         JoinRequestsScreenModel(
             communityId = params.get(),
             communityRepository = get(),
+        )
+    }
+    factory {
+        ExploreCommunitiesScreenModel(
+            communityRepository = get(),
+            tagRepository = get(),
+        )
+    }
+    factory { params ->
+        CommunityPreviewScreenModel(
+            communityId = params.get(),
+            communityRepository = get(),
+            authRepository = get(),
         )
     }
     factory { params ->

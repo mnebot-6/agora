@@ -6,11 +6,13 @@ import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
+import com.app.community.core.data.repository.TagRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
+import com.app.community.core.model.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +23,7 @@ class CommunityDetailScreenModel(
     private val communityRepository: CommunityRepository,
     private val activityRepository: ActivityRepository,
     private val authRepository: AuthRepository,
+    private val tagRepository: TagRepository,
 ) : ScreenModel {
 
     sealed class UiState {
@@ -34,6 +37,9 @@ class CommunityDetailScreenModel(
             val showEditDialog: Boolean = false,
             val editName: String = "",
             val editDescription: String = "",
+            val editVisibility: CommunityVisibility = CommunityVisibility.PRIVATE,
+            val editSelectedTagIds: Set<String> = emptySet(),
+            val availableTags: List<Tag> = emptyList(),
             val showDeleteDialog: Boolean = false,
             val pendingRequestsCount: Int = 0,
         ) : UiState()
@@ -113,7 +119,17 @@ class CommunityDetailScreenModel(
             showEditDialog = true,
             editName = current.community.name,
             editDescription = current.community.description.orEmpty(),
+            editVisibility = current.community.visibility,
+            editSelectedTagIds = current.community.tags.map { it.id }.toSet(),
         )
+        if (current.availableTags.isEmpty()) {
+            screenModelScope.launch {
+                tagRepository.getAllTags().onSuccess { tags ->
+                    val now = _uiState.value as? UiState.Content ?: return@onSuccess
+                    _uiState.value = now.copy(availableTags = tags)
+                }
+            }
+        }
     }
 
     fun dismissEditDialog() {
@@ -131,23 +147,60 @@ class CommunityDetailScreenModel(
         _uiState.value = current.copy(editDescription = description)
     }
 
+    fun onEditVisibilityChange(visibility: CommunityVisibility) {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(editVisibility = visibility)
+    }
+
+    fun onEditTagToggle(tagId: String) {
+        val current = _uiState.value as? UiState.Content ?: return
+        val newSet = when {
+            current.editSelectedTagIds.contains(tagId) -> current.editSelectedTagIds - tagId
+            current.editSelectedTagIds.size >= 3 -> current.editSelectedTagIds
+            else -> current.editSelectedTagIds + tagId
+        }
+        _uiState.value = current.copy(editSelectedTagIds = newSet)
+    }
+
     fun saveCommunity() {
         val current = _uiState.value as? UiState.Content ?: return
         val name = current.editName.trim()
         if (name.isBlank()) return
 
         screenModelScope.launch {
-            communityRepository.updateCommunity(
-                id = communityId,
-                name = name,
-                description = current.editDescription.trim().ifBlank { null },
-            ).onSuccess {
+            val nameOrDescChanged = name != current.community.name ||
+                current.editDescription.trim().ifBlank { null } != current.community.description
+            val visibilityChanged = current.editVisibility != current.community.visibility
+            val originalTagIds = current.community.tags.map { it.id }.toSet()
+            val tagsChanged = current.editSelectedTagIds != originalTagIds
+
+            var firstError: String? = null
+
+            if (nameOrDescChanged) {
+                communityRepository.updateCommunity(
+                    id = communityId,
+                    name = name,
+                    description = current.editDescription.trim().ifBlank { null },
+                ).onError { msg, _ -> firstError = firstError ?: msg }
+            }
+            if (firstError == null && visibilityChanged) {
+                communityRepository.updateCommunityVisibility(communityId, current.editVisibility)
+                    .onError { msg, _ -> firstError = firstError ?: msg }
+            }
+            if (firstError == null && tagsChanged) {
+                communityRepository.updateCommunityTags(
+                    communityId,
+                    current.editSelectedTagIds.toList(),
+                ).onError { msg, _ -> firstError = firstError ?: msg }
+            }
+
+            if (firstError == null) {
                 RefreshBus.emit(RefreshBus.COMMUNITIES)
                 _actionMessage.value = "Comunidad actualizada"
                 _uiState.value = current.copy(showEditDialog = false)
                 loadDetails()
-            }.onError { msg, _ ->
-                _actionMessage.value = "Error: $msg"
+            } else {
+                _actionMessage.value = "Error: $firstError"
             }
         }
     }
