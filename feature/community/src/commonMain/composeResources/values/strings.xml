@@ -46,9 +46,21 @@
     <string name="create_community_visibility_public_approval_desc">Shown in Explore. You approve each request.</string>
     <string name="create_community_visibility_private">Private</string>
     <string name="create_community_visibility_private_desc">Hidden. Invite code only.</string>
-    <string name="create_community_tags_label">Categories (1 to 3)</string>
-    <string name="create_community_tags_error_min">Select at least 1 category</string>
+    <string name="create_community_tags_label">Categories (up to 3)</string>
     <string name="create_community_tags_error_max">Maximum 3 categories</string>
+
+    <!-- ExploreCommunitiesScreen -->
+    <string name="explore_title">Explore</string>
+    <string name="explore_search_hint">Search communities</string>
+    <string name="explore_filter_all">All</string>
+    <string name="explore_no_results">No public communities found</string>
+
+    <!-- CommunityPreviewScreen -->
+    <string name="preview_member_count">%1$d members</string>
+    <string name="preview_join_button">Join</string>
+    <string name="preview_request_join_button">Request to join</string>
+    <string name="preview_already_member">Open</string>
+    <string name="preview_request_sent">Request sent — waiting for approval</string>
     <string name="community_pending_requests_badge">Pending requests</string>
     <string name="community_pending_requests_count">%1$d pending</string>
     <string name="join_requests_title">Join requests</string>

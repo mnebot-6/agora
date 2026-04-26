@@ -218,7 +218,7 @@ class CreateCommunityScreen : Screen {
                         text = stringResource(Res.string.create_community_button),
                         onClick = { screenModel.create() },
                         variant = AgoraButtonVariant.Primary,
-                        enabled = !isLoading && form.name.isNotBlank() && form.selectedTagIds.isNotEmpty(),
+                        enabled = !isLoading && form.name.isNotBlank(),
                         isLoading = isLoading,
                         modifier = Modifier.fillMaxWidth(),
                     )

@@ -69,10 +69,6 @@ class CreateCommunityScreenModel(
             _uiState.value = UiState.Error("Name is required")
             return
         }
-        if (state.selectedTagIds.isEmpty()) {
-            _uiState.value = UiState.Error("Select at least 1 category")
-            return
-        }
         screenModelScope.launch {
             _uiState.value = UiState.Loading
             createCommunityUseCase(

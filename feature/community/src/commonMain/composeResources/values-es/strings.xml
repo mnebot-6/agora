@@ -46,9 +46,21 @@
     <string name="create_community_visibility_public_approval_desc">Aparece en Explorar. Tú apruebas cada solicitud.</string>
     <string name="create_community_visibility_private">Privada</string>
     <string name="create_community_visibility_private_desc">Oculta. Solo por código de invitación.</string>
-    <string name="create_community_tags_label">Categorías (1 a 3)</string>
-    <string name="create_community_tags_error_min">Selecciona al menos 1 categoría</string>
+    <string name="create_community_tags_label">Categorías (hasta 3)</string>
     <string name="create_community_tags_error_max">Máximo 3 categorías</string>
+
+    <!-- ExploreCommunitiesScreen -->
+    <string name="explore_title">Explorar</string>
+    <string name="explore_search_hint">Buscar comunidades</string>
+    <string name="explore_filter_all">Todas</string>
+    <string name="explore_no_results">No hay comunidades públicas</string>
+
+    <!-- CommunityPreviewScreen -->
+    <string name="preview_member_count">%1$d miembros</string>
+    <string name="preview_join_button">Unirse</string>
+    <string name="preview_request_join_button">Solicitar unirse</string>
+    <string name="preview_already_member">Abrir</string>
+    <string name="preview_request_sent">Solicitud enviada — esperando aprobación</string>
     <string name="community_pending_requests_badge">Solicitudes pendientes</string>
     <string name="community_pending_requests_count">%1$d pendientes</string>
     <string name="join_requests_title">Solicitudes de unión</string>
