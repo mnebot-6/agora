@@ -16,7 +16,7 @@ class NotificationRepository {
                 .select {
                     filter { eq("user_id", userId) }
                     order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-                    limit(50)
+                    limit(200)
                 }
                 .decodeList<Notification>()
         }
@@ -38,5 +38,17 @@ class NotificationRepository {
                         eq("read", false)
                     }
                 }
+        }
+
+    suspend fun deleteNotification(notificationId: String): AppResult<Unit> =
+        safeCall {
+            postgrest.from("notifications")
+                .delete { filter { eq("id", notificationId) } }
+        }
+
+    suspend fun deleteAll(userId: String): AppResult<Unit> =
+        safeCall {
+            postgrest.from("notifications")
+                .delete { filter { eq("user_id", userId) } }
         }
 }
