@@ -63,7 +63,7 @@ class CreateCommunityScreenModel(
         state.copy(selectedTagIds = newSet)
     }
 
-    fun create() {
+    fun create(parentId: String? = null) {
         val state = _form.value
         if (state.name.isBlank()) {
             _uiState.value = UiState.Error("Name is required")
@@ -76,8 +76,12 @@ class CreateCommunityScreenModel(
                 description = state.description.trim().ifBlank { null },
                 visibility = state.visibility,
                 tagIds = state.selectedTagIds.toList(),
+                parentId = parentId,
             )
                 .onSuccess { community ->
+                    if (parentId != null) {
+                        RefreshBus.emit(RefreshBus.COMMUNITY_DETAIL)
+                    }
                     RefreshBus.emit(RefreshBus.COMMUNITIES)
                     _uiState.value = UiState.Success(community)
                 }

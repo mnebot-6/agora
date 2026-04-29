@@ -111,6 +111,14 @@ data class CommunityPreviewScreen(val communityId: String) : Screen {
                             .verticalScroll(rememberScrollState())
                             .padding(AgoraSpacing.screenHorizontal),
                     ) {
+                        if (!community.breadcrumb.isNullOrBlank() && community.breadcrumb!!.contains(" › ")) {
+                            Text(
+                                text = community.breadcrumb!!.substringBeforeLast(" › "),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                            Spacer(Modifier.height(AgoraSpacing.xs))
+                        }
                         if (!community.description.isNullOrBlank()) {
                             Surface(
                                 color = MaterialTheme.agoraColors.parchment,

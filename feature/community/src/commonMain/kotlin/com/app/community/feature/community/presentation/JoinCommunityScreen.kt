@@ -59,14 +59,22 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
         }
 
         LaunchedEffect(uiState) {
-            if (uiState is JoinCommunityScreenModel.UiState.Success) {
-                delay(1500)
-                navigator.pop()
+            when (uiState) {
+                is JoinCommunityScreenModel.UiState.Success -> {
+                    delay(1500)
+                    navigator.pop()
+                }
+                is JoinCommunityScreenModel.UiState.Pending -> {
+                    delay(2500)
+                    navigator.pop()
+                }
+                else -> Unit
             }
         }
 
         val isLoading = uiState is JoinCommunityScreenModel.UiState.Loading
         val successState = uiState as? JoinCommunityScreenModel.UiState.Success
+        val pendingState = uiState as? JoinCommunityScreenModel.UiState.Pending
 
         Scaffold(
             topBar = {
@@ -120,7 +128,7 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
                             },
                             label = { Text(stringResource(Res.string.join_code_label)) },
                             singleLine = true,
-                            enabled = !isLoading && successState == null,
+                            enabled = !isLoading && successState == null && pendingState == null,
                             modifier = Modifier.fillMaxWidth(),
                             textStyle = MaterialTheme.typography.headlineSmall.copy(
                                 textAlign = TextAlign.Center,
@@ -146,6 +154,18 @@ data class JoinCommunityScreen(val initialCode: String = "") : Screen {
                             text = stringResource(Res.string.join_success, successState.community.name),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyLarge,
+                        )
+                    } else if (pendingState != null) {
+                        Text(
+                            text = stringResource(Res.string.join_pending_title),
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Spacer(Modifier.height(AgoraSpacing.xs))
+                        Text(
+                            text = stringResource(Res.string.join_pending_message, pendingState.community.name),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
                         AgoraButton(

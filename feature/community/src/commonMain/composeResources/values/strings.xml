@@ -32,6 +32,20 @@
     <string name="community_detail_delete_message">This action cannot be undone. All activities, slots and members will be deleted.</string>
     <string name="community_detail_delete_confirm">Delete</string>
     <string name="community_detail_delete_cancel">Cancel</string>
+    <string name="community_detail_leave">Leave community</string>
+    <string name="community_detail_leave_title">Leave community?</string>
+    <string name="community_detail_leave_message">You will lose access to its activities and chats. You can rejoin later if you have the invite code.</string>
+    <string name="community_detail_leave_confirm">Leave</string>
+    <string name="community_detail_leave_cancel">Cancel</string>
+    <string name="join_pending_title">Request sent</string>
+    <string name="join_pending_message">Your request to join %1$s is awaiting admin approval.</string>
+    <string name="community_detail_tab_activities">Activities</string>
+    <string name="community_detail_tab_subcommunities">Subcommunities</string>
+    <string name="community_detail_create_subcommunity">Create subcommunity</string>
+    <string name="community_detail_no_subcommunities">No subcommunities yet.</string>
+    <string name="community_detail_my_subcommunities">My subcommunities</string>
+    <string name="community_detail_available_subcommunities">Available</string>
+    <string name="create_community_subcommunity_of">Subcommunity of %1$s</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Create community</string>

@@ -1,7 +1,9 @@
 package com.app.community
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -84,7 +86,11 @@ private fun MainContent() {
                 }
             },
         ) { paddingValues ->
-            androidx.compose.foundation.layout.Box(Modifier.padding(paddingValues)) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
                 CurrentTab()
             }
         }

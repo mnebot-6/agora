@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -79,54 +80,63 @@ class ExploreCommunitiesScreen : Screen {
                 )
             },
         ) { padding ->
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = AgoraSpacing.screenHorizontal),
+                    .padding(padding),
+                contentPadding = PaddingValues(
+                    horizontal = AgoraSpacing.screenHorizontal,
+                    vertical = AgoraSpacing.md,
+                ),
+                verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
             ) {
-                Spacer(Modifier.height(AgoraSpacing.md))
-                OutlinedTextField(
-                    value = state.query,
-                    onValueChange = { screenModel.onQueryChange(it) },
-                    label = { Text(stringResource(Res.string.explore_search_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(AgoraSpacing.sm))
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
-                    verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
-                ) {
-                    FilterChip(
-                        selected = state.selectedTagIds.isEmpty(),
-                        onClick = { screenModel.clearTags() },
-                        label = { Text(stringResource(Res.string.explore_filter_all)) },
+                item {
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = { screenModel.onQueryChange(it) },
+                        label = { Text(stringResource(Res.string.explore_search_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    state.availableTags.forEach { tag ->
-                        val selected = state.selectedTagIds.contains(tag.id)
+                }
+                item {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                    ) {
                         FilterChip(
-                            selected = selected,
-                            onClick = { screenModel.onTagToggle(tag.id) },
-                            label = {
-                                val icon = tag.icon?.let { "$it " }.orEmpty()
-                                Text(icon + tag.nameEs)
-                            },
+                            selected = state.selectedTagIds.isEmpty(),
+                            onClick = { screenModel.clearTags() },
+                            label = { Text(stringResource(Res.string.explore_filter_all)) },
                         )
+                        state.availableTags.forEach { tag ->
+                            val selected = state.selectedTagIds.contains(tag.id)
+                            FilterChip(
+                                selected = selected,
+                                onClick = { screenModel.onTagToggle(tag.id) },
+                                label = {
+                                    val icon = tag.icon?.let { "$it " }.orEmpty()
+                                    Text(icon + tag.nameEs)
+                                },
+                            )
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(AgoraSpacing.md))
-
                 when {
-                    state.isLoading -> LoadingScreen()
-                    state.error != null -> ErrorScreen(
-                        message = state.error!!,
-                        onRetry = { screenModel.onQueryChange(state.query) },
-                    )
-                    state.results.isEmpty() -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    state.isLoading -> item {
+                        Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                            LoadingScreen()
+                        }
+                    }
+                    state.error != null -> item {
+                        ErrorScreen(
+                            message = state.error!!,
+                            onRetry = { screenModel.onQueryChange(state.query) },
+                        )
+                    }
+                    state.results.isEmpty() -> item {
+                        Box(Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.xl), contentAlignment = Alignment.Center) {
                             Text(
                                 stringResource(Res.string.explore_no_results),
                                 style = MaterialTheme.typography.bodyLarge,
@@ -134,20 +144,13 @@ class ExploreCommunitiesScreen : Screen {
                             )
                         }
                     }
-                    else -> {
-                        LazyColumn(
-                            contentPadding = PaddingValues(vertical = AgoraSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
-                        ) {
-                            items(state.results, key = { it.id }) { community ->
-                                ExploreCommunityCard(
-                                    community = community,
-                                    onClick = {
-                                        navigator.push(CommunityPreviewScreen(community.id))
-                                    },
-                                )
-                            }
-                        }
+                    else -> items(state.results, key = { it.id }) { community ->
+                        ExploreCommunityCard(
+                            community = community,
+                            onClick = {
+                                navigator.push(CommunityPreviewScreen(community.id))
+                            },
+                        )
                     }
                 }
             }
@@ -166,6 +169,16 @@ private fun ExploreCommunityCard(
         onClick = onClick,
     ) {
         Column(modifier = Modifier.padding(AgoraSpacing.cardInternal)) {
+            if (!community.breadcrumb.isNullOrBlank() && community.breadcrumb!!.contains(" › ")) {
+                Text(
+                    text = community.breadcrumb!!.substringBeforeLast(" › "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(AgoraSpacing.xs))
+            }
             Text(
                 text = community.name,
                 style = MaterialTheme.typography.titleMedium,

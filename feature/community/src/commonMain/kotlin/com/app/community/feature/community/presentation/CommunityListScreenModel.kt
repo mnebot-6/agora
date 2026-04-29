@@ -39,7 +39,7 @@ class CommunityListScreenModel(
     private fun loadCommunities() {
         screenModelScope.launch {
             _uiState.value = UiState.Loading
-            getMyCommunitiesUseCase()
+            getMyCommunitiesUseCase(rootOnly = true)
                 .onSuccess { communities ->
                     _uiState.value = UiState.Content(communities)
                 }

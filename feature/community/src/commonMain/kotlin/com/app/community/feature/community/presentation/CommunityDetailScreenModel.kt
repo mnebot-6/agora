@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.days
 
 class CommunityDetailScreenModel(
     private val communityId: String,
@@ -26,12 +28,17 @@ class CommunityDetailScreenModel(
     private val tagRepository: TagRepository,
 ) : ScreenModel {
 
+    enum class DetailTab { ACTIVITIES, SUBCOMMUNITIES }
+
     sealed class UiState {
         data object Loading : UiState()
         data class Content(
             val community: Community,
             val members: List<CommunityMember>,
             val activities: List<Activity>,
+            val children: List<Community> = emptyList(),
+            val myCommunityIds: Set<String> = emptySet(),
+            val selectedTab: DetailTab = DetailTab.ACTIVITIES,
             val isAdmin: Boolean = false,
             val isCreator: Boolean = false,
             val showEditDialog: Boolean = false,
@@ -41,6 +48,7 @@ class CommunityDetailScreenModel(
             val editSelectedTagIds: Set<String> = emptySet(),
             val availableTags: List<Tag> = emptyList(),
             val showDeleteDialog: Boolean = false,
+            val showLeaveDialog: Boolean = false,
             val pendingRequestsCount: Int = 0,
         ) : UiState()
 
@@ -90,20 +98,40 @@ class CommunityDetailScreenModel(
 
             val members = communityRepository.getMembers(communityId).getOrNull().orEmpty()
             val activities = activityRepository.getActivities(communityId).getOrNull().orEmpty()
+            val children = communityRepository.getChildren(communityId).getOrNull().orEmpty()
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
             val isCreator = community.createdBy == userId
 
             val pendingRequestsCount =
-                if (isAdmin && community.visibility == CommunityVisibility.PUBLIC_APPROVAL) {
+                if ((isAdmin || isCreator) && community.visibility != CommunityVisibility.PUBLIC_OPEN) {
                     communityRepository.getPendingJoinRequests(communityId).getOrNull()?.size ?: 0
                 } else {
                     0
                 }
 
+            val myCommunityIds = userId?.let {
+                communityRepository.getMyCommunities(it).getOrNull()?.map { c -> c.id }?.toSet()
+            }.orEmpty()
+
+            val previousTab = (_uiState.value as? UiState.Content)?.selectedTab
+            val initialTab = previousTab ?: run {
+                val now = Clock.System.now()
+                val nextMonth = now + 30.days
+                val hasUpcomingActivity = activities.any { it.datetime > now && it.datetime <= nextMonth }
+                if (!hasUpcomingActivity && children.isNotEmpty()) {
+                    DetailTab.SUBCOMMUNITIES
+                } else {
+                    DetailTab.ACTIVITIES
+                }
+            }
+
             _uiState.value = UiState.Content(
                 community = community,
                 members = members,
                 activities = activities,
+                children = children,
+                myCommunityIds = myCommunityIds,
+                selectedTab = initialTab,
                 isAdmin = isAdmin,
                 isCreator = isCreator,
                 pendingRequestsCount = pendingRequestsCount,
@@ -229,6 +257,46 @@ class CommunityDetailScreenModel(
                     _actionMessage.value = "Error: $msg"
                 }
         }
+    }
+
+    // --- Leave community ---
+
+    fun showLeaveDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(showLeaveDialog = true)
+    }
+
+    fun dismissLeaveDialog() {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(showLeaveDialog = false)
+    }
+
+    fun leaveCommunity() {
+        screenModelScope.launch {
+            val current = _uiState.value as? UiState.Content
+            if (current != null) {
+                _uiState.value = current.copy(showLeaveDialog = false)
+            }
+            val userId = authRepository.currentUserId()
+            if (userId == null) {
+                _actionMessage.value = "Error: no autenticado"
+                return@launch
+            }
+            communityRepository.removeMember(communityId, userId)
+                .onSuccess {
+                    RefreshBus.emit(RefreshBus.COMMUNITIES)
+                    _actionMessage.value = "Has salido de la comunidad"
+                    _deleted.value = true
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
+        }
+    }
+
+    fun onTabSelected(tab: DetailTab) {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(selectedTab = tab)
     }
 
     fun clearActionMessage() {

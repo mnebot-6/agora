@@ -15,4 +15,6 @@ data class Community(
     val tags: List<Tag> = emptyList(),
     @SerialName("member_count") val memberCount: Int? = null,
     @SerialName("activity_count_upcoming") val activityCountUpcoming: Int? = null,
+    @SerialName("parent_id") val parentId: String? = null,
+    val breadcrumb: String? = null,
 )

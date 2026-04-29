@@ -3,6 +3,7 @@ package com.app.community.feature.community.presentation
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.RefreshBus
+import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.domain.community.JoinCommunityUseCase
 import com.app.community.core.model.Community
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ class JoinCommunityScreenModel(
         data object Idle : UiState()
         data object Loading : UiState()
         data class Success(val community: Community) : UiState()
+        data class Pending(val community: Community) : UiState()
         data class Error(val message: String) : UiState()
     }
 
@@ -39,9 +41,21 @@ class JoinCommunityScreenModel(
         screenModelScope.launch {
             _uiState.value = UiState.Loading
             joinCommunityUseCase(inviteCode)
-                .onSuccess { community ->
-                    RefreshBus.emit(RefreshBus.COMMUNITIES)
-                    _uiState.value = UiState.Success(community)
+                .onSuccess { result ->
+                    when (result) {
+                        is CommunityRepository.JoinByInviteResult.Joined -> {
+                            RefreshBus.emit(RefreshBus.COMMUNITIES)
+                            _uiState.value = UiState.Success(result.community)
+                        }
+                        is CommunityRepository.JoinByInviteResult.AlreadyMember -> {
+                            RefreshBus.emit(RefreshBus.COMMUNITIES)
+                            _uiState.value = UiState.Success(result.community)
+                        }
+                        is CommunityRepository.JoinByInviteResult.Pending -> {
+                            // No emite COMMUNITIES — todavía no es miembro
+                            _uiState.value = UiState.Pending(result.community)
+                        }
+                    }
                 }
                 .onError { message, _ ->
                     _uiState.value = UiState.Error(message)

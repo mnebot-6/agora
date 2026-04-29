@@ -36,6 +36,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -82,6 +85,8 @@ import org.koin.core.parameter.parametersOf
 
 @Serializable
 data class CommunityDetailScreen(val communityId: String) : Screen {
+
+    override val key: ScreenKey = "CommunityDetailScreen-$communityId"
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -164,6 +169,22 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                         onActivityClick = { activityId -> navigator.push(ActivityDetailScreen(activityId)) },
                         onManageMembers = { navigator.push(MemberManagementScreen(communityId)) },
                         onViewPendingRequests = { navigator.push(JoinRequestsScreen(communityId)) },
+                        onChildClick = { childId ->
+                            val isMember = state.myCommunityIds.contains(childId)
+                            if (isMember) {
+                                navigator.push(CommunityDetailScreen(childId))
+                            } else {
+                                navigator.push(CommunityPreviewScreen(childId))
+                            }
+                        },
+                        onCreateSubcommunity = {
+                            navigator.push(
+                                CreateCommunityScreen(
+                                    parentId = communityId,
+                                    parentName = state.community.name,
+                                ),
+                            )
+                        },
                         modifier = Modifier.padding(padding),
                     )
                 }
@@ -179,6 +200,8 @@ private fun CommunityDetailContent(
     onActivityClick: (String) -> Unit,
     onManageMembers: () -> Unit,
     onViewPendingRequests: () -> Unit,
+    onChildClick: (String) -> Unit,
+    onCreateSubcommunity: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val community = state.community
@@ -189,6 +212,28 @@ private fun CommunityDetailContent(
     // Edit dialog
     if (state.showEditDialog) {
         EditCommunityDialog(state = state, screenModel = screenModel)
+    }
+
+    // Leave confirmation dialog
+    if (state.showLeaveDialog) {
+        AlertDialog(
+            onDismissRequest = screenModel::dismissLeaveDialog,
+            title = { Text(stringResource(Res.string.community_detail_leave_title)) },
+            text = { Text(stringResource(Res.string.community_detail_leave_message)) },
+            confirmButton = {
+                TextButton(onClick = screenModel::leaveCommunity) {
+                    Text(
+                        stringResource(Res.string.community_detail_leave_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = screenModel::dismissLeaveDialog) {
+                    Text(stringResource(Res.string.community_detail_leave_cancel))
+                }
+            },
+        )
     }
 
     // Delete confirmation dialog
@@ -258,52 +303,55 @@ private fun CommunityDetailContent(
                     }
                 }
             }
+        }
 
-            if (state.pendingRequestsCount > 0) {
-                item {
-                    Spacer(Modifier.height(AgoraSpacing.sm))
-                    AgoraButton(
-                        text = stringResource(
-                            Res.string.community_pending_requests_count,
-                            state.pendingRequestsCount,
-                        ),
-                        onClick = onViewPendingRequests,
-                        variant = AgoraButtonVariant.Secondary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+        if (state.pendingRequestsCount > 0) {
+            item {
+                Spacer(Modifier.height(AgoraSpacing.sm))
+                AgoraButton(
+                    text = stringResource(
+                        Res.string.community_pending_requests_count,
+                        state.pendingRequestsCount,
+                    ),
+                    onClick = onViewPendingRequests,
+                    variant = AgoraButtonVariant.Secondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
 
-        // Invite code chip
-        item {
-            MarbleCard(
-                elevation = AgoraElevation.none,
-                borderColor = MaterialTheme.agoraColors.gildedVolute,
-                onClick = {
-                    clipboardManager.setText(AnnotatedString(community.inviteCode.orEmpty()))
-                },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AgoraSpacing.cardInternal, vertical = AgoraSpacing.md),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+        // Invite code chip — visible para todos si la comunidad no es PRIVATE; si es PRIVATE solo admins
+        val showInvite = community.visibility != CommunityVisibility.PRIVATE || state.isAdmin
+        if (showInvite && !community.inviteCode.isNullOrBlank()) {
+            item {
+                MarbleCard(
+                    elevation = AgoraElevation.none,
+                    borderColor = MaterialTheme.agoraColors.gildedVolute,
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(community.inviteCode.orEmpty()))
+                    },
                 ) {
-                    Text(
-                        text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode.orEmpty()),
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
-                        ),
-                        color = MaterialTheme.agoraColors.gildedVolute,
-                    )
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = stringResource(Res.string.community_detail_copy_code_cd),
-                        modifier = Modifier.height(16.dp),
-                        tint = MaterialTheme.agoraColors.gildedVolute,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = AgoraSpacing.cardInternal, vertical = AgoraSpacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode.orEmpty()),
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
+                            ),
+                            color = MaterialTheme.agoraColors.gildedVolute,
+                        )
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = stringResource(Res.string.community_detail_copy_code_cd),
+                            modifier = Modifier.height(16.dp),
+                            tint = MaterialTheme.agoraColors.gildedVolute,
+                        )
+                    }
                 }
             }
         }
@@ -324,27 +372,124 @@ private fun CommunityDetailContent(
             )
         }
 
-        // Activities section header
-        item {
-            FriezeBandHeader(
-                title = stringResource(Res.string.community_detail_activities_header, activities.size),
-            )
+        // Mostramos las pestañas si ya hay hijas o si eres admin (para poder crear la primera).
+        val showTabs = state.children.isNotEmpty() || state.isAdmin
+
+        if (showTabs) {
+            item {
+                TabRow(
+                    selectedTabIndex = state.selectedTab.ordinal,
+                    containerColor = MaterialTheme.agoraColors.parchment,
+                ) {
+                    Tab(
+                        selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES,
+                        onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.ACTIVITIES) },
+                        text = { Text(stringResource(Res.string.community_detail_tab_activities)) },
+                    )
+                    Tab(
+                        selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES,
+                        onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES) },
+                        text = { Text(stringResource(Res.string.community_detail_tab_subcommunities)) },
+                    )
+                }
+            }
         }
 
-        if (activities.isEmpty()) {
+        val showActivitiesTab = !showTabs || state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES
+        val showSubcommunitiesTab = showTabs && state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES
+
+        if (showActivitiesTab) {
+            // Activities section header
             item {
-                Text(
-                    text = stringResource(Res.string.community_detail_no_activities),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = AgoraSpacing.sm),
+                FriezeBandHeader(
+                    title = stringResource(Res.string.community_detail_activities_header, activities.size),
                 )
             }
-        } else {
-            items(activities, key = { it.id }) { activity ->
-                ActivityCard(
-                    activity = activity,
-                    onClick = { onActivityClick(activity.id) },
+
+            if (activities.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(Res.string.community_detail_no_activities),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = AgoraSpacing.sm),
+                    )
+                }
+            } else {
+                items(activities, key = { it.id }) { activity ->
+                    ActivityCard(
+                        activity = activity,
+                        onClick = { onActivityClick(activity.id) },
+                    )
+                }
+            }
+        }
+
+        if (showSubcommunitiesTab) {
+            if (state.isAdmin) {
+                item {
+                    AgoraButton(
+                        text = stringResource(Res.string.community_detail_create_subcommunity),
+                        onClick = onCreateSubcommunity,
+                        variant = AgoraButtonVariant.Secondary,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            val (mine, available) = state.children.partition { state.myCommunityIds.contains(it.id) }
+
+            if (mine.isEmpty() && available.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(Res.string.community_detail_no_subcommunities),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = AgoraSpacing.sm),
+                    )
+                }
+            }
+
+            if (mine.isNotEmpty()) {
+                item {
+                    FriezeBandHeader(
+                        title = stringResource(Res.string.community_detail_my_subcommunities),
+                    )
+                }
+                items(mine, key = { it.id }) { child ->
+                    SubcommunityCard(
+                        community = child,
+                        isMember = true,
+                        onClick = { onChildClick(child.id) },
+                    )
+                }
+            }
+
+            if (available.isNotEmpty()) {
+                item {
+                    FriezeBandHeader(
+                        title = stringResource(Res.string.community_detail_available_subcommunities),
+                    )
+                }
+                items(available, key = { it.id }) { child ->
+                    SubcommunityCard(
+                        community = child,
+                        isMember = false,
+                        onClick = { onChildClick(child.id) },
+                    )
+                }
+            }
+        }
+
+        // Leave community — solo para miembros que NO son el creador
+        if (!state.isCreator) {
+            item {
+                Spacer(Modifier.height(AgoraSpacing.lg))
+                AgoraButton(
+                    text = stringResource(Res.string.community_detail_leave),
+                    onClick = screenModel::showLeaveDialog,
+                    variant = AgoraButtonVariant.Danger,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -466,6 +611,72 @@ private fun CommunityVisibility.editDescRes(): StringResource = when (this) {
     CommunityVisibility.PUBLIC_OPEN -> Res.string.create_community_visibility_public_open_desc
     CommunityVisibility.PUBLIC_APPROVAL -> Res.string.create_community_visibility_public_approval_desc
     CommunityVisibility.PRIVATE -> Res.string.create_community_visibility_private_desc
+}
+
+@Composable
+private fun SubcommunityCard(
+    community: Community,
+    isMember: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MarbleCard(
+        modifier = modifier,
+        elevation = AgoraElevation.none,
+        onClick = onClick,
+    ) {
+        Column(modifier = Modifier.padding(AgoraSpacing.md)) {
+            Text(
+                text = community.name,
+                style = MaterialTheme.typography.titleSmall,
+            )
+            if (!community.description.isNullOrBlank()) {
+                Spacer(Modifier.height(AgoraSpacing.xs))
+                Text(
+                    text = community.description.orEmpty(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(AgoraSpacing.xs))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                val visibilityLabel = when (community.visibility) {
+                    CommunityVisibility.PUBLIC_OPEN -> stringResource(Res.string.create_community_visibility_public_open)
+                    CommunityVisibility.PUBLIC_APPROVAL -> stringResource(Res.string.create_community_visibility_public_approval)
+                    CommunityVisibility.PRIVATE -> stringResource(Res.string.create_community_visibility_private)
+                }
+                Text(
+                    text = visibilityLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                community.memberCount?.let { count ->
+                    Text(
+                        text = stringResource(Res.string.community_detail_members_header, count),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (!isMember) {
+                Spacer(Modifier.height(AgoraSpacing.xs))
+                val cta = when (community.visibility) {
+                    CommunityVisibility.PUBLIC_APPROVAL -> stringResource(Res.string.preview_request_join_button)
+                    else -> stringResource(Res.string.preview_join_button)
+                }
+                Text(
+                    text = cta,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
 }
 
 @Composable

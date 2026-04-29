@@ -58,10 +58,14 @@ import agora.feature.community.generated.resources.create_community_visibility_p
 import agora.feature.community.generated.resources.create_community_visibility_public_approval_desc
 import agora.feature.community.generated.resources.create_community_visibility_public_open
 import agora.feature.community.generated.resources.create_community_visibility_public_open_desc
+import agora.feature.community.generated.resources.create_community_subcommunity_of
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-class CreateCommunityScreen : Screen {
+data class CreateCommunityScreen(
+    val parentId: String? = null,
+    val parentName: String? = null,
+) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
     @Composable
@@ -113,7 +117,12 @@ class CreateCommunityScreen : Screen {
                 ) {
                     Spacer(Modifier.height(AgoraSpacing.xl))
 
-                    IonicVoluteHeader(title = stringResource(Res.string.create_community_header))
+                    val headerTitle = if (parentName != null) {
+                        stringResource(Res.string.create_community_subcommunity_of, parentName)
+                    } else {
+                        stringResource(Res.string.create_community_header)
+                    }
+                    IonicVoluteHeader(title = headerTitle)
 
                     Spacer(Modifier.height(AgoraSpacing.xxl))
 
@@ -216,7 +225,7 @@ class CreateCommunityScreen : Screen {
 
                     AgoraButton(
                         text = stringResource(Res.string.create_community_button),
-                        onClick = { screenModel.create() },
+                        onClick = { screenModel.create(parentId) },
                         variant = AgoraButtonVariant.Primary,
                         enabled = !isLoading && form.name.isNotBlank(),
                         isLoading = isLoading,

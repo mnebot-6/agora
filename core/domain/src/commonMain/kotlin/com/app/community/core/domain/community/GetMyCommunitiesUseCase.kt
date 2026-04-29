@@ -9,9 +9,9 @@ class GetMyCommunitiesUseCase(
     private val communityRepository: CommunityRepository,
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(): AppResult<List<Community>> {
+    suspend operator fun invoke(rootOnly: Boolean = false): AppResult<List<Community>> {
         val userId = authRepository.currentUserId()
             ?: return AppResult.Error("Not authenticated")
-        return communityRepository.getMyCommunities(userId)
+        return communityRepository.getMyCommunities(userId, rootOnly)
     }
 }

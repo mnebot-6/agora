@@ -15,8 +15,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import kotlin.random.Random
 
@@ -32,7 +34,10 @@ class CommunityRepository {
 
     private val postgrest = SupabaseProvider.client.postgrest
 
-    suspend fun getMyCommunities(userId: String): AppResult<List<Community>> =
+    suspend fun getMyCommunities(
+        userId: String,
+        rootOnly: Boolean = false,
+    ): AppResult<List<Community>> =
         safeCall {
             postgrest.from("community_members")
                 .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("community_id, communities(*)")) {
@@ -40,6 +45,14 @@ class CommunityRepository {
                 }
                 .decodeList<CommunityMemberWithCommunity>()
                 .mapNotNull { it.communities }
+                .let { list -> if (rootOnly) list.filter { it.parentId == null } else list }
+        }
+
+    suspend fun getChildren(parentId: String): AppResult<List<Community>> =
+        safeCall {
+            postgrest.from("communities")
+                .select { filter { eq("parent_id", parentId) } }
+                .decodeList<Community>()
         }
 
     suspend fun getMyAdminCommunities(userId: String): AppResult<List<Community>> =
@@ -68,6 +81,7 @@ class CommunityRepository {
         createdBy: String,
         visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
         tagIds: List<String> = emptyList(),
+        parentId: String? = null,
     ): AppResult<Community> =
         safeCall {
             val inviteCode = generateInviteCode()
@@ -78,6 +92,7 @@ class CommunityRepository {
                     put("invite_code", inviteCode)
                     put("created_by", createdBy)
                     put("visibility", visibility.serialized())
+                    parentId?.let { put("parent_id", it) }
                 }) { select() }
                 .decodeSingle<Community>()
 
@@ -102,6 +117,36 @@ class CommunityRepository {
                 parameters = buildJsonObject { put("p_invite_code", inviteCode) },
             )
             lenientJson.decodeFromString<Community>(result.data)
+        }
+
+    /** Result of `join_community_by_invite_v2`. */
+    sealed class JoinByInviteResult {
+        data class Joined(val community: Community) : JoinByInviteResult()
+        data class Pending(val community: Community, val requestId: String?) : JoinByInviteResult()
+        data class AlreadyMember(val community: Community) : JoinByInviteResult()
+    }
+
+    suspend fun joinByInviteCodeV2(inviteCode: String): AppResult<JoinByInviteResult> =
+        safeCall {
+            val result = postgrest.rpc(
+                function = "join_community_by_invite_v2",
+                parameters = buildJsonObject { put("p_invite_code", inviteCode) },
+            )
+            val root = lenientJson.parseToJsonElement(result.data)
+            val obj = root as? kotlinx.serialization.json.JsonObject
+                ?: error("join_community_by_invite_v2 devolvió un payload inesperado")
+            val status = (obj["status"] as? JsonPrimitive)?.content
+                ?: error("join_community_by_invite_v2 sin status")
+            val communityJson = obj["community"]?.toString()
+                ?: error("join_community_by_invite_v2 sin community")
+            val community = lenientJson.decodeFromString<Community>(communityJson)
+            val requestId = (obj["request_id"] as? JsonPrimitive)?.contentOrNull
+            when (status) {
+                "joined" -> JoinByInviteResult.Joined(community)
+                "pending" -> JoinByInviteResult.Pending(community, requestId)
+                "already_member" -> JoinByInviteResult.AlreadyMember(community)
+                else -> error("Estado desconocido: $status")
+            }
         }
 
     suspend fun getMembers(communityId: String): AppResult<List<CommunityMember>> =

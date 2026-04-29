@@ -32,6 +32,20 @@
     <string name="community_detail_delete_message">Esta accion no se puede deshacer. Se eliminaran todas las actividades, plazas y miembros.</string>
     <string name="community_detail_delete_confirm">Eliminar</string>
     <string name="community_detail_delete_cancel">Cancelar</string>
+    <string name="community_detail_leave">Salir de la comunidad</string>
+    <string name="community_detail_leave_title">¿Salir de la comunidad?</string>
+    <string name="community_detail_leave_message">Perderás acceso a sus actividades y chats. Podrás volver a unirte si tienes el código de invitación.</string>
+    <string name="community_detail_leave_confirm">Salir</string>
+    <string name="community_detail_leave_cancel">Cancelar</string>
+    <string name="join_pending_title">Solicitud enviada</string>
+    <string name="join_pending_message">Tu solicitud para unirte a %1$s está pendiente de aprobación.</string>
+    <string name="community_detail_tab_activities">Actividades</string>
+    <string name="community_detail_tab_subcommunities">Subcomunidades</string>
+    <string name="community_detail_create_subcommunity">Crear subcomunidad</string>
+    <string name="community_detail_no_subcommunities">Todavía no hay subcomunidades.</string>
+    <string name="community_detail_my_subcommunities">Mis subcomunidades</string>
+    <string name="community_detail_available_subcommunities">Disponibles</string>
+    <string name="create_community_subcommunity_of">Subcomunidad de %1$s</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Crear comunidad</string>
