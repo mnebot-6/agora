@@ -27,6 +27,8 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.ui)
             implementation(projects.core.common)
+            implementation(projects.feature.community)
+            implementation(projects.feature.activity)
 
             implementation(compose.runtime)
             implementation(compose.foundation)

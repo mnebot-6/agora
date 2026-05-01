@@ -40,12 +40,12 @@
     <string name="join_pending_title">Solicitud enviada</string>
     <string name="join_pending_message">Tu solicitud para unirte a %1$s está pendiente de aprobación.</string>
     <string name="community_detail_tab_activities">Actividades</string>
-    <string name="community_detail_tab_subcommunities">Subcomunidades</string>
-    <string name="community_detail_create_subcommunity">Crear subcomunidad</string>
-    <string name="community_detail_no_subcommunities">Todavía no hay subcomunidades.</string>
-    <string name="community_detail_my_subcommunities">Mis subcomunidades</string>
+    <string name="community_detail_tab_subcommunities">Comunidades hijas</string>
+    <string name="community_detail_create_subcommunity">Crear comunidad</string>
+    <string name="community_detail_no_subcommunities">Todavía no hay comunidades.</string>
+    <string name="community_detail_my_subcommunities">Mis comunidades</string>
     <string name="community_detail_available_subcommunities">Disponibles</string>
-    <string name="create_community_subcommunity_of">Subcomunidad de %1$s</string>
+    <string name="create_community_subcommunity_of">Comunidad de %1$s</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Crear comunidad</string>
@@ -75,8 +75,34 @@
     <string name="preview_request_join_button">Solicitar unirse</string>
     <string name="preview_already_member">Abrir</string>
     <string name="preview_request_sent">Solicitud enviada — esperando aprobación</string>
+    <string name="preview_join_confirm_title">¿Solicitar unirte?</string>
+    <string name="preview_join_confirm_message">Tu solicitud necesitará ser aprobada por un administrador antes de poder acceder a esta comunidad.</string>
+    <string name="preview_join_confirm_ok">Enviar solicitud</string>
+    <string name="preview_join_confirm_cancel">Cancelar</string>
     <string name="community_pending_requests_badge">Solicitudes pendientes</string>
     <string name="community_pending_requests_count">%1$d pendientes</string>
+    <string name="community_pending_requests_empty">Solicitudes pendientes</string>
+    <string name="community_detail_share_invite">Compartir invitación</string>
+    <string name="community_detail_share_dialog_title">¿Cómo quieres compartir?</string>
+    <string name="community_detail_share_as_code">Por código</string>
+    <string name="community_detail_share_as_link">Por enlace</string>
+    <string name="community_detail_invite_share_template">Únete a %1$s en Agora: %2$s</string>
+
+    <!-- Chat -->
+    <string name="community_detail_tab_chat">Chat</string>
+    <string name="chat_input_placeholder">Escribe un mensaje…</string>
+    <string name="chat_send_cd">Enviar</string>
+    <string name="chat_empty_title">Aún no hay mensajes</string>
+    <string name="chat_empty_subtitle">Sé el primero en escribir.</string>
+    <string name="chat_edited_marker">(editado)</string>
+    <string name="chat_edit">Editar</string>
+    <string name="chat_delete">Borrar</string>
+    <string name="chat_delete_confirm_title">¿Borrar mensaje?</string>
+    <string name="chat_delete_confirm_message">Esta acción no se puede deshacer.</string>
+    <string name="chat_delete_confirm">Borrar</string>
+    <string name="chat_cancel">Cancelar</string>
+    <string name="chat_save">Guardar</string>
+    <string name="chat_load_more">Cargar mensajes anteriores</string>
     <string name="join_requests_title">Solicitudes de unión</string>
     <string name="join_requests_empty">No hay solicitudes pendientes</string>
     <string name="join_requests_approve">Aprobar</string>

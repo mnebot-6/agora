@@ -1,6 +1,8 @@
 package com.app.community.feature.auth.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +19,15 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import com.app.community.core.ui.locale.AppLanguage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -99,7 +104,9 @@ class ProfileScreen : Screen {
                 state.profile != null -> ProfileContent(
                     profile = state.profile!!,
                     isDarkMode = state.isDarkMode,
+                    language = state.language,
                     onToggleDarkMode = screenModel::toggleDarkMode,
+                    onLanguageChange = screenModel::setLanguage,
                     onSignOut = screenModel::signOut,
                     modifier = Modifier.padding(padding),
                 )
@@ -112,15 +119,19 @@ class ProfileScreen : Screen {
 private fun ProfileContent(
     profile: com.app.community.core.model.Profile,
     isDarkMode: Boolean,
+    language: AppLanguage,
     onToggleDarkMode: () -> Unit,
+    onLanguageChange: (AppLanguage) -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showSignOutDialog by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(AgoraSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AgoraSpacing.lg),
@@ -177,7 +188,38 @@ private fun ProfileContent(
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        // Idioma de la app
+        MarbleCard(elevation = AgoraElevation.subtle) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AgoraSpacing.md, vertical = AgoraSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+            ) {
+                Text(
+                    text = stringResource(Res.string.profile_language_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                LanguageOption(
+                    label = stringResource(Res.string.profile_language_auto),
+                    selected = language == AppLanguage.AUTO,
+                    onSelect = { onLanguageChange(AppLanguage.AUTO) },
+                )
+                LanguageOption(
+                    label = stringResource(Res.string.profile_language_es),
+                    selected = language == AppLanguage.ES,
+                    onSelect = { onLanguageChange(AppLanguage.ES) },
+                )
+                LanguageOption(
+                    label = stringResource(Res.string.profile_language_en),
+                    selected = language == AppLanguage.EN,
+                    onSelect = { onLanguageChange(AppLanguage.EN) },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(AgoraSpacing.xl))
 
         AgoraButton(
             text = stringResource(Res.string.profile_sign_out),
@@ -185,6 +227,8 @@ private fun ProfileContent(
             variant = AgoraButtonVariant.Danger,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        Spacer(Modifier.height(AgoraSpacing.lg))
     }
 
     if (showSignOutDialog) {
@@ -205,6 +249,28 @@ private fun ProfileContent(
                     Text(stringResource(Res.string.cancel))
                 }
             },
+        )
+    }
+}
+
+@Composable
+private fun LanguageOption(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect)
+            .padding(vertical = AgoraSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Spacer(Modifier.size(AgoraSpacing.sm))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

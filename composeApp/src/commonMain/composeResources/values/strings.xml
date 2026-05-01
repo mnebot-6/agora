@@ -8,6 +8,12 @@
     <string name="tab_profile">Profile</string>
 
     <!-- Dashboard -->
+    <string name="dashboard_greeting_morning">Good morning</string>
+    <string name="dashboard_greeting_afternoon">Good afternoon</string>
+    <string name="dashboard_greeting_night">Good evening</string>
+    <string name="dashboard_greeting_with_name">%1$s, %2$s</string>
+    <string name="dashboard_week_summary_zero">No activities scheduled this week</string>
+    <string name="dashboard_week_summary">%1$d activities this week · Confirmed: %2$d</string>
     <string name="dashboard_upcoming_activities">Upcoming activities</string>
     <string name="dashboard_status_reserved">Reserved</string>
     <string name="dashboard_status_in_queue">In queue #%1$d</string>

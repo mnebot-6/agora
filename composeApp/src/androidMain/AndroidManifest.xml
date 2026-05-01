@@ -21,13 +21,28 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter android:autoVerify="true">
+            <!-- Custom scheme: agora://invite/{code} (funciona sin verificacion de dominio) -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="agora"
                     android:host="invite" />
+            </intent-filter>
+            <!--
+                HTTPS App Link: https://share-agora.app/c/{code}
+                Requiere subir /.well-known/assetlinks.json al servidor del dominio
+                con el SHA256 del certificado de release. Ver INVITE_LINKS.md.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="share-agora.app"
+                    android:pathPattern="/c/.*" />
             </intent-filter>
         </activity>
 

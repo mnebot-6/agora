@@ -50,9 +50,20 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
-        if (data.scheme == "agora" && data.host == "invite") {
-            val code = data.pathSegments?.firstOrNull() ?: return
-            DeepLinkHandler.setInviteCode(code)
-        }
+        val code = when {
+            // agora://invite/{code}
+            data.scheme == "agora" && data.host == "invite" -> {
+                data.pathSegments?.firstOrNull()
+            }
+            // https://share-agora.app/c/{code}
+            data.scheme == "https" && data.host == "share-agora.app" -> {
+                val segments = data.pathSegments
+                if (segments != null && segments.size >= 2 && segments[0] == "c") {
+                    segments[1]
+                } else null
+            }
+            else -> null
+        } ?: return
+        DeepLinkHandler.setInviteCode(code)
     }
 }

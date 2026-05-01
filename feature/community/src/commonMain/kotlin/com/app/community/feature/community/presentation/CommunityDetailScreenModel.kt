@@ -28,7 +28,7 @@ class CommunityDetailScreenModel(
     private val tagRepository: TagRepository,
 ) : ScreenModel {
 
-    enum class DetailTab { ACTIVITIES, SUBCOMMUNITIES }
+    enum class DetailTab { ACTIVITIES, SUBCOMMUNITIES, CHAT }
 
     sealed class UiState {
         data object Loading : UiState()
@@ -50,6 +50,7 @@ class CommunityDetailScreenModel(
             val showDeleteDialog: Boolean = false,
             val showLeaveDialog: Boolean = false,
             val pendingRequestsCount: Int = 0,
+            val pendingRequestsLoadFailed: Boolean = false,
         ) : UiState()
 
         data class Error(val message: String) : UiState()
@@ -102,12 +103,13 @@ class CommunityDetailScreenModel(
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
             val isCreator = community.createdBy == userId
 
-            val pendingRequestsCount =
-                if ((isAdmin || isCreator) && community.visibility != CommunityVisibility.PUBLIC_OPEN) {
-                    communityRepository.getPendingJoinRequests(communityId).getOrNull()?.size ?: 0
-                } else {
-                    0
-                }
+            var pendingRequestsCount = 0
+            var pendingRequestsLoadFailed = false
+            if ((isAdmin || isCreator) && community.visibility != CommunityVisibility.PUBLIC_OPEN) {
+                communityRepository.getPendingJoinRequests(communityId)
+                    .onSuccess { pendingRequestsCount = it.size }
+                    .onError { _, _ -> pendingRequestsLoadFailed = true }
+            }
 
             val myCommunityIds = userId?.let {
                 communityRepository.getMyCommunities(it).getOrNull()?.map { c -> c.id }?.toSet()
@@ -135,6 +137,7 @@ class CommunityDetailScreenModel(
                 isAdmin = isAdmin,
                 isCreator = isCreator,
                 pendingRequestsCount = pendingRequestsCount,
+                pendingRequestsLoadFailed = pendingRequestsLoadFailed,
             )
         }
     }

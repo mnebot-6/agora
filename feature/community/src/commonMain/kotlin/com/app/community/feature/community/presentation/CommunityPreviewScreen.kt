@@ -24,10 +24,14 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.core.screen.Screen
@@ -47,6 +51,10 @@ import agora.feature.community.generated.resources.Res
 import agora.feature.community.generated.resources.back_cd
 import agora.feature.community.generated.resources.preview_already_member
 import agora.feature.community.generated.resources.preview_join_button
+import agora.feature.community.generated.resources.preview_join_confirm_cancel
+import agora.feature.community.generated.resources.preview_join_confirm_message
+import agora.feature.community.generated.resources.preview_join_confirm_ok
+import agora.feature.community.generated.resources.preview_join_confirm_title
 import agora.feature.community.generated.resources.preview_member_count
 import agora.feature.community.generated.resources.preview_request_join_button
 import agora.feature.community.generated.resources.preview_request_sent
@@ -65,12 +73,34 @@ data class CommunityPreviewScreen(val communityId: String) : Screen {
         val state by screenModel.state.collectAsState()
         val actionMessage by screenModel.actionMessage.collectAsState()
         val snackbarHostState = remember { SnackbarHostState() }
+        var showJoinConfirmDialog by remember { mutableStateOf(false) }
 
         LaunchedEffect(actionMessage) {
             actionMessage?.let {
                 snackbarHostState.showSnackbar(it)
                 screenModel.clearActionMessage()
             }
+        }
+
+        if (showJoinConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showJoinConfirmDialog = false },
+                title = { Text(stringResource(Res.string.preview_join_confirm_title)) },
+                text = { Text(stringResource(Res.string.preview_join_confirm_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showJoinConfirmDialog = false
+                        screenModel.join()
+                    }) {
+                        Text(stringResource(Res.string.preview_join_confirm_ok))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showJoinConfirmDialog = false }) {
+                        Text(stringResource(Res.string.preview_join_confirm_cancel))
+                    }
+                },
+            )
         }
 
         Scaffold(
@@ -182,14 +212,22 @@ data class CommunityPreviewScreen(val communityId: String) : Screen {
                                 }
                             }
                             else -> {
-                                val labelRes = if (community.visibility == CommunityVisibility.PUBLIC_APPROVAL) {
+                                val requiresApproval = community.visibility == CommunityVisibility.PUBLIC_APPROVAL ||
+                                    community.visibility == CommunityVisibility.PRIVATE
+                                val labelRes = if (requiresApproval) {
                                     Res.string.preview_request_join_button
                                 } else {
                                     Res.string.preview_join_button
                                 }
                                 AgoraButton(
                                     text = stringResource(labelRes),
-                                    onClick = { screenModel.join() },
+                                    onClick = {
+                                        if (requiresApproval) {
+                                            showJoinConfirmDialog = true
+                                        } else {
+                                            screenModel.join()
+                                        }
+                                    },
                                     variant = AgoraButtonVariant.Primary,
                                     isLoading = s.isJoining,
                                     enabled = !s.isJoining,

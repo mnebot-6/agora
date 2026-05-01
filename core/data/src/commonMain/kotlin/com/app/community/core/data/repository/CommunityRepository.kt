@@ -70,9 +70,19 @@ class CommunityRepository {
 
     suspend fun getCommunity(communityId: String): AppResult<Community> =
         safeCall {
-            postgrest.from("communities")
+            val community = postgrest.from("communities")
                 .select { filter { eq("id", communityId) } }
                 .decodeSingle<Community>()
+            // Tags se obtienen aparte porque la relación es many-to-many a través
+            // de community_tags. Sin esto el dialog de editar comunidad mostraba
+            // el set de tags vacío al abrirse.
+            val tags = postgrest.from("community_tags")
+                .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("tags(*)")) {
+                    filter { eq("community_id", communityId) }
+                }
+                .decodeList<TagJoinRow>()
+                .mapNotNull { it.tags }
+            community.copy(tags = tags)
         }
 
     suspend fun createCommunity(
@@ -275,9 +285,12 @@ class CommunityRepository {
     }
 
     suspend fun getPendingJoinRequests(communityId: String): AppResult<List<PendingJoinRequest>> = safeCall {
+        // NOTA: community_join_requests tiene dos FKs a profiles (user_id y resolved_by).
+        // Hay que desambiguar el embed con !user_id; sin ello PostgREST devuelve 300
+        // (Multiple Choices) que supabase-kt reporta como "Unknown error".
         postgrest.from("community_join_requests")
             .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw(
-                "id, community_id, user_id, status, message, requested_at, resolved_at, resolved_by, profiles(id, display_name, avatar_url)"
+                "id, community_id, user_id, status, message, requested_at, profiles!user_id(id, display_name, avatar_url)"
             )) {
                 filter {
                     eq("community_id", communityId)
@@ -343,6 +356,11 @@ class CommunityRepository {
 @Serializable
 private data class CommunityMemberWithCommunity(
     val communities: Community? = null,
+)
+
+@Serializable
+private data class TagJoinRow(
+    val tags: com.app.community.core.model.Tag? = null,
 )
 
 @Serializable

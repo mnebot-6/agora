@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Notification
 import com.app.community.core.model.NotificationType
 import com.app.community.core.ui.components.AgoraTopBar
@@ -48,10 +50,15 @@ import com.app.community.core.ui.components.DentilDivider
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
+import com.app.community.feature.activity.presentation.ActivityDetailScreen
+import com.app.community.feature.community.presentation.CommunityDetailScreen
+import com.app.community.feature.community.presentation.JoinRequestsScreen
 import agora.feature.notification.generated.resources.Res
 import agora.feature.notification.generated.resources.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.compose.resources.stringResource
 
 class NotificationListScreen : Screen {
@@ -59,6 +66,7 @@ class NotificationListScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
         val screenModel = koinScreenModel<NotificationListScreenModel>()
         val state by screenModel.state.collectAsState()
         var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -156,6 +164,21 @@ class NotificationListScreen : Screen {
                                     if (!notification.read) {
                                         screenModel.markAsRead(notification.id)
                                     }
+                                    val data = notification.data
+                                    val communityId = data?.get("community_id")?.jsonPrimitive?.contentOrNull
+                                    val activityId = data?.get("activity_id")?.jsonPrimitive?.contentOrNull
+                                    when (notification.type) {
+                                        NotificationType.JOIN_REQUEST_RECEIVED ->
+                                            communityId?.let { navigator.push(JoinRequestsScreen(it)) }
+                                        NotificationType.JOIN_REQUEST_APPROVED ->
+                                            communityId?.let { navigator.push(CommunityDetailScreen(it)) }
+                                        NotificationType.JOIN_REQUEST_REJECTED -> Unit
+                                        NotificationType.NEW_ACTIVITY,
+                                        NotificationType.SLOT_RELEASED,
+                                        NotificationType.SUBSTITUTE_PROMOTED,
+                                        NotificationType.ACTIVITY_REMINDER ->
+                                            activityId?.let { navigator.push(ActivityDetailScreen(it)) }
+                                    }
                                 },
                                 onDismiss = { screenModel.deleteNotification(notification.id) },
                             )
@@ -237,6 +260,7 @@ private fun NotificationRow(
         NotificationType.NEW_ACTIVITY -> stringResource(Res.string.type_new_activity)
         NotificationType.SLOT_RELEASED -> stringResource(Res.string.type_slot_released)
         NotificationType.SUBSTITUTE_PROMOTED -> stringResource(Res.string.type_substitute_promoted)
+        NotificationType.ACTIVITY_REMINDER -> stringResource(Res.string.type_activity_reminder)
         NotificationType.JOIN_REQUEST_RECEIVED -> stringResource(Res.string.type_join_request_received)
         NotificationType.JOIN_REQUEST_APPROVED -> stringResource(Res.string.type_join_request_approved)
         NotificationType.JOIN_REQUEST_REJECTED -> stringResource(Res.string.type_join_request_rejected)

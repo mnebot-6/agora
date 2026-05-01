@@ -1,8 +1,10 @@
 package com.app.community.di
 
+import com.app.community.core.ui.locale.LanguagePreferenceManager
 import com.app.community.core.ui.theme.ThemeManager
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.CommunityMessageRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
@@ -23,6 +25,7 @@ import com.app.community.feature.auth.presentation.ForgotPasswordScreenModel
 import com.app.community.feature.auth.presentation.LoginScreenModel
 import com.app.community.feature.auth.presentation.ProfileScreenModel
 import com.app.community.feature.auth.presentation.RegisterScreenModel
+import com.app.community.feature.community.presentation.CommunityChatScreenModel
 import com.app.community.feature.community.presentation.CommunityDetailScreenModel
 import com.app.community.feature.community.presentation.CommunityListScreenModel
 import com.app.community.feature.community.presentation.CommunityPreviewScreenModel
@@ -37,9 +40,11 @@ import org.koin.dsl.module
 
 val repositoryModule = module {
     single { ThemeManager() }
+    single { LanguagePreferenceManager() }
     single { AuthRepository() }
     single { ProfileRepository() }
     single { CommunityRepository() }
+    single { CommunityMessageRepository() }
     single { ActivityRepository() }
     single { SlotRepository() }
     single { NotificationRepository() }
@@ -62,6 +67,7 @@ val screenModelModule = module {
             activityRepository = get(),
             slotRepository = get(),
             authRepository = get(),
+            profileRepository = get(),
         )
     }
     factory { params ->
@@ -147,10 +153,25 @@ val screenModelModule = module {
             authRepository = get(),
         )
     }
+    factory { params ->
+        CommunityChatScreenModel(
+            communityId = params.get(),
+            messageRepo = get(),
+            communityRepo = get(),
+            authRepo = get(),
+        )
+    }
     factory { LoginScreenModel(signInUseCase = get()) }
     factory { RegisterScreenModel(signUpUseCase = get()) }
     factory { ForgotPasswordScreenModel(authRepository = get()) }
-    factory { ProfileScreenModel(authRepository = get(), profileRepository = get(), themeManager = get()) }
+    factory {
+        ProfileScreenModel(
+            authRepository = get(),
+            profileRepository = get(),
+            themeManager = get(),
+            languageManager = get(),
+        )
+    }
     factory {
         NotificationListScreenModel(
             notificationRepository = get(),

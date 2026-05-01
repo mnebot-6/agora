@@ -31,6 +31,11 @@ class MemberManagementScreenModel(
 
     init {
         load()
+        screenModelScope.launch {
+            RefreshBus.events.collect { tag ->
+                if (tag == RefreshBus.COMMUNITY_DETAIL) load()
+            }
+        }
     }
 
     fun load() {

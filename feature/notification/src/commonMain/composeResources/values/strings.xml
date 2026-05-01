@@ -5,6 +5,7 @@
     <string name="type_new_activity">New activity</string>
     <string name="type_slot_released">Slot released</string>
     <string name="type_substitute_promoted">Promoted</string>
+    <string name="type_activity_reminder">Reminder</string>
     <string name="type_join_request_received">Join request</string>
     <string name="type_join_request_approved">Request approved</string>
     <string name="type_join_request_rejected">Request rejected</string>

@@ -90,7 +90,10 @@ class ExploreCommunitiesScreenModel(
                 offset = 0,
             )
                 .onSuccess { list ->
-                    _state.update { it.copy(results = list, isLoading = false) }
+                    // Solo mostrar comunidades raíz (sin comunidad padre) para
+                    // evitar mostrar subcomunidades anidadas en el explorador.
+                    val rootOnly = list.filter { it.parentId == null }
+                    _state.update { it.copy(results = rootOnly, isLoading = false) }
                 }
                 .onError { msg, _ ->
                     _state.update { it.copy(isLoading = false, error = msg) }

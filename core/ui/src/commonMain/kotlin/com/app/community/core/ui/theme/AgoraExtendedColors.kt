@@ -37,15 +37,15 @@ val LightAgoraExtendedColors = AgoraExtendedColors(
 )
 
 val DarkAgoraExtendedColors = AgoraExtendedColors(
-    malachiteGreen = Color(0xFF8FD49B),
-    malachiteGreenContainer = Color(0xFF1E4028),
+    malachiteGreen = Color(0xFF8FCEA0),         // Malaquita lunar
+    malachiteGreenContainer = Color(0xFF1F4029),
     onMalachiteGreen = Color(0xFF0E2614),
-    marbleRelief = Color(0xFF48453E),
-    gildedVolute = Color(0xFFECCC6E),
+    marbleRelief = Color(0xFF433930),           // Caliza nocturna calida
+    gildedVolute = Color(0xFFD9B96B),           // Oro bronce sincronizado con tertiary
     onGildedVolute = Color(0xFF3A2800),
-    parchment = Color(0xFF252420),
-    onParchment = Color(0xFFE6E3DC),
-    friezeBandTint = Color(0x14BCD4C6), // secondary dark jonico 8% alpha
+    parchment = Color(0xFF221C16),              // Pergamino quemado, sincronizado con surface
+    onParchment = Color(0xFFEFEAD9),
+    friezeBandTint = Color(0x18C9B583),         // Frieze tint calido, mas visible que el 0x14 anterior
 )
 
 val LocalAgoraExtendedColors = staticCompositionLocalOf { LightAgoraExtendedColors }

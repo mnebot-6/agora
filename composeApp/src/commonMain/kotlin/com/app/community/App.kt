@@ -7,17 +7,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.ProfileRepository
+import com.app.community.core.ui.locale.AppLanguage
+import com.app.community.core.ui.locale.AppLocaleProvider
+import com.app.community.core.ui.locale.LanguagePreferenceManager
 import com.app.community.core.ui.theme.ThemeManager
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
@@ -26,6 +28,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.app.community.core.domain.auth.GetAuthStateUseCase
 import com.app.community.core.ui.components.AgoraNavigationBar
+import com.app.community.core.ui.components.AgoraNavigationBarItem
 import com.app.community.core.ui.theme.AppTheme
 import com.app.community.feature.auth.presentation.LoginScreen
 import com.app.community.navigation.ActivitiesTab
@@ -39,10 +42,12 @@ import org.koin.compose.koinInject
 fun App() {
     val themeManager = koinInject<ThemeManager>()
     val isDarkMode by themeManager.isDarkMode.collectAsState()
+    val languageManager = koinInject<LanguagePreferenceManager>()
+    val language by languageManager.language.collectAsState()
     val getAuthState = koinInject<GetAuthStateUseCase>()
     val isAuthenticated by getAuthState().collectAsState(initial = false)
 
-    // Load theme preference from profile when authenticated
+    // Load theme + language preferences from profile when authenticated
     val authRepository = koinInject<AuthRepository>()
     val profileRepository = koinInject<ProfileRepository>()
     LaunchedEffect(isAuthenticated) {
@@ -50,6 +55,12 @@ fun App() {
             val userId = authRepository.currentUserId() ?: return@LaunchedEffect
             profileRepository.getProfile(userId).onSuccess { profile ->
                 themeManager.setDarkMode(profile.darkMode == true)
+                val lang = when (profile.languagePreference) {
+                    "es" -> AppLanguage.ES
+                    "en" -> AppLanguage.EN
+                    else -> AppLanguage.AUTO
+                }
+                languageManager.setLanguage(lang)
             }
             fetchPushToken()?.let { token ->
                 profileRepository.updateFcmToken(userId, token)
@@ -57,16 +68,24 @@ fun App() {
         }
     }
 
-    AppTheme(darkTheme = isDarkMode) {
-        // Status bar matches TopBar's primary color
-        StatusBarEffect(
-            statusBarColor = MaterialTheme.colorScheme.primary,
-            darkIcons = isDarkMode, // dark mode primary is light → dark icons
-        )
-        if (isAuthenticated) {
-            MainContent()
-        } else {
-            Navigator(LoginScreen())
+    AppLocaleProvider(locale = language.toLocaleCode()) {
+        AppTheme(darkTheme = isDarkMode) {
+            // key(isDarkMode) fuerza la recomposición completa del subárbol cuando
+            // cambia el tema, garantizando que la pantalla actual se re-pinte sin
+            // tener que navegar fuera y volver. Workaround robusto frente a stale
+            // colors capturados en remember{} o cache de Voyager Tab.
+            key(isDarkMode) {
+                // Status bar matches TopBar's primary color
+                StatusBarEffect(
+                    statusBarColor = MaterialTheme.colorScheme.primary,
+                    darkIcons = isDarkMode, // dark mode primary is light → dark icons
+                )
+                if (isAuthenticated) {
+                    MainContent()
+                } else {
+                    Navigator(LoginScreen())
+                }
+            }
         }
     }
 }
@@ -101,7 +120,7 @@ private fun MainContent() {
 private fun RowScope.TabNavigationItem(tab: Tab) {
     val tabNavigator = LocalTabNavigator.current
 
-    NavigationBarItem(
+    AgoraNavigationBarItem(
         selected = tabNavigator.current == tab,
         onClick = { tabNavigator.current = tab },
         icon = {
@@ -109,6 +128,5 @@ private fun RowScope.TabNavigationItem(tab: Tab) {
                 Icon(painter = painter, contentDescription = tab.options.title)
             }
         },
-        label = { Text(tab.options.title) },
     )
 }

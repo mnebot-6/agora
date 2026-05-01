@@ -40,12 +40,12 @@
     <string name="join_pending_title">Request sent</string>
     <string name="join_pending_message">Your request to join %1$s is awaiting admin approval.</string>
     <string name="community_detail_tab_activities">Activities</string>
-    <string name="community_detail_tab_subcommunities">Subcommunities</string>
-    <string name="community_detail_create_subcommunity">Create subcommunity</string>
-    <string name="community_detail_no_subcommunities">No subcommunities yet.</string>
-    <string name="community_detail_my_subcommunities">My subcommunities</string>
+    <string name="community_detail_tab_subcommunities">Sub-communities</string>
+    <string name="community_detail_create_subcommunity">Create community</string>
+    <string name="community_detail_no_subcommunities">No communities yet.</string>
+    <string name="community_detail_my_subcommunities">My communities</string>
     <string name="community_detail_available_subcommunities">Available</string>
-    <string name="create_community_subcommunity_of">Subcommunity of %1$s</string>
+    <string name="create_community_subcommunity_of">Community of %1$s</string>
 
     <!-- CreateCommunityScreen -->
     <string name="create_community_title">Create community</string>
@@ -75,8 +75,35 @@
     <string name="preview_request_join_button">Request to join</string>
     <string name="preview_already_member">Open</string>
     <string name="preview_request_sent">Request sent — waiting for approval</string>
+    <string name="preview_join_confirm_title">Send a join request?</string>
+    <string name="preview_join_confirm_message">Your request will need to be approved by an administrator before you can access this community.</string>
+    <string name="preview_join_confirm_ok">Send request</string>
+    <string name="preview_join_confirm_cancel">Cancel</string>
     <string name="community_pending_requests_badge">Pending requests</string>
     <string name="community_pending_requests_count">%1$d pending</string>
+    <string name="community_pending_requests_empty">Pending requests</string>
+    <string name="community_detail_share_invite">Share invite</string>
+    <string name="community_detail_share_dialog_title">How do you want to share?</string>
+    <string name="community_detail_share_as_code">By code</string>
+    <string name="community_detail_share_as_link">By link</string>
+    <string name="community_detail_invite_share_template">Join %1$s on Agora: %2$s</string>
+
+    <!-- Chat -->
+    <string name="community_detail_tab_chat">Chat</string>
+    <string name="chat_input_placeholder">Type a message…</string>
+    <string name="chat_send_cd">Send</string>
+    <string name="chat_empty_title">No messages yet</string>
+    <string name="chat_empty_subtitle">Be the first to write something.</string>
+    <string name="chat_edited_marker">(edited)</string>
+    <string name="chat_edit">Edit</string>
+    <string name="chat_delete">Delete</string>
+    <string name="chat_delete_confirm_title">Delete message?</string>
+    <string name="chat_delete_confirm_message">This action cannot be undone.</string>
+    <string name="chat_delete_confirm">Delete</string>
+    <string name="chat_cancel">Cancel</string>
+    <string name="chat_save">Save</string>
+    <string name="chat_load_more">Load older messages</string>
+
     <string name="join_requests_title">Join requests</string>
     <string name="join_requests_empty">No pending requests</string>
     <string name="join_requests_approve">Approve</string>

@@ -2,6 +2,7 @@ package com.app.community.core.ui.theme
 
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 
 /**
@@ -19,13 +20,23 @@ val IonicCapitalShape = RoundedCornerShape(
     bottomEnd = 4.dp,
 )
 
-/** Borde superior de la barra de navegacion: base elegante de columnata jonica */
-val NavBarShape = RoundedCornerShape(
-    topStart = 12.dp,
-    topEnd = 12.dp,
-    bottomStart = 0.dp,
-    bottomEnd = 0.dp,
-)
+/** Barra de navegacion: borde recto, sin redondeo. La sombra elevada provee la separacion visual. */
+val NavBarShape = RectangleShape
+
+/**
+ * Capitel jonico miniatura: trapecio invertido (base ancha abajo, tapa estrecha arriba).
+ * Usado como indicador de tab seleccionada en la barra de navegacion inferior.
+ */
+val IonicCapitalIndicatorShape = GenericShape { size, _ ->
+    val w = size.width
+    val h = size.height
+    val inset = w * 0.15f
+    moveTo(inset, 0f)              // top-left (estrecho)
+    lineTo(w - inset, 0f)          // top-right (estrecho)
+    lineTo(w, h)                   // bottom-right (ancho)
+    lineTo(0f, h)                  // bottom-left (ancho)
+    close()
+}
 
 /**
  * Par de volutas jonicas estilizadas.

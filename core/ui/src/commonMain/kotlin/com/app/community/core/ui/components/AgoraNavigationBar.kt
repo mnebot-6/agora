@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.app.community.core.ui.theme.NavBarShape
@@ -26,6 +27,7 @@ fun AgoraNavigationBar(
 
     NavigationBar(
         modifier = modifier
+            .shadow(elevation = 8.dp, shape = NavBarShape, clip = false)
             .clip(NavBarShape)
             .drawBehind {
                 val h = lineHeight.toPx()

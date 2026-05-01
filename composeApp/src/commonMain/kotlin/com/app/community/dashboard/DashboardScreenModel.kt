@@ -6,6 +6,7 @@ import com.app.community.core.common.AppResult
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.SlotMode
@@ -13,16 +14,22 @@ import com.app.community.core.model.SlotStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.days
 
 class DashboardScreenModel(
     private val activityRepository: ActivityRepository,
     private val slotRepository: SlotRepository,
     private val authRepository: AuthRepository,
+    private val profileRepository: ProfileRepository,
 ) : ScreenModel {
 
     sealed class UiState {
         data object Loading : UiState()
         data class Content(
+            val displayName: String? = null,
+            val weekActivityCount: Int = 0,
+            val weekConfirmedCount: Int = 0,
             val nextActivity: ActivityWithSlotInfo? = null,
             val upcomingActivities: List<ActivityWithSlotInfo> = emptyList(),
         ) : UiState()
@@ -53,11 +60,14 @@ class DashboardScreenModel(
                 return@launch
             }
 
+            // Profile (best-effort: si falla, saludo sin nombre)
+            val displayName = profileRepository.getProfile(userId).getOrNull()?.displayName
+
             when (val result = activityRepository.getUpcomingActivities()) {
                 is AppResult.Success -> {
                     val activities = result.data
                     if (activities.isEmpty()) {
-                        _uiState.value = UiState.Content()
+                        _uiState.value = UiState.Content(displayName = displayName)
                         return@launch
                     }
 
@@ -66,7 +76,17 @@ class DashboardScreenModel(
                         enrichActivity(activity, userId)
                     }
 
+                    // Resumen semanal: actividades en los proximos 7 dias
+                    val now = Clock.System.now()
+                    val weekEnd = now + 7.days
+                    val thisWeek = enriched.filter {
+                        it.activity.datetime > now && it.activity.datetime <= weekEnd
+                    }
+
                     _uiState.value = UiState.Content(
+                        displayName = displayName,
+                        weekActivityCount = thisWeek.size,
+                        weekConfirmedCount = thisWeek.count { it.isUserReserved },
                         nextActivity = enriched.firstOrNull(),
                         upcomingActivities = enriched,
                     )

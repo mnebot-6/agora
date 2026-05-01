@@ -1,0 +1,5 @@
+# Content-Type para apple-app-site-association.
+# Apple exige application/json; Cloudflare por defecto serviría como
+# application/octet-stream porque el archivo no tiene extensión.
+/.well-known/apple-app-site-association
+  Content-Type: application/json

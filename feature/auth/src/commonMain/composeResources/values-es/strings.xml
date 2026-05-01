@@ -25,6 +25,10 @@
     <string name="profile_title">Perfil</string>
     <string name="profile_edit">Editar</string>
     <string name="profile_dark_mode">Modo oscuro</string>
+    <string name="profile_language_title">Idioma</string>
+    <string name="profile_language_auto">Por defecto del sistema</string>
+    <string name="profile_language_es">Español</string>
+    <string name="profile_language_en">Inglés</string>
     <string name="profile_sign_out">Cerrar sesion</string>
     <string name="profile_sign_out_confirm">Seguro que quieres cerrar sesion?</string>
     <string name="profile_edit_title">Editar perfil</string>

@@ -112,16 +112,28 @@ private fun DashboardContent(
     onActivityClick: (Activity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (state.upcomingActivities.isEmpty()) {
-        EmptyDashboard(modifier = modifier)
-        return
-    }
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(AgoraSpacing.screenHorizontal),
         verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
     ) {
+        // Saludo + resumen semanal (siempre visible, independiente de actividades)
+        item(key = "greeting") {
+            DashboardGreeting(
+                displayName = state.displayName,
+                weekActivityCount = state.weekActivityCount,
+                weekConfirmedCount = state.weekConfirmedCount,
+                modifier = Modifier.padding(vertical = AgoraSpacing.sm),
+            )
+        }
+
+        if (state.upcomingActivities.isEmpty()) {
+            item(key = "empty") {
+                EmptyDashboard()
+            }
+            return@LazyColumn
+        }
+
         // Hero card -- next activity
         val next = state.nextActivity
         if (next != null) {

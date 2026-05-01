@@ -1,26 +1,31 @@
 package com.app.community.feature.community.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,8 +40,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Community
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
+import com.app.community.core.ui.components.AgoraFabMenu
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FabMenuItem
 import com.app.community.core.ui.components.IonicFrame
 import com.app.community.core.ui.components.DentilDivider
 import com.app.community.core.ui.components.LoadingScreen
@@ -58,6 +65,10 @@ class CommunityListScreen : Screen {
 
         LaunchedEffect(Unit) { screenModel.refresh() }
 
+        val joinLabel = stringResource(Res.string.community_list_join_button)
+        val exploreLabel = stringResource(Res.string.explore_title)
+        val createLabel = stringResource(Res.string.create_community_title)
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
@@ -67,25 +78,30 @@ class CommunityListScreen : Screen {
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
-                    actions = {
-                        IconButton(onClick = { navigator.push(ExploreCommunitiesScreen()) }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(Res.string.explore_title),
-                            )
-                        }
-                    },
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { navigator.push(CreateCommunityScreen()) },
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary,
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_list_create_cd))
-                }
+                AgoraFabMenu(
+                    fabIcon = Icons.Default.Public,
+                    fabContentDescription = stringResource(Res.string.community_list_create_cd),
+                    items = listOf(
+                        FabMenuItem(
+                            icon = Icons.Default.GroupAdd,
+                            label = joinLabel,
+                            onClick = { navigator.push(JoinCommunityScreen()) },
+                        ),
+                        FabMenuItem(
+                            icon = Icons.Default.Search,
+                            label = exploreLabel,
+                            onClick = { navigator.push(ExploreCommunitiesScreen()) },
+                        ),
+                        FabMenuItem(
+                            icon = Icons.Default.Groups,
+                            label = createLabel,
+                            onClick = { navigator.push(CreateCommunityScreen()) },
+                        ),
+                    ),
+                )
             },
         ) { padding ->
             when (val state = uiState) {
@@ -103,9 +119,9 @@ class CommunityListScreen : Screen {
 
                 is CommunityListScreenModel.UiState.Content -> {
                     CommunityListContent(
-                        communities = state.communities,
-                        onCommunityClick = { community ->
-                            navigator.push(CommunityDetailScreen(communityId = community.id))
+                        nodes = state.nodes,
+                        onCommunityClick = { id ->
+                            navigator.push(CommunityDetailScreen(communityId = id))
                         },
                         onJoinClick = { navigator.push(JoinCommunityScreen()) },
                         onExploreClick = { navigator.push(ExploreCommunitiesScreen()) },
@@ -119,13 +135,13 @@ class CommunityListScreen : Screen {
 
 @Composable
 private fun CommunityListContent(
-    communities: List<Community>,
-    onCommunityClick: (Community) -> Unit,
+    nodes: List<CommunityNode>,
+    onCommunityClick: (String) -> Unit,
     onJoinClick: () -> Unit,
     onExploreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (communities.isEmpty()) {
+    if (nodes.isEmpty()) {
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -169,29 +185,11 @@ private fun CommunityListContent(
             contentPadding = PaddingValues(AgoraSpacing.screenHorizontal),
             verticalArrangement = Arrangement.spacedBy(AgoraSpacing.listItemSpacing),
         ) {
-            item {
-                DentilDivider()
-            }
-            item {
-                AgoraButton(
-                    text = stringResource(Res.string.community_list_join_button),
-                    onClick = onJoinClick,
-                    variant = AgoraButtonVariant.Secondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            item {
-                AgoraButton(
-                    text = stringResource(Res.string.explore_title),
-                    onClick = onExploreClick,
-                    variant = AgoraButtonVariant.Secondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            items(communities, key = { it.id }) { community ->
+            item { DentilDivider() }
+            items(nodes, key = { it.community.id }) { node ->
                 CommunityCard(
-                    community = community,
-                    onClick = { onCommunityClick(community) },
+                    node = node,
+                    onClick = onCommunityClick,
                 )
             }
         }
@@ -200,14 +198,15 @@ private fun CommunityListContent(
 
 @Composable
 private fun CommunityCard(
-    community: Community,
-    onClick: () -> Unit,
+    node: CommunityNode,
+    onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val community = node.community
     MarbleCard(
         modifier = modifier,
         elevation = AgoraElevation.subtle,
-        onClick = onClick,
+        onClick = { onClick(community.id) },
     ) {
         Column(modifier = Modifier.padding(AgoraSpacing.cardInternal)) {
             Text(
@@ -222,6 +221,54 @@ private fun CommunityCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (node.children.isNotEmpty()) {
+                Spacer(Modifier.height(AgoraSpacing.md))
+                node.children.forEach { child ->
+                    NestedChildRow(
+                        community = child,
+                        onClick = { onClick(child.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NestedChildRow(
+    community: Community,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = AgoraSpacing.sm, horizontal = AgoraSpacing.xs),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+    ) {
+        Icon(
+            Icons.Default.SubdirectoryArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(16.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = community.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            community.memberCount?.let { count ->
+                Text(
+                    text = stringResource(Res.string.community_detail_members_header, count),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

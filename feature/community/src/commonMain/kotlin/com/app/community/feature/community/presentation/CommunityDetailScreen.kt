@@ -21,12 +21,16 @@ import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +48,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -63,11 +69,15 @@ import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
+import com.app.community.core.ui.components.AgoraFabMenu
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
+import com.app.community.core.ui.components.FabMenuItem
+import com.app.community.core.ui.components.FabMenuItemVariant
 import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.MarbleCard
+import com.app.community.core.ui.share.rememberInviteSharer
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.MarblePanelShape
@@ -93,6 +103,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = koinScreenModel<CommunityDetailScreenModel> { parametersOf(communityId) }
+        val chatScreenModel = koinScreenModel<CommunityChatScreenModel> { parametersOf(communityId) }
         val uiState by screenModel.uiState.collectAsState()
         val deleted by screenModel.deleted.collectAsState()
         val actionMessage by screenModel.actionMessage.collectAsState()
@@ -116,6 +127,41 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
             else -> stringResource(Res.string.community_detail_default_title)
         }
 
+        val inviteSharer = rememberInviteSharer()
+        // Strings que necesitamos en lambdas no-composables (FAB items)
+        val labelEdit = stringResource(Res.string.community_detail_edit)
+        val labelDelete = stringResource(Res.string.community_detail_delete)
+        val labelInvite = stringResource(Res.string.community_detail_share_invite)
+        val labelCreateChild = stringResource(Res.string.community_detail_create_subcommunity)
+        val labelCreateActivity = stringResource(Res.string.community_detail_create_activity_cd)
+        val labelPendingEmpty = stringResource(Res.string.community_pending_requests_empty)
+        val inviteShareLinkTemplate = stringResource(Res.string.community_detail_invite_share_template)
+
+        // Estado del dialog de "compartir como código / como link"
+        var showShareDialog by remember { mutableStateOf(false) }
+        val contentState = uiState as? CommunityDetailScreenModel.UiState.Content
+        if (showShareDialog && contentState != null) {
+            val community = contentState.community
+            val code = community.inviteCode.orEmpty()
+            ShareInviteDialog(
+                onDismiss = { showShareDialog = false },
+                onShareCode = {
+                    // Solo el código pelado, para que se pueda pegar tal cual en
+                    // la pantalla "Unirse con código" sin tener que limpiar texto.
+                    inviteSharer.share(code)
+                    showShareDialog = false
+                },
+                onShareLink = {
+                    val link = "https://share-agora.app/c/$code"
+                    val text = inviteShareLinkTemplate
+                        .replace("%1\$s", community.name)
+                        .replace("%2\$s", link)
+                    inviteSharer.share(text)
+                    showShareDialog = false
+                },
+            )
+        }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
@@ -136,16 +182,86 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
-                val isAdmin = (uiState as? CommunityDetailScreenModel.UiState.Content)?.isAdmin == true
-                if (isAdmin) {
-                    FloatingActionButton(
-                        onClick = { navigator.push(CreateActivityScreen(communityId)) },
-                        containerColor = MaterialTheme.colorScheme.tertiary,
-                        contentColor = MaterialTheme.colorScheme.onTertiary,
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.community_detail_create_activity_cd))
+                val state = uiState as? CommunityDetailScreenModel.UiState.Content
+                val showFab = state?.let {
+                    (it.isAdmin || it.isCreator) &&
+                        it.selectedTab != CommunityDetailScreenModel.DetailTab.CHAT
+                } == true
+                if (showFab && state != null) { // state non-null cuando showFab=true
+                    val community = state.community
+                    val canShareInvite = !community.inviteCode.isNullOrBlank()
+                    val showPending = community.visibility != CommunityVisibility.PUBLIC_OPEN &&
+                        state.pendingRequestsCount > 0
+                    val pendingLabel = "${labelPendingEmpty} (${state.pendingRequestsCount})"
+                    val items = buildList {
+                        // 1. Crear actividad
+                        add(
+                            FabMenuItem(
+                                icon = Icons.Default.Event,
+                                label = labelCreateActivity,
+                                onClick = { navigator.push(CreateActivityScreen(communityId)) },
+                            ),
+                        )
+                        // 2. Compartir invitación
+                        if (canShareInvite) {
+                            add(
+                                FabMenuItem(
+                                    icon = Icons.Default.Share,
+                                    label = labelInvite,
+                                    onClick = { showShareDialog = true },
+                                ),
+                            )
+                        }
+                        // 3. Solicitudes pendientes (si las hay)
+                        if (showPending) {
+                            add(
+                                FabMenuItem(
+                                    icon = Icons.Default.Inbox,
+                                    label = pendingLabel,
+                                    onClick = { navigator.push(JoinRequestsScreen(communityId)) },
+                                ),
+                            )
+                        }
+                        // 4. Crear comunidad hija
+                        add(
+                            FabMenuItem(
+                                icon = Icons.Default.AccountTree,
+                                label = labelCreateChild,
+                                onClick = {
+                                    navigator.push(
+                                        CreateCommunityScreen(
+                                            parentId = communityId,
+                                            parentName = community.name,
+                                        ),
+                                    )
+                                },
+                            ),
+                        )
+                        // 5. Editar
+                        add(
+                            FabMenuItem(
+                                icon = Icons.Default.Edit,
+                                label = labelEdit,
+                                onClick = screenModel::showEditDialog,
+                            ),
+                        )
+                        // 6. Borrar (solo creador)
+                        if (state.isCreator) {
+                            add(
+                                FabMenuItem(
+                                    icon = Icons.Default.Delete,
+                                    label = labelDelete,
+                                    onClick = screenModel::showDeleteDialog,
+                                    variant = FabMenuItemVariant.Danger,
+                                ),
+                            )
+                        }
                     }
+                    AgoraFabMenu(
+                        fabIcon = Icons.Default.Tune,
+                        fabContentDescription = labelCreateActivity,
+                        items = items,
+                    )
                 }
             },
         ) { padding ->
@@ -166,9 +282,9 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                     CommunityDetailContent(
                         state = state,
                         screenModel = screenModel,
+                        chatScreenModel = chatScreenModel,
                         onActivityClick = { activityId -> navigator.push(ActivityDetailScreen(activityId)) },
                         onManageMembers = { navigator.push(MemberManagementScreen(communityId)) },
-                        onViewPendingRequests = { navigator.push(JoinRequestsScreen(communityId)) },
                         onChildClick = { childId ->
                             val isMember = state.myCommunityIds.contains(childId)
                             if (isMember) {
@@ -177,14 +293,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                                 navigator.push(CommunityPreviewScreen(childId))
                             }
                         },
-                        onCreateSubcommunity = {
-                            navigator.push(
-                                CreateCommunityScreen(
-                                    parentId = communityId,
-                                    parentName = state.community.name,
-                                ),
-                            )
-                        },
+                        onShareInvite = { showShareDialog = true },
                         modifier = Modifier.padding(padding),
                     )
                 }
@@ -197,17 +306,16 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
 private fun CommunityDetailContent(
     state: CommunityDetailScreenModel.UiState.Content,
     screenModel: CommunityDetailScreenModel,
+    chatScreenModel: CommunityChatScreenModel,
     onActivityClick: (String) -> Unit,
     onManageMembers: () -> Unit,
-    onViewPendingRequests: () -> Unit,
     onChildClick: (String) -> Unit,
-    onCreateSubcommunity: () -> Unit,
+    onShareInvite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val community = state.community
     val members = state.members
     val activities = state.activities
-    val clipboardManager = LocalClipboardManager.current
 
     // Edit dialog
     if (state.showEditDialog) {
@@ -280,79 +388,20 @@ private fun CommunityDetailContent(
             }
         }
 
-        // Admin controls: edit / delete
-        if (state.isAdmin) {
+        // Para no-admins: si la comunidad NO es privada y tiene invite, mostramos
+        // un botón compacto para compartir el link directamente (los admins lo
+        // tienen en el FAB).
+        val showShareForMember = !state.isAdmin &&
+            community.visibility != CommunityVisibility.PRIVATE &&
+            !community.inviteCode.isNullOrBlank()
+        if (showShareForMember) {
             item {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
-                ) {
-                    AgoraButton(
-                        text = stringResource(Res.string.community_detail_edit),
-                        onClick = screenModel::showEditDialog,
-                        variant = AgoraButtonVariant.Secondary,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (state.isCreator) {
-                        AgoraButton(
-                            text = stringResource(Res.string.community_detail_delete),
-                            onClick = screenModel::showDeleteDialog,
-                            variant = AgoraButtonVariant.Danger,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        }
-
-        if (state.pendingRequestsCount > 0) {
-            item {
-                Spacer(Modifier.height(AgoraSpacing.sm))
                 AgoraButton(
-                    text = stringResource(
-                        Res.string.community_pending_requests_count,
-                        state.pendingRequestsCount,
-                    ),
-                    onClick = onViewPendingRequests,
+                    text = stringResource(Res.string.community_detail_share_invite),
+                    onClick = onShareInvite,
                     variant = AgoraButtonVariant.Secondary,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            }
-        }
-
-        // Invite code chip — visible para todos si la comunidad no es PRIVATE; si es PRIVATE solo admins
-        val showInvite = community.visibility != CommunityVisibility.PRIVATE || state.isAdmin
-        if (showInvite && !community.inviteCode.isNullOrBlank()) {
-            item {
-                MarbleCard(
-                    elevation = AgoraElevation.none,
-                    borderColor = MaterialTheme.agoraColors.gildedVolute,
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(community.inviteCode.orEmpty()))
-                    },
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = AgoraSpacing.cardInternal, vertical = AgoraSpacing.md),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.community_detail_invite_prefix, community.inviteCode.orEmpty()),
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                letterSpacing = MaterialTheme.typography.labelLarge.letterSpacing * 1.5,
-                            ),
-                            color = MaterialTheme.agoraColors.gildedVolute,
-                        )
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = stringResource(Res.string.community_detail_copy_code_cd),
-                            modifier = Modifier.height(16.dp),
-                            tint = MaterialTheme.agoraColors.gildedVolute,
-                        )
-                    }
-                }
             }
         }
 
@@ -372,40 +421,39 @@ private fun CommunityDetailContent(
             )
         }
 
-        // Mostramos las pestañas si ya hay hijas o si eres admin (para poder crear la primera).
-        val showTabs = state.children.isNotEmpty() || state.isAdmin
-
-        if (showTabs) {
-            item {
-                TabRow(
-                    selectedTabIndex = state.selectedTab.ordinal,
-                    containerColor = MaterialTheme.agoraColors.parchment,
-                ) {
-                    Tab(
-                        selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES,
-                        onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.ACTIVITIES) },
-                        text = { Text(stringResource(Res.string.community_detail_tab_activities)) },
-                    )
+        // El Chat siempre esta disponible, asi que las tabs siempre se muestran.
+        val showSubcommunitiesEntry = state.children.isNotEmpty() || state.isAdmin
+        item {
+            TabRow(
+                selectedTabIndex = state.selectedTab.ordinal,
+                containerColor = MaterialTheme.agoraColors.parchment,
+            ) {
+                Tab(
+                    selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES,
+                    onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.ACTIVITIES) },
+                    text = { Text(stringResource(Res.string.community_detail_tab_activities)) },
+                )
+                if (showSubcommunitiesEntry) {
                     Tab(
                         selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES,
                         onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES) },
                         text = { Text(stringResource(Res.string.community_detail_tab_subcommunities)) },
                     )
                 }
+                Tab(
+                    selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.CHAT,
+                    onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.CHAT) },
+                    text = { Text(stringResource(Res.string.community_detail_tab_chat)) },
+                )
             }
         }
 
-        val showActivitiesTab = !showTabs || state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES
-        val showSubcommunitiesTab = showTabs && state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES
+        val showActivitiesTab = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES
+        val showSubcommunitiesTab = showSubcommunitiesEntry &&
+            state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES
+        val showChatTab = state.selectedTab == CommunityDetailScreenModel.DetailTab.CHAT
 
         if (showActivitiesTab) {
-            // Activities section header
-            item {
-                FriezeBandHeader(
-                    title = stringResource(Res.string.community_detail_activities_header, activities.size),
-                )
-            }
-
             if (activities.isEmpty()) {
                 item {
                     Text(
@@ -426,17 +474,6 @@ private fun CommunityDetailContent(
         }
 
         if (showSubcommunitiesTab) {
-            if (state.isAdmin) {
-                item {
-                    AgoraButton(
-                        text = stringResource(Res.string.community_detail_create_subcommunity),
-                        onClick = onCreateSubcommunity,
-                        variant = AgoraButtonVariant.Secondary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
             val (mine, available) = state.children.partition { state.myCommunityIds.contains(it.id) }
 
             if (mine.isEmpty() && available.isEmpty()) {
@@ -451,11 +488,6 @@ private fun CommunityDetailContent(
             }
 
             if (mine.isNotEmpty()) {
-                item {
-                    FriezeBandHeader(
-                        title = stringResource(Res.string.community_detail_my_subcommunities),
-                    )
-                }
                 items(mine, key = { it.id }) { child ->
                     SubcommunityCard(
                         community = child,
@@ -477,6 +509,20 @@ private fun CommunityDetailContent(
                         isMember = false,
                         onClick = { onChildClick(child.id) },
                     )
+                }
+            }
+        }
+
+        if (showChatTab) {
+            // El chat tiene su propio LazyColumn interno. Le damos toda la altura
+            // visible del parent para que sea usable como pantalla completa.
+            item {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillParentMaxHeight(0.85f),
+                ) {
+                    CommunityChatTab(screenModel = chatScreenModel)
                 }
             }
         }
@@ -611,6 +657,29 @@ private fun CommunityVisibility.editDescRes(): StringResource = when (this) {
     CommunityVisibility.PUBLIC_OPEN -> Res.string.create_community_visibility_public_open_desc
     CommunityVisibility.PUBLIC_APPROVAL -> Res.string.create_community_visibility_public_approval_desc
     CommunityVisibility.PRIVATE -> Res.string.create_community_visibility_private_desc
+}
+
+@Composable
+private fun ShareInviteDialog(
+    onDismiss: () -> Unit,
+    onShareCode: () -> Unit,
+    onShareLink: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.community_detail_share_dialog_title)) },
+        text = null,
+        confirmButton = {
+            TextButton(onClick = onShareLink) {
+                Text(stringResource(Res.string.community_detail_share_as_link))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onShareCode) {
+                Text(stringResource(Res.string.community_detail_share_as_code))
+            }
+        },
+    )
 }
 
 @Composable

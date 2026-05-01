@@ -41,23 +41,23 @@ val LightSlotStatusColors = SlotStatusColors(
     ),
 )
 
-// Dark mode slot colors — templo jonico a la luz de la luna
+// Dark mode slot colors — Atenas a medianoche, sincronizado con paleta calida
 val DarkSlotStatusColors = SlotStatusColors(
     available = SlotColorPair(
-        container = Color(0xFF1E4028),  // Malaquita profundo
-        content = Color(0xFF8FD49B),    // Malaquita brillante
+        container = Color(0xFF1F4029),  // Malaquita lunar profunda
+        content = Color(0xFF8FCEA0),    // Malaquita lunar brillante
     ),
     reservedByMe = SlotColorPair(
-        container = Color(0xFF0A5C5A),  // Teal Egeo nocturno
-        content = Color(0xFF8ED4D2),    // Teal Egeo suave
+        container = Color(0xFF0E5856),  // Templo nocturno teal
+        content = Color(0xFF7DC9C5),    // Teal Egeo sereno
     ),
     reservedByOther = SlotColorPair(
-        container = Color(0xFF48453E),  // Piedra oscura
-        content = Color(0xFFC8C4BC),    // Piedra clara
+        container = Color(0xFF3D352B),  // Caliza nocturna calida
+        content = Color(0xFFCBC0B0),    // Caliza clara calida
     ),
     paid = SlotColorPair(
-        container = Color(0xFF654F00),  // Oro brunido profundo
-        content = Color(0xFFECCC6E),    // Oro brillante
+        container = Color(0xFF5A4520),  // Oro brunido bronce
+        content = Color(0xFFD9B96B),    // Oro bronce
     ),
 )
 

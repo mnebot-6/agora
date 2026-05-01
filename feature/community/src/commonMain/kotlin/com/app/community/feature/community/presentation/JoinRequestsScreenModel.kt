@@ -53,7 +53,13 @@ class JoinRequestsScreenModel(
             val result = action()
             _actionInProgress.value = null
             when (result) {
-                is AppResult.Success -> load()
+                is AppResult.Success -> {
+                    // Avisa a CommunityDetail/MemberManagement de que la membresía cambió
+                    com.app.community.core.common.RefreshBus.emit(
+                        com.app.community.core.common.RefreshBus.COMMUNITY_DETAIL,
+                    )
+                    load()
+                }
                 is AppResult.Error -> _uiState.value = UiState.Error(result.message)
             }
         }

@@ -5,5 +5,14 @@
     <!-- Set to "production" before archiving for TestFlight / App Store. -->
     <key>aps-environment</key>
     <string>development</string>
+    <!--
+        Universal Links: https://share-agora.app/c/{code}
+        Requiere subir /.well-known/apple-app-site-association al servidor del
+        dominio firmado con el TeamID + bundleID. Ver INVITE_LINKS.md.
+    -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:share-agora.app</string>
+    </array>
 </dict>
 </plist>
