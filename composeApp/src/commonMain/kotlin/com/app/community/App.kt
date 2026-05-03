@@ -93,6 +93,7 @@ fun App() {
 @Composable
 private fun MainContent() {
     TabNavigator(AgoraTab) {
+        DeepLinkTabSwitcher()
         Scaffold(
             contentWindowInsets = WindowInsets.navigationBars,
             bottomBar = {
@@ -112,6 +113,21 @@ private fun MainContent() {
             ) {
                 CurrentTab()
             }
+        }
+    }
+}
+
+/**
+ * Si llega un deep link de invitación mientras estamos en otro tab, saltamos
+ * automáticamente a Comunidades para que el AutoJoinByInviteScreen se monte.
+ */
+@Composable
+private fun DeepLinkTabSwitcher() {
+    val tabNavigator = LocalTabNavigator.current
+    val pendingInviteCode by DeepLinkHandler.pendingInviteCode.collectAsState()
+    LaunchedEffect(pendingInviteCode) {
+        if (pendingInviteCode != null && tabNavigator.current != CommunitiesTab) {
+            tabNavigator.current = CommunitiesTab
         }
     }
 }

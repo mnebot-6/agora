@@ -136,6 +136,47 @@ class CommunityRepository {
         data class AlreadyMember(val community: Community) : JoinByInviteResult()
     }
 
+    /** Resultado de [lookupCommunityByInvite]. */
+    sealed class InviteLookupResult {
+        /** El usuario ya es miembro de la comunidad. */
+        data class AlreadyMember(val community: Community) : InviteLookupResult()
+        /** Comunidad pública abierta — se puede unir sin confirmación. */
+        data class CanJoinDirectly(val community: Community) : InviteLookupResult()
+        /** Comunidad privada o pública con aprobación — pedir confirmación al usuario. */
+        data class RequiresApproval(val community: Community) : InviteLookupResult()
+        /** Código no encontrado. */
+        data object NotFound : InviteLookupResult()
+    }
+
+    /**
+     * Resuelve un código de invitación a la información de la comunidad sin
+     * tener efectos secundarios. Para el flujo de deep link de invitaciones.
+     */
+    suspend fun lookupCommunityByInvite(inviteCode: String): AppResult<InviteLookupResult> =
+        safeCall {
+            val result = postgrest.rpc(
+                function = "lookup_community_by_invite",
+                parameters = buildJsonObject { put("p_invite_code", inviteCode) },
+            )
+            val obj = lenientJson.parseToJsonElement(result.data) as? JsonObject
+                ?: error("lookup_community_by_invite devolvió un payload inesperado")
+            val status = (obj["status"] as? JsonPrimitive)?.content
+                ?: error("lookup_community_by_invite sin status")
+            if (status == "not_found" || status == "unauthenticated") {
+                InviteLookupResult.NotFound
+            } else {
+                val communityJson = obj["community"]?.toString()
+                    ?: error("lookup_community_by_invite sin community")
+                val community = lenientJson.decodeFromString<Community>(communityJson)
+                when (status) {
+                    "already_member" -> InviteLookupResult.AlreadyMember(community)
+                    "can_join_directly" -> InviteLookupResult.CanJoinDirectly(community)
+                    "requires_approval" -> InviteLookupResult.RequiresApproval(community)
+                    else -> error("Estado desconocido: $status")
+                }
+            }
+        }
+
     suspend fun joinByInviteCodeV2(inviteCode: String): AppResult<JoinByInviteResult> =
         safeCall {
             val result = postgrest.rpc(

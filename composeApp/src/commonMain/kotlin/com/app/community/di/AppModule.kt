@@ -31,6 +31,7 @@ import com.app.community.feature.community.presentation.CommunityListScreenModel
 import com.app.community.feature.community.presentation.CommunityPreviewScreenModel
 import com.app.community.feature.community.presentation.CreateCommunityScreenModel
 import com.app.community.feature.community.presentation.ExploreCommunitiesScreenModel
+import com.app.community.feature.community.presentation.AutoJoinByInviteScreenModel
 import com.app.community.feature.community.presentation.JoinCommunityScreenModel
 import com.app.community.feature.community.presentation.JoinRequestsScreenModel
 import com.app.community.feature.community.presentation.MemberManagementScreenModel
@@ -125,6 +126,12 @@ val screenModelModule = module {
     factory {
         JoinCommunityScreenModel(
             joinCommunityUseCase = get(),
+        )
+    }
+    factory { params ->
+        AutoJoinByInviteScreenModel(
+            inviteCode = params.get(),
+            communityRepository = get(),
         )
     }
     factory { params ->

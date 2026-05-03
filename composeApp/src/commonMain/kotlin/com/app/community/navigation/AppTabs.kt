@@ -25,6 +25,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.resources.stringResource
 import com.app.community.DeepLinkHandler
 import com.app.community.feature.activity.presentation.ActivityFeedScreen
+import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
 import com.app.community.feature.community.presentation.JoinCommunityScreen
 import com.app.community.feature.auth.presentation.ProfileScreen
@@ -62,7 +63,10 @@ object CommunitiesTab : Tab {
             LaunchedEffect(pendingCode) {
                 val code = DeepLinkHandler.consumeInviteCode()
                 if (code != null) {
-                    navigator.push(JoinCommunityScreen(initialCode = code))
+                    // Resuelve y une silenciosamente (o pide confirmación si la
+                    // comunidad requiere aprobación). El usuario nunca ve la
+                    // pantalla manual de "introducir código".
+                    navigator.push(AutoJoinByInviteScreen(inviteCode = code))
                 }
             }
             navigator.lastItem.Content()

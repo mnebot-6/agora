@@ -79,6 +79,16 @@
     <string name="preview_join_confirm_message">Tu solicitud necesitará ser aprobada por un administrador antes de poder acceder a esta comunidad.</string>
     <string name="preview_join_confirm_ok">Enviar solicitud</string>
     <string name="preview_join_confirm_cancel">Cancelar</string>
+
+    <!-- AutoJoinByInviteScreen (deep link de invitación) -->
+    <string name="invite_auto_join_confirm_title">¿Enviar solicitud de unión?</string>
+    <string name="invite_auto_join_confirm_message">¿Quieres solicitar unirte a %1$s? Tu solicitud necesitará ser aprobada por un administrador.</string>
+    <string name="invite_auto_join_confirm_ok">Enviar solicitud</string>
+    <string name="invite_auto_join_confirm_cancel">Cancelar</string>
+    <string name="invite_auto_join_request_sent_title">Solicitud enviada</string>
+    <string name="invite_auto_join_request_sent_message">Tu solicitud para unirte a %1$s ha sido enviada. Recibirás una notificación cuando un administrador responda.</string>
+    <string name="invite_auto_join_invalid">Invitación inválida o caducada</string>
+    <string name="invite_auto_join_close">Cerrar</string>
     <string name="community_pending_requests_badge">Solicitudes pendientes</string>
     <string name="community_pending_requests_count">%1$d pendientes</string>
     <string name="community_pending_requests_empty">Solicitudes pendientes</string>

@@ -79,6 +79,16 @@
     <string name="preview_join_confirm_message">Your request will need to be approved by an administrator before you can access this community.</string>
     <string name="preview_join_confirm_ok">Send request</string>
     <string name="preview_join_confirm_cancel">Cancel</string>
+
+    <!-- AutoJoinByInviteScreen (deep link de invitación) -->
+    <string name="invite_auto_join_confirm_title">Send a join request?</string>
+    <string name="invite_auto_join_confirm_message">Do you want to request to join %1$s? Your request will need to be approved by an administrator.</string>
+    <string name="invite_auto_join_confirm_ok">Send request</string>
+    <string name="invite_auto_join_confirm_cancel">Cancel</string>
+    <string name="invite_auto_join_request_sent_title">Request sent</string>
+    <string name="invite_auto_join_request_sent_message">Your request to join %1$s has been sent. You will receive a notification when an administrator responds.</string>
+    <string name="invite_auto_join_invalid">Invalid or expired invitation</string>
+    <string name="invite_auto_join_close">Close</string>
     <string name="community_pending_requests_badge">Pending requests</string>
     <string name="community_pending_requests_count">%1$d pending</string>
     <string name="community_pending_requests_empty">Pending requests</string>
