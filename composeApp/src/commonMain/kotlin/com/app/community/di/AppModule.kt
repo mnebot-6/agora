@@ -37,11 +37,13 @@ import com.app.community.feature.community.presentation.JoinRequestsScreenModel
 import com.app.community.feature.community.presentation.MemberManagementScreenModel
 import com.app.community.feature.notification.presentation.NotificationListScreenModel
 import com.app.community.dashboard.DashboardScreenModel
+import com.russhwolf.settings.Settings
 import org.koin.dsl.module
 
-val repositoryModule = module {
-    single { ThemeManager() }
-    single { LanguagePreferenceManager() }
+fun repositoryModule(settings: Settings) = module {
+    single<Settings> { settings }
+    single { ThemeManager(get()) }
+    single { LanguagePreferenceManager(get()) }
     single { AuthRepository() }
     single { ProfileRepository() }
     single { CommunityRepository() }
@@ -187,4 +189,4 @@ val screenModelModule = module {
     }
 }
 
-val appModules = listOf(repositoryModule, useCaseModule, screenModelModule)
+fun appModules(settings: Settings) = listOf(repositoryModule(settings), useCaseModule, screenModelModule)

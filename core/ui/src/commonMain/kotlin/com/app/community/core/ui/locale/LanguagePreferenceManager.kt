@@ -1,5 +1,6 @@
 package com.app.community.core.ui.locale
 
+import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,19 +26,36 @@ enum class AppLanguage {
         ES -> "es"
         EN -> "en"
     }
+
+    companion object {
+        fun fromKey(key: String?): AppLanguage = when (key) {
+            "ES" -> ES
+            "EN" -> EN
+            else -> AUTO
+        }
+    }
 }
 
 /**
- * Almacena la preferencia de idioma actual en memoria. La persistencia (Supabase
- * profile o DataStore) la gestiona el screen model que llama a [setLanguage].
+ * Almacena la preferencia de idioma actual con persistencia local
+ * (SharedPreferences en Android, NSUserDefaults en iOS).
  *
- * Patrón paralelo a [com.app.community.core.ui.theme.ThemeManager].
+ * Persistir localmente garantiza que el valor inicial en cold start coincide
+ * con la preferencia del usuario, evitando flips post-login que disparen
+ * recomposiciones destructivas.
  */
-class LanguagePreferenceManager {
-    private val _language = MutableStateFlow(AppLanguage.AUTO)
+class LanguagePreferenceManager(private val settings: Settings) {
+    private val _language = MutableStateFlow(
+        AppLanguage.fromKey(settings.getStringOrNull(KEY_LANGUAGE)),
+    )
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
     fun setLanguage(language: AppLanguage) {
+        settings.putString(KEY_LANGUAGE, language.name)
         _language.value = language
+    }
+
+    private companion object {
+        const val KEY_LANGUAGE = "language_preference"
     }
 }

@@ -74,6 +74,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
+
+            // Persistencia local KMP
+            implementation(libs.multiplatform.settings)
         }
 
         androidMain.dependencies {

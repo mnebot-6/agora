@@ -11,6 +11,7 @@ kotlinx-serialization = "1.7.3"
 kotlinx-coroutines = "1.10.1"
 coil = "3.1.0"
 markdown-renderer = "0.28.0"
+multiplatform-settings = "1.2.0"
 firebase-bom = "33.7.0"
 android-minSdk = "26"
 android-compileSdk = "35"
@@ -56,6 +57,9 @@ coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.re
 # Markdown
 markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer", version.ref = "markdown-renderer" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdown-renderer" }
+
+# Multiplatform Settings (persistencia local KMP: SharedPreferences en Android, NSUserDefaults en iOS)
+multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 
 # Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
