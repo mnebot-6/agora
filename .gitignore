@@ -31,3 +31,7 @@ firebase-service-account.json
 node_modules/
 # Supabase CLI local state
 supabase/.temp/
+# Android release signing — NEVER commit
+keystore.properties
+*.jks
+*.keystore

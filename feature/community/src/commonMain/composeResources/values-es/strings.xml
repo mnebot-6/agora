@@ -113,6 +113,22 @@
     <string name="chat_cancel">Cancelar</string>
     <string name="chat_save">Guardar</string>
     <string name="chat_load_more">Cargar mensajes anteriores</string>
+
+    <!-- Moderation -->
+    <string name="moderation_report">Reportar</string>
+    <string name="moderation_block">Bloquear</string>
+    <string name="moderation_report_title">Reportar mensaje</string>
+    <string name="moderation_report_user_title">Reportar usuario</string>
+    <string name="moderation_report_reason">Motivo</string>
+    <string name="moderation_reason_spam">Spam</string>
+    <string name="moderation_reason_harassment">Acoso</string>
+    <string name="moderation_reason_inappropriate">Contenido inapropiado</string>
+    <string name="moderation_reason_other">Otro</string>
+    <string name="moderation_send_report">Enviar reporte</string>
+    <string name="moderation_block_dialog_title">¿Bloquear a este usuario?</string>
+    <string name="moderation_block_dialog_text">Ya no verás los mensajes de %1$s. Podrás desbloquearlo más tarde desde tu perfil.</string>
+    <string name="moderation_block_confirm">Bloquear</string>
+
     <string name="join_requests_title">Solicitudes de unión</string>
     <string name="join_requests_empty">No hay solicitudes pendientes</string>
     <string name="join_requests_approve">Aprobar</string>

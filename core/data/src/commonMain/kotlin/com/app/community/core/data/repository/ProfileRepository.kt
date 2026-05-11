@@ -32,6 +32,12 @@ class ProfileRepository {
                 .update({ set("fcm_token", token) }) { filter { eq("id", userId) } }
         }
 
+    suspend fun clearFcmToken(userId: String): AppResult<Unit> =
+        safeCall {
+            postgrest.from("profiles")
+                .update({ set("fcm_token", null as String?) }) { filter { eq("id", userId) } }
+        }
+
     suspend fun updateDarkMode(userId: String, darkMode: Boolean): AppResult<Unit> =
         safeCall {
             postgrest.from("profiles")

@@ -23,6 +23,7 @@ data class ProfileUiState(
     val actionMessage: String? = null,
     val isDarkMode: Boolean = false,
     val language: AppLanguage = AppLanguage.AUTO,
+    val isDeletingAccount: Boolean = false,
 )
 
 class ProfileScreenModel(
@@ -113,7 +114,29 @@ class ProfileScreenModel(
 
     fun signOut() {
         screenModelScope.launch {
+            authRepository.currentUserId()?.let { uid ->
+                profileRepository.clearFcmToken(uid)
+            }
             authRepository.signOut()
+        }
+    }
+
+    fun deleteAccount() {
+        screenModelScope.launch {
+            _state.value = _state.value.copy(isDeletingAccount = true)
+            authRepository.currentUserId()?.let { uid ->
+                profileRepository.clearFcmToken(uid)
+            }
+            authRepository.deleteAccount()
+                .onSuccess {
+                    _state.value = _state.value.copy(isDeletingAccount = false)
+                }
+                .onError { msg, _ ->
+                    _state.value = _state.value.copy(
+                        isDeletingAccount = false,
+                        actionMessage = "Error: $msg",
+                    )
+                }
         }
     }
 

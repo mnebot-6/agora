@@ -62,6 +62,20 @@ import agora.feature.community.generated.resources.chat_input_placeholder
 import agora.feature.community.generated.resources.chat_load_more
 import agora.feature.community.generated.resources.chat_save
 import agora.feature.community.generated.resources.chat_send_cd
+import agora.feature.community.generated.resources.moderation_block
+import agora.feature.community.generated.resources.moderation_report
+import agora.feature.community.generated.resources.moderation_report_reason
+import agora.feature.community.generated.resources.moderation_report_title
+import agora.feature.community.generated.resources.moderation_reason_spam
+import agora.feature.community.generated.resources.moderation_reason_harassment
+import agora.feature.community.generated.resources.moderation_reason_inappropriate
+import agora.feature.community.generated.resources.moderation_reason_other
+import agora.feature.community.generated.resources.moderation_send_report
+import agora.feature.community.generated.resources.moderation_block_dialog_title
+import agora.feature.community.generated.resources.moderation_block_dialog_text
+import agora.feature.community.generated.resources.moderation_block_confirm
+import androidx.compose.material3.RadioButton
+import com.app.community.core.data.repository.ReportReason
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,10 +109,16 @@ private fun ChatContent(
     modifier: Modifier = Modifier,
 ) {
     var deleteCandidate by remember { mutableStateOf<String?>(null) }
+    var reportCandidate by remember { mutableStateOf<String?>(null) }
+    var blockCandidate by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val visibleMessages = remember(state.messages, state.blockedUserIds) {
+        if (state.blockedUserIds.isEmpty()) state.messages
+        else state.messages.filterNot { it.userId in state.blockedUserIds }
+    }
 
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         // Lista de mensajes (mas reciente al fondo, scroll inicia abajo)
-        if (state.messages.isEmpty()) {
+        if (visibleMessages.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -136,7 +156,7 @@ private fun ChatContent(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(AgoraSpacing.sm),
                 verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
             ) {
-                items(state.messages, key = { it.id }) { msg ->
+                items(visibleMessages, key = { it.id }) { msg ->
                     MessageBubble(
                         message = msg,
                         isOwn = msg.userId == state.currentUserId,
@@ -149,6 +169,10 @@ private fun ChatContent(
                         onEditSave = screenModel::saveEdit,
                         onEditDraftChange = screenModel::onEditDraftChange,
                         onDeleteRequest = { deleteCandidate = msg.id },
+                        onReportRequest = { reportCandidate = msg.id },
+                        onBlockRequest = {
+                            blockCandidate = msg.userId to (msg.profiles?.displayName ?: "—")
+                        },
                     )
                 }
                 if (state.isLoadingMore) {
@@ -194,6 +218,96 @@ private fun ChatContent(
             },
         )
     }
+
+    reportCandidate?.let { messageId ->
+        ReportReasonDialog(
+            title = stringResource(Res.string.moderation_report_title),
+            onDismiss = { reportCandidate = null },
+            onConfirm = { reason ->
+                screenModel.reportMessage(messageId, reason)
+                reportCandidate = null
+            },
+        )
+    }
+
+    blockCandidate?.let { (userId, displayName) ->
+        AlertDialog(
+            onDismissRequest = { blockCandidate = null },
+            title = { Text(stringResource(Res.string.moderation_block_dialog_title)) },
+            text = { Text(stringResource(Res.string.moderation_block_dialog_text, displayName)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    screenModel.blockUser(userId)
+                    blockCandidate = null
+                }) {
+                    Text(
+                        stringResource(Res.string.moderation_block_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { blockCandidate = null }) {
+                    Text(stringResource(Res.string.chat_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+internal fun ReportReasonDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: (ReportReason) -> Unit,
+) {
+    var selected by remember { mutableStateOf(ReportReason.SPAM) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                Text(
+                    text = stringResource(Res.string.moderation_report_reason),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                ReasonRow(label = stringResource(Res.string.moderation_reason_spam),
+                    selected = selected == ReportReason.SPAM,
+                    onSelect = { selected = ReportReason.SPAM })
+                ReasonRow(label = stringResource(Res.string.moderation_reason_harassment),
+                    selected = selected == ReportReason.HARASSMENT,
+                    onSelect = { selected = ReportReason.HARASSMENT })
+                ReasonRow(label = stringResource(Res.string.moderation_reason_inappropriate),
+                    selected = selected == ReportReason.INAPPROPRIATE,
+                    onSelect = { selected = ReportReason.INAPPROPRIATE })
+                ReasonRow(label = stringResource(Res.string.moderation_reason_other),
+                    selected = selected == ReportReason.OTHER,
+                    onSelect = { selected = ReportReason.OTHER })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selected) }) {
+                Text(stringResource(Res.string.moderation_send_report))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.chat_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ReasonRow(label: String, selected: Boolean, onSelect: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Spacer(Modifier.width(AgoraSpacing.xs))
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+    }
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -210,6 +324,8 @@ private fun MessageBubble(
     onEditSave: () -> Unit,
     onEditDraftChange: (String) -> Unit,
     onDeleteRequest: () -> Unit,
+    onReportRequest: () -> Unit,
+    onBlockRequest: () -> Unit,
 ) {
     val alignment = if (isOwn) Alignment.End else Alignment.Start
     val containerColor = if (isOwn) {
@@ -252,9 +368,7 @@ private fun MessageBubble(
             modifier = Modifier
                 .combinedClickable(
                     onClick = {},
-                    onLongClick = {
-                        if (canEdit || canDelete) menuOpen = true
-                    },
+                    onLongClick = { menuOpen = true },
                 ),
         ) {
             Box {
@@ -323,6 +437,22 @@ private fun MessageBubble(
                             onClick = {
                                 menuOpen = false
                                 onDeleteRequest()
+                            },
+                        )
+                    }
+                    if (!isOwn) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.moderation_report)) },
+                            onClick = {
+                                menuOpen = false
+                                onReportRequest()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.moderation_block)) },
+                            onClick = {
+                                menuOpen = false
+                                onBlockRequest()
                             },
                         )
                     }

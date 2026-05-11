@@ -4,7 +4,10 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.BlockRepository
 import com.app.community.core.data.repository.CommunityRepository
+import com.app.community.core.data.repository.ReportReason
+import com.app.community.core.data.repository.ReportRepository
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.MemberRole
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,8 @@ class MemberManagementScreenModel(
     private val communityId: String,
     private val communityRepository: CommunityRepository,
     private val authRepository: AuthRepository,
+    private val blockRepository: BlockRepository,
+    private val reportRepository: ReportRepository,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(MemberManagementUiState())
@@ -90,6 +95,41 @@ class MemberManagementScreenModel(
                         actionMessage = "${member.profiles?.displayName ?: "Usuario"} eliminado",
                     )
                     load()
+                }
+                .onError { msg, _ ->
+                    _state.value = _state.value.copy(actionMessage = "Error: $msg")
+                }
+        }
+    }
+
+    fun blockMember(member: CommunityMember) {
+        val me = _state.value.currentUserId
+        if (me.isBlank() || member.userId == me) return
+        screenModelScope.launch {
+            blockRepository.blockUser(me, member.userId)
+                .onSuccess {
+                    _state.value = _state.value.copy(
+                        actionMessage = "${member.profiles?.displayName ?: "Usuario"} bloqueado",
+                    )
+                }
+                .onError { msg, _ ->
+                    _state.value = _state.value.copy(actionMessage = "Error: $msg")
+                }
+        }
+    }
+
+    fun reportMember(member: CommunityMember, reason: ReportReason) {
+        val me = _state.value.currentUserId
+        if (me.isBlank() || member.userId == me) return
+        screenModelScope.launch {
+            reportRepository.reportProfile(
+                reporterId = me,
+                targetUserId = member.userId,
+                communityId = communityId,
+                reason = reason,
+            )
+                .onSuccess {
+                    _state.value = _state.value.copy(actionMessage = "Reporte enviado")
                 }
                 .onError { msg, _ ->
                     _state.value = _state.value.copy(actionMessage = "Error: $msg")

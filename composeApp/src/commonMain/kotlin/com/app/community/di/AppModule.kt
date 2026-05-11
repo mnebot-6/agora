@@ -4,10 +4,12 @@ import com.app.community.core.ui.locale.LanguagePreferenceManager
 import com.app.community.core.ui.theme.ThemeManager
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.BlockRepository
 import com.app.community.core.data.repository.CommunityMessageRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
+import com.app.community.core.data.repository.ReportRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.data.repository.SlotTemplateRepository
 import com.app.community.core.data.repository.TagRepository
@@ -53,6 +55,8 @@ fun repositoryModule(settings: Settings) = module {
     single { NotificationRepository() }
     single { SlotTemplateRepository() }
     single { TagRepository() }
+    single { ReportRepository() }
+    single { BlockRepository() }
 }
 
 val useCaseModule = module {
@@ -160,6 +164,8 @@ val screenModelModule = module {
             communityId = params.get(),
             communityRepository = get(),
             authRepository = get(),
+            blockRepository = get(),
+            reportRepository = get(),
         )
     }
     factory { params ->
@@ -168,6 +174,8 @@ val screenModelModule = module {
             messageRepo = get(),
             communityRepo = get(),
             authRepo = get(),
+            blockRepository = get(),
+            reportRepository = get(),
         )
     }
     factory { LoginScreenModel(signInUseCase = get()) }

@@ -3,9 +3,12 @@ package com.app.community.feature.community.presentation
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.BlockRepository
 import com.app.community.core.data.repository.CommunityMessageRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.MessageEvent
+import com.app.community.core.data.repository.ReportReason
+import com.app.community.core.data.repository.ReportRepository
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityMessage
 import com.app.community.core.model.MemberRole
@@ -21,6 +24,8 @@ class CommunityChatScreenModel(
     private val messageRepo: CommunityMessageRepository,
     private val communityRepo: CommunityRepository,
     private val authRepo: AuthRepository,
+    private val blockRepository: BlockRepository,
+    private val reportRepository: ReportRepository,
 ) : ScreenModel {
 
     sealed class UiState {
@@ -37,6 +42,7 @@ class CommunityChatScreenModel(
             val editingMessageId: String? = null,
             val editDraft: String = "",
             val actionMessage: String? = null,
+            val blockedUserIds: Set<String> = emptySet(),
         ) : UiState()
     }
 
@@ -59,6 +65,8 @@ class CommunityChatScreenModel(
                 ?.any { m: CommunityMember -> m.userId == userId && m.role == MemberRole.ADMIN }
                 ?: false
 
+            val blockedIds = blockRepository.getBlockedUserIds(userId).getOrNull() ?: emptySet()
+
             messageRepo.getMessages(communityId, before = null, limit = 50)
                 .onSuccess { messages ->
                     _state.value = UiState.Content(
@@ -66,11 +74,51 @@ class CommunityChatScreenModel(
                         currentUserId = userId,
                         isAdmin = isAdmin,
                         canLoadMore = messages.size >= 50,
+                        blockedUserIds = blockedIds,
                     )
                     subscribeToRealtime()
                 }
                 .onError { msg, _ ->
                     _state.value = UiState.Error(msg)
+                }
+        }
+    }
+
+    fun reportMessage(messageId: String, reason: ReportReason, details: String? = null) {
+        val current = _state.value as? UiState.Content ?: return
+        screenModelScope.launch {
+            reportRepository.reportMessage(
+                reporterId = current.currentUserId,
+                messageId = messageId,
+                communityId = communityId,
+                reason = reason,
+                details = details,
+            )
+                .onSuccess {
+                    _state.update { (it as? UiState.Content)?.copy(actionMessage = "Reporte enviado") ?: it }
+                }
+                .onError { msg, _ ->
+                    _state.update { (it as? UiState.Content)?.copy(actionMessage = "Error: $msg") ?: it }
+                }
+        }
+    }
+
+    fun blockUser(userId: String) {
+        val current = _state.value as? UiState.Content ?: return
+        if (userId == current.currentUserId) return
+        screenModelScope.launch {
+            blockRepository.blockUser(current.currentUserId, userId)
+                .onSuccess {
+                    _state.update { s ->
+                        val c = s as? UiState.Content ?: return@update s
+                        c.copy(
+                            blockedUserIds = c.blockedUserIds + userId,
+                            actionMessage = "Usuario bloqueado",
+                        )
+                    }
+                }
+                .onError { msg, _ ->
+                    _state.update { (it as? UiState.Content)?.copy(actionMessage = "Error: $msg") ?: it }
                 }
         }
     }

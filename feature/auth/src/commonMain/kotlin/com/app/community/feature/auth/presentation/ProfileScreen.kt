@@ -37,7 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -105,9 +107,11 @@ class ProfileScreen : Screen {
                     profile = state.profile!!,
                     isDarkMode = state.isDarkMode,
                     language = state.language,
+                    isDeletingAccount = state.isDeletingAccount,
                     onToggleDarkMode = screenModel::toggleDarkMode,
                     onLanguageChange = screenModel::setLanguage,
                     onSignOut = screenModel::signOut,
+                    onDeleteAccount = screenModel::deleteAccount,
                     modifier = Modifier.padding(padding),
                 )
             }
@@ -120,12 +124,18 @@ private fun ProfileContent(
     profile: com.app.community.core.model.Profile,
     isDarkMode: Boolean,
     language: AppLanguage,
+    isDeletingAccount: Boolean,
     onToggleDarkMode: () -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showSignOutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var deleteConfirmText by remember { mutableStateOf("") }
+    val deleteKeyword = stringResource(Res.string.profile_delete_account_keyword)
+    val uriHandler = LocalUriHandler.current
     val scrollState = rememberScrollState()
 
     Column(
@@ -228,6 +238,46 @@ private fun ProfileContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        Spacer(Modifier.height(AgoraSpacing.md))
+
+        TextButton(
+            onClick = {
+                deleteConfirmText = ""
+                showDeleteAccountDialog = true
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = stringResource(Res.string.profile_delete_account),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        Spacer(Modifier.height(AgoraSpacing.md))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(Res.string.profile_privacy_policy),
+                style = MaterialTheme.typography.bodySmall,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .clickable { uriHandler.openUri("https://share-agora.app/privacy") }
+                    .padding(AgoraSpacing.xs),
+            )
+            Spacer(Modifier.size(AgoraSpacing.md))
+            Text(
+                text = stringResource(Res.string.profile_terms_of_service),
+                style = MaterialTheme.typography.bodySmall,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .clickable { uriHandler.openUri("https://share-agora.app/terms") }
+                    .padding(AgoraSpacing.xs),
+            )
+        }
+
         Spacer(Modifier.height(AgoraSpacing.lg))
     }
 
@@ -246,6 +296,50 @@ private fun ProfileContent(
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutDialog = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isDeletingAccount) showDeleteAccountDialog = false
+            },
+            title = { Text(stringResource(Res.string.profile_delete_account_confirm_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+                    Text(stringResource(Res.string.profile_delete_account_confirm_body))
+                    OutlinedTextField(
+                        value = deleteConfirmText,
+                        onValueChange = { deleteConfirmText = it },
+                        label = { Text(stringResource(Res.string.profile_delete_account_type_to_confirm)) },
+                        singleLine = true,
+                        enabled = !isDeletingAccount,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteAccountDialog = false
+                        onDeleteAccount()
+                    },
+                    enabled = !isDeletingAccount && deleteConfirmText.trim() == deleteKeyword,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.profile_delete_account_action),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAccountDialog = false },
+                    enabled = !isDeletingAccount,
+                ) {
                     Text(stringResource(Res.string.cancel))
                 }
             },

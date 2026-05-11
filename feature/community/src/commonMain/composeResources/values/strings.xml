@@ -114,6 +114,21 @@
     <string name="chat_save">Save</string>
     <string name="chat_load_more">Load older messages</string>
 
+    <!-- Moderation -->
+    <string name="moderation_report">Report</string>
+    <string name="moderation_block">Block</string>
+    <string name="moderation_report_title">Report message</string>
+    <string name="moderation_report_user_title">Report user</string>
+    <string name="moderation_report_reason">Reason</string>
+    <string name="moderation_reason_spam">Spam</string>
+    <string name="moderation_reason_harassment">Harassment</string>
+    <string name="moderation_reason_inappropriate">Inappropriate content</string>
+    <string name="moderation_reason_other">Other</string>
+    <string name="moderation_send_report">Send report</string>
+    <string name="moderation_block_dialog_title">Block this user?</string>
+    <string name="moderation_block_dialog_text">You will no longer see %1$s\'s messages. You can unblock them later from your profile.</string>
+    <string name="moderation_block_confirm">Block</string>
+
     <string name="join_requests_title">Join requests</string>
     <string name="join_requests_empty">No pending requests</string>
     <string name="join_requests_approve">Approve</string>

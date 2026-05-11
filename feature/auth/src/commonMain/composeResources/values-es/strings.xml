@@ -33,6 +33,14 @@
     <string name="profile_sign_out_confirm">Seguro que quieres cerrar sesion?</string>
     <string name="profile_edit_title">Editar perfil</string>
     <string name="profile_save">Guardar</string>
+    <string name="profile_delete_account">Eliminar cuenta</string>
+    <string name="profile_delete_account_confirm_title">Eliminar tu cuenta?</string>
+    <string name="profile_delete_account_confirm_body">Esto eliminara permanentemente tu perfil, tus mensajes y tus reservas. Esta accion no se puede deshacer.</string>
+    <string name="profile_delete_account_type_to_confirm">Escribe BORRAR para confirmar</string>
+    <string name="profile_delete_account_keyword">BORRAR</string>
+    <string name="profile_delete_account_action">Eliminar permanentemente</string>
+    <string name="profile_privacy_policy">Politica de privacidad</string>
+    <string name="profile_terms_of_service">Terminos del servicio</string>
 
     <!-- Forgot password screen -->
     <string name="forgot_title">Restablecer contrasena</string>

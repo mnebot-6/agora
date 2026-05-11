@@ -37,6 +37,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.app.community.core.data.repository.ReportReason
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.MemberRole
 import com.app.community.core.ui.components.AgoraTopBar
@@ -102,6 +103,8 @@ data class MemberManagementScreen(val communityId: String) : Screen {
                     },
                     onToggleRole = screenModel::toggleRole,
                     onRemove = screenModel::removeMember,
+                    onBlock = screenModel::blockMember,
+                    onReport = screenModel::reportMember,
                     modifier = Modifier.padding(padding),
                 )
             }
@@ -116,6 +119,8 @@ private fun MemberList(
     isCurrentUserAdmin: Boolean,
     onToggleRole: (CommunityMember) -> Unit,
     onRemove: (CommunityMember) -> Unit,
+    onBlock: (CommunityMember) -> Unit,
+    onReport: (CommunityMember, ReportReason) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val admins = members.filter { it.role == MemberRole.ADMIN }
@@ -135,6 +140,8 @@ private fun MemberList(
                 isCurrentUserAdmin = isCurrentUserAdmin,
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
+                onBlock = onBlock,
+                onReport = onReport,
             )
             FlutedColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
@@ -149,6 +156,8 @@ private fun MemberList(
                 isCurrentUserAdmin = isCurrentUserAdmin,
                 onToggleRole = onToggleRole,
                 onRemove = onRemove,
+                onBlock = onBlock,
+                onReport = onReport,
             )
             FlutedColumnDivider(modifier = Modifier.padding(vertical = AgoraSpacing.xs))
         }
@@ -162,11 +171,15 @@ private fun MemberRow(
     isCurrentUserAdmin: Boolean,
     onToggleRole: (CommunityMember) -> Unit,
     onRemove: (CommunityMember) -> Unit,
+    onBlock: (CommunityMember) -> Unit,
+    onReport: (CommunityMember, ReportReason) -> Unit,
 ) {
     val isMe = member.userId == currentUserId
     val defaultName = stringResource(Res.string.member_default_name)
     val displayName = member.profiles?.displayName ?: defaultName
     var showRemoveDialog by remember { mutableStateOf(false) }
+    var showBlockDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.sm),
@@ -190,17 +203,32 @@ private fun MemberRow(
             )
         }
 
-        if (isCurrentUserAdmin && !isMe) {
+        if (!isMe) {
             Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                TextButton(onClick = { onToggleRole(member) }) {
+                if (isCurrentUserAdmin) {
+                    TextButton(onClick = { onToggleRole(member) }) {
+                        Text(
+                            if (member.role == MemberRole.ADMIN) stringResource(Res.string.member_demote_admin) else stringResource(Res.string.member_promote_admin),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    TextButton(onClick = { showRemoveDialog = true }) {
+                        Text(
+                            stringResource(Res.string.member_remove_button),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+                TextButton(onClick = { showReportDialog = true }) {
                     Text(
-                        if (member.role == MemberRole.ADMIN) stringResource(Res.string.member_demote_admin) else stringResource(Res.string.member_promote_admin),
+                        stringResource(Res.string.moderation_report),
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
-                TextButton(onClick = { showRemoveDialog = true }) {
+                TextButton(onClick = { showBlockDialog = true }) {
                     Text(
-                        stringResource(Res.string.member_remove_button),
+                        stringResource(Res.string.moderation_block),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -226,6 +254,38 @@ private fun MemberRow(
                 TextButton(onClick = { showRemoveDialog = false }) {
                     Text(stringResource(Res.string.member_remove_cancel))
                 }
+            },
+        )
+    }
+
+    if (showBlockDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = { Text(stringResource(Res.string.moderation_block_dialog_title)) },
+            text = { Text(stringResource(Res.string.moderation_block_dialog_text, displayName)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBlockDialog = false
+                    onBlock(member)
+                }) {
+                    Text(stringResource(Res.string.moderation_block_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) {
+                    Text(stringResource(Res.string.member_remove_cancel))
+                }
+            },
+        )
+    }
+
+    if (showReportDialog) {
+        ReportReasonDialog(
+            title = stringResource(Res.string.moderation_report_user_title),
+            onDismiss = { showReportDialog = false },
+            onConfirm = { reason ->
+                showReportDialog = false
+                onReport(member, reason)
             },
         )
     }
