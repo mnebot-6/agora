@@ -29,7 +29,9 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.app.community.core.domain.auth.GetAuthStateUseCase
 import com.app.community.core.ui.components.AgoraNavigationBar
 import com.app.community.core.ui.components.AgoraNavigationBarItem
+import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AppTheme
+import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.auth.presentation.LoginScreen
 import com.app.community.navigation.ActivitiesTab
 import com.app.community.navigation.AgoraTab
@@ -50,8 +52,11 @@ fun App() {
     // Load theme + language preferences from profile when authenticated
     val authRepository = koinInject<AuthRepository>()
     val profileRepository = koinInject<ProfileRepository>()
-    LaunchedEffect(isAuthenticated) {
-        if (isAuthenticated) {
+    val isGuest by authRepository.isGuestSession.collectAsState(initial = false)
+    val guestStore = koinInject<GuestSessionStore>()
+    val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
+    LaunchedEffect(isAuthenticated, isGuest) {
+        if (isAuthenticated && !isGuest) {
             val userId = authRepository.currentUserId() ?: return@LaunchedEffect
             profileRepository.getProfile(userId).onSuccess { profile ->
                 themeManager.setDarkMode(profile.darkMode == true)
@@ -80,10 +85,45 @@ fun App() {
                     statusBarColor = MaterialTheme.colorScheme.primary,
                     darkIcons = isDarkMode, // dark mode primary is light → dark icons
                 )
-                if (isAuthenticated) {
-                    MainContent()
-                } else {
-                    Navigator(LoginScreen())
+                when {
+                    // Sesión de invitado anónimo: UI confinada a la actividad.
+                    isAuthenticated && isGuest -> {
+                        LaunchedEffect(pendingActivityCode) {
+                            if (pendingActivityCode != null) {
+                                guestStore.setActivityCode(pendingActivityCode)
+                                DeepLinkHandler.consumeActivityCode()
+                            }
+                        }
+                        val guestCode = guestStore.activityCode()
+                        if (guestCode != null) {
+                            key(guestCode) { Navigator(GuestActivityScreen(guestCode)) }
+                        } else {
+                            // Sesión anónima sin actividad objetivo → cerrar sesión.
+                            LaunchedEffect(Unit) { authRepository.signOut() }
+                            LoadingScreen()
+                        }
+                    }
+                    // Usuario real: UI de miembro. El deep link de actividad se
+                    // resuelve en ActivitiesTab (miembro → detalle; no miembro →
+                    // flujo de invitado con su identidad real).
+                    isAuthenticated -> {
+                        LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
+                        MainContent()
+                    }
+                    // No autenticado: si llega un link de actividad, entrar como
+                    // invitado anónimo; si no, login.
+                    pendingActivityCode != null -> {
+                        LaunchedEffect(pendingActivityCode) {
+                            guestStore.setActivityCode(pendingActivityCode)
+                            DeepLinkHandler.consumeActivityCode()
+                            authRepository.signInAnonymously()
+                        }
+                        LoadingScreen()
+                    }
+                    else -> {
+                        LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
+                        Navigator(LoginScreen())
+                    }
                 }
             }
         }
@@ -125,9 +165,15 @@ private fun MainContent() {
 private fun DeepLinkTabSwitcher() {
     val tabNavigator = LocalTabNavigator.current
     val pendingInviteCode by DeepLinkHandler.pendingInviteCode.collectAsState()
+    val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
     LaunchedEffect(pendingInviteCode) {
         if (pendingInviteCode != null && tabNavigator.current != CommunitiesTab) {
             tabNavigator.current = CommunitiesTab
+        }
+    }
+    LaunchedEffect(pendingActivityCode) {
+        if (pendingActivityCode != null && tabNavigator.current != ActivitiesTab) {
+            tabNavigator.current = ActivitiesTab
         }
     }
 }

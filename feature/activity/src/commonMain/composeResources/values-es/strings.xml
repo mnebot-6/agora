@@ -100,4 +100,36 @@
     <!-- Edit screen -->
     <string name="edit_title">Editar Actividad</string>
     <string name="edit_save">Guardar</string>
+
+    <!-- Compartir con invitados (admin) -->
+    <string name="detail_share_guest">Compartir con invitados</string>
+    <string name="detail_guest_requests_header">Solicitudes de invitados</string>
+    <string name="detail_guest_requests_empty">No hay solicitudes de invitados pendientes</string>
+    <string name="detail_guest_request_approve">Aprobar</string>
+    <string name="detail_guest_request_reject">Rechazar</string>
+    <string name="detail_guest_chip">Invitado</string>
+    <string name="detail_guest_pending_chip">Pendiente</string>
+
+    <!-- Landing de invitado (en la app) -->
+    <string name="guest_loading">Cargando…</string>
+    <string name="guest_not_found">Este enlace ya no es válido.</string>
+    <string name="guest_invite_intro">Te han invitado a esta actividad</string>
+    <string name="guest_when">Cuándo: %1$s</string>
+    <string name="guest_where">Dónde: %1$s</string>
+    <string name="guest_capacity">Plazas: %1$d / %2$d</string>
+    <string name="guest_capacity_unlimited">Plazas abiertas</string>
+    <string name="guest_name_label">Tu nombre</string>
+    <string name="guest_phone_label">Teléfono</string>
+    <string name="guest_form_error">Introduce tu nombre y tu teléfono.</string>
+    <string name="guest_request_button">Solicitar asistir</string>
+    <string name="guest_pending_title">Solicitud enviada</string>
+    <string name="guest_pending_message">Tu solicitud para asistir a %1$s está pendiente de que la apruebe un administrador.</string>
+    <string name="guest_approved_title">¡Estás dentro!</string>
+    <string name="guest_approved_message">Tu asistencia a %1$s ha sido aprobada.</string>
+    <string name="guest_rejected_title">Solicitud no aprobada</string>
+    <string name="guest_rejected_message">Tu solicitud para asistir a %1$s no fue aprobada.</string>
+    <string name="guest_full_title">Sin plazas</string>
+    <string name="guest_full_message">Esta actividad no tiene plazas disponibles ahora mismo.</string>
+    <string name="guest_exit">Cerrar</string>
+    <string name="guest_get_app">Descargar la app</string>
 </resources>

@@ -7,6 +7,7 @@ import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.BlockRepository
 import com.app.community.core.data.repository.CommunityMessageRepository
 import com.app.community.core.data.repository.CommunityRepository
+import com.app.community.core.data.repository.GuestRepository
 import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.ReportRepository
@@ -19,10 +20,12 @@ import com.app.community.core.domain.auth.SignUpUseCase
 import com.app.community.core.domain.community.CreateCommunityUseCase
 import com.app.community.core.domain.community.GetMyCommunitiesUseCase
 import com.app.community.core.domain.community.JoinCommunityUseCase
+import com.app.community.GuestSessionStore
 import com.app.community.feature.activity.presentation.ActivityDetailScreenModel
 import com.app.community.feature.activity.presentation.ActivityFeedScreenModel
 import com.app.community.feature.activity.presentation.CreateActivityScreenModel
 import com.app.community.feature.activity.presentation.EditActivityScreenModel
+import com.app.community.feature.activity.presentation.GuestActivityScreenModel
 import com.app.community.feature.auth.presentation.ForgotPasswordScreenModel
 import com.app.community.feature.auth.presentation.LoginScreenModel
 import com.app.community.feature.auth.presentation.ProfileScreenModel
@@ -57,6 +60,8 @@ fun repositoryModule(settings: Settings) = module {
     single { TagRepository() }
     single { ReportRepository() }
     single { BlockRepository() }
+    single { GuestRepository() }
+    single { GuestSessionStore(get()) }
 }
 
 val useCaseModule = module {
@@ -100,6 +105,13 @@ val screenModelModule = module {
             authRepository = get(),
             communityRepository = get(),
             profileRepository = get(),
+            guestRepository = get(),
+        )
+    }
+    factory { params ->
+        GuestActivityScreenModel(
+            code = params.get(),
+            guestRepository = get(),
         )
     }
     factory {

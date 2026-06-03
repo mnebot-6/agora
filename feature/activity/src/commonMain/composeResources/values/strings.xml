@@ -100,4 +100,36 @@
     <!-- Edit screen -->
     <string name="edit_title">Edit Activity</string>
     <string name="edit_save">Save</string>
+
+    <!-- Guest sharing (admin) -->
+    <string name="detail_share_guest">Share with guests</string>
+    <string name="detail_guest_requests_header">Guest requests</string>
+    <string name="detail_guest_requests_empty">No pending guest requests</string>
+    <string name="detail_guest_request_approve">Approve</string>
+    <string name="detail_guest_request_reject">Reject</string>
+    <string name="detail_guest_chip">Guest</string>
+    <string name="detail_guest_pending_chip">Pending</string>
+
+    <!-- Guest landing (in-app) -->
+    <string name="guest_loading">Loading…</string>
+    <string name="guest_not_found">This link is no longer valid.</string>
+    <string name="guest_invite_intro">You\'ve been invited to this activity</string>
+    <string name="guest_when">When: %1$s</string>
+    <string name="guest_where">Where: %1$s</string>
+    <string name="guest_capacity">Spots: %1$d / %2$d</string>
+    <string name="guest_capacity_unlimited">Open capacity</string>
+    <string name="guest_name_label">Your name</string>
+    <string name="guest_phone_label">Phone number</string>
+    <string name="guest_form_error">Please enter your name and phone number.</string>
+    <string name="guest_request_button">Request to attend</string>
+    <string name="guest_pending_title">Request sent</string>
+    <string name="guest_pending_message">Your request to attend %1$s is awaiting approval from an admin.</string>
+    <string name="guest_approved_title">You\'re in!</string>
+    <string name="guest_approved_message">Your attendance to %1$s has been approved.</string>
+    <string name="guest_rejected_title">Request not approved</string>
+    <string name="guest_rejected_message">Your request to attend %1$s was not approved.</string>
+    <string name="guest_full_title">No spots left</string>
+    <string name="guest_full_message">This activity has no available spots right now.</string>
+    <string name="guest_exit">Close</string>
+    <string name="guest_get_app">Get the app</string>
 </resources>

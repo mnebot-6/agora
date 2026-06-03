@@ -6,11 +6,14 @@ import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
+import com.app.community.core.data.repository.GuestRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
+import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
+import com.app.community.core.model.PendingGuestRequest
 import com.app.community.core.model.Position
 import com.app.community.core.model.Profile
 import com.app.community.core.model.Slot
@@ -49,6 +52,8 @@ sealed class ActivityDetailUiState {
         val isAdmin: Boolean,
         val participantCount: Int = 0,
         val isUserJoined: Boolean = false,
+        val isPublicCommunity: Boolean = false,
+        val pendingGuestRequests: List<PendingGuestRequest> = emptyList(),
     ) : ActivityDetailUiState()
 
     data class Error(val message: String) : ActivityDetailUiState()
@@ -61,6 +66,7 @@ class ActivityDetailScreenModel(
     private val authRepository: AuthRepository,
     private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
+    private val guestRepository: GuestRepository,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow<ActivityDetailUiState>(ActivityDetailUiState.Loading)
@@ -71,6 +77,13 @@ class ActivityDetailScreenModel(
 
     private val _deleted = MutableStateFlow(false)
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
+
+    /** URL del link de invitado a compartir; la pantalla la consume y abre el share sheet. */
+    private val _guestShareUrl = MutableStateFlow<String?>(null)
+    val guestShareUrl: StateFlow<String?> = _guestShareUrl.asStateFlow()
+
+    private var isPublicCommunity: Boolean = false
+    private var pendingGuestRequests: List<PendingGuestRequest> = emptyList()
 
     init {
         load()
@@ -100,6 +113,13 @@ class ActivityDetailScreenModel(
             val members = membersResult.getOrNull() ?: emptyList()
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
 
+            // Comunidad pública → habilita compartir/invitados; carga la cola FIFO si soy admin
+            isPublicCommunity = communityRepository.getCommunity(activity.communityId)
+                .getOrNull()?.visibility?.let { it != CommunityVisibility.PRIVATE } ?: false
+            pendingGuestRequests = if (isAdmin && isPublicCommunity) {
+                guestRepository.listPendingRequests(activityId).getOrNull() ?: emptyList()
+            } else emptyList()
+
             loadSlots(activity, userId, isAdmin)
         }
     }
@@ -120,6 +140,8 @@ class ActivityDetailScreenModel(
                     isAdmin = isAdmin,
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
+                    isPublicCommunity = isPublicCommunity,
+                    pendingGuestRequests = pendingGuestRequests,
                 )
             }
 
@@ -133,6 +155,8 @@ class ActivityDetailScreenModel(
                     isAdmin = isAdmin,
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
+                    isPublicCommunity = isPublicCommunity,
+                    pendingGuestRequests = pendingGuestRequests,
                 )
             }
 
@@ -166,6 +190,8 @@ class ActivityDetailScreenModel(
                     isAdmin = isAdmin,
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
+                    isPublicCommunity = isPublicCommunity,
+                    pendingGuestRequests = pendingGuestRequests,
                 )
             }
         }
@@ -335,6 +361,34 @@ class ActivityDetailScreenModel(
                 .onError { msg, _ ->
                     _actionMessage.value = "Error: $msg"
                 }
+        }
+    }
+
+    fun generateGuestLink() {
+        screenModelScope.launch {
+            guestRepository.generateLink(activityId)
+                .onSuccess { url -> _guestShareUrl.value = url }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
+        }
+    }
+
+    fun consumeGuestShareUrl() {
+        _guestShareUrl.value = null
+    }
+
+    fun approveGuestRequest(requestId: String) {
+        screenModelScope.launch {
+            guestRepository.approveRequest(requestId)
+                .onSuccess { load() }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
+        }
+    }
+
+    fun rejectGuestRequest(requestId: String) {
+        screenModelScope.launch {
+            guestRepository.rejectRequest(requestId)
+                .onSuccess { load() }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
         }
     }
 

@@ -59,6 +59,8 @@ import com.app.community.core.ui.components.FriezeBandHeader
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.SlotStatusBadge
 import com.app.community.core.ui.components.MarbleCard
+import com.app.community.core.ui.share.rememberInviteSharer
+import com.app.community.core.model.PendingGuestRequest
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.MarblePanelShape
@@ -84,9 +86,18 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
         val state by screenModel.state.collectAsState()
         val actionMessage by screenModel.actionMessage.collectAsState()
         val deleted by screenModel.deleted.collectAsState()
+        val guestShareUrl by screenModel.guestShareUrl.collectAsState()
         val snackbarHostState = remember { SnackbarHostState() }
+        val inviteSharer = rememberInviteSharer()
 
         LaunchedEffect(Unit) { screenModel.load() }
+
+        LaunchedEffect(guestShareUrl) {
+            guestShareUrl?.let {
+                inviteSharer.share(it)
+                screenModel.consumeGuestShareUrl()
+            }
+        }
 
         LaunchedEffect(deleted) {
             if (deleted) navigator.pop()
@@ -243,6 +254,30 @@ private fun ActivityDetailContent(
                         onClick = { showDeleteDialog = true },
                         variant = AgoraButtonVariant.Danger,
                         modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            // Compartir con invitados: solo comunidades públicas
+            if (state.isPublicCommunity) {
+                item {
+                    AgoraButton(
+                        text = stringResource(Res.string.detail_share_guest),
+                        onClick = screenModel::generateGuestLink,
+                        variant = AgoraButtonVariant.Secondary,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // Cola FIFO de solicitudes de invitados pendientes
+            if (state.pendingGuestRequests.isNotEmpty()) {
+                item { FriezeBandHeader(title = stringResource(Res.string.detail_guest_requests_header)) }
+                items(state.pendingGuestRequests, key = { it.id }) { request ->
+                    GuestRequestRow(
+                        request = request,
+                        onApprove = { screenModel.approveGuestRequest(request.id) },
+                        onReject = { screenModel.rejectGuestRequest(request.id) },
                     )
                 }
             }
@@ -427,6 +462,46 @@ private fun ParticipantRow(slotWithProfile: SlotWithProfile, currentUserId: Stri
 }
 
 @Composable
+private fun GuestRequestRow(
+    request: PendingGuestRequest,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MarblePanelShape,
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.padding(AgoraSpacing.md).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(request.guestName, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    request.guestPhone,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                TextButton(onClick = onApprove) {
+                    Text(stringResource(Res.string.detail_guest_request_approve), style = MaterialTheme.typography.labelMedium)
+                }
+                TextButton(onClick = onReject) {
+                    Text(
+                        stringResource(Res.string.detail_guest_request_reject),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun LocationLink(activity: Activity) {
     val uriHandler = LocalUriHandler.current
     val loc = activity.location ?: return
@@ -477,6 +552,7 @@ private fun SlotCard(
         SlotStatus.AVAILABLE -> slotColors.available
         SlotStatus.RESERVED -> if (isMySlot) slotColors.reservedByMe else slotColors.reservedByOther
         SlotStatus.PAID -> slotColors.paid
+        SlotStatus.PENDING -> slotColors.reservedByOther
     }
 
     OutlinedCard(
@@ -496,13 +572,24 @@ private fun SlotCard(
                         Text(stringResource(Res.string.detail_slot_index, index), style = MaterialTheme.typography.titleSmall)
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
-                    SlotStatus.RESERVED, SlotStatus.PAID -> {
-                        val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                    SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
+                        val name = when {
+                            slot.isGuest -> stringResource(Res.string.detail_guest_chip)
+                            else -> slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
                                 style = MaterialTheme.typography.titleSmall,
                             )
+                            if (slot.status == SlotStatus.PENDING) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = stringResource(Res.string.detail_guest_pending_chip),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             if (isAdmin && slot.status == SlotStatus.PAID) {
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Icon(
@@ -569,6 +656,7 @@ private fun PositionSlotCard(
         SlotStatus.AVAILABLE -> slotColors.available
         SlotStatus.RESERVED -> if (isMySlot) slotColors.reservedByMe else slotColors.reservedByOther
         SlotStatus.PAID -> slotColors.paid
+        SlotStatus.PENDING -> slotColors.reservedByOther
     }
 
     OutlinedCard(
@@ -589,13 +677,24 @@ private fun PositionSlotCard(
                         Text(positionLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
-                    SlotStatus.RESERVED, SlotStatus.PAID -> {
-                        val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                    SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
+                        val name = when {
+                            slot.isGuest -> stringResource(Res.string.detail_guest_chip)
+                            else -> slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
                                 style = MaterialTheme.typography.titleSmall,
                             )
+                            if (slot.status == SlotStatus.PENDING) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = stringResource(Res.string.detail_guest_pending_chip),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             if (isAdmin && slot.status == SlotStatus.PAID) {
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Icon(

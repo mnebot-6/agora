@@ -55,20 +55,24 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
-        val code = when {
+        val segments = data.pathSegments
+        when {
             // agora://invite/{code}
             data.scheme == "agora" && data.host == "invite" -> {
-                data.pathSegments?.firstOrNull()
+                data.pathSegments?.firstOrNull()?.let { DeepLinkHandler.setInviteCode(it) }
             }
-            // https://share-agora.app/c/{code}
-            data.scheme == "https" && data.host == "share-agora.app" -> {
-                val segments = data.pathSegments
-                if (segments != null && segments.size >= 2 && segments[0] == "c") {
-                    segments[1]
-                } else null
+            // agora://activity/{code}
+            data.scheme == "agora" && data.host == "activity" -> {
+                data.pathSegments?.firstOrNull()?.let { DeepLinkHandler.setActivityCode(it) }
             }
-            else -> null
-        } ?: return
-        DeepLinkHandler.setInviteCode(code)
+            data.scheme == "https" && data.host == "share-agora.app" && segments != null && segments.size >= 2 -> {
+                when (segments[0]) {
+                    // https://share-agora.app/c/{code}
+                    "c" -> DeepLinkHandler.setInviteCode(segments[1])
+                    // https://share-agora.app/a/{code}
+                    "a" -> DeepLinkHandler.setActivityCode(segments[1])
+                }
+            }
+        }
     }
 }

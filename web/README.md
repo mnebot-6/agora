@@ -16,12 +16,40 @@ Sin estos archivos los enlaces `https://share-agora.app/c/{CODE}` abrirían el n
 ```
 web/
 ├── index.html                              # Landing page placeholder
+├── a/index.html                            # Landing de invitado a actividad (SPA)
 ├── _headers                                # Content-Type config para AASA
 ├── README.md                               # Este archivo
 └── .well-known/
     ├── assetlinks.json                     # Android — listo (debug SHA256)
     └── apple-app-site-association          # iOS — PENDIENTE
 ```
+
+## Landing de invitado a actividad (`/a/{code}`)
+
+`a/index.html` es una SPA autocontenida (HTML+CSS+JS inline, usa `@supabase/supabase-js`
+desde CDN) que permite a alguien SIN la app solicitar asistir a una actividad como
+invitado:
+
+1. Inicia una sesión **anónima** de Supabase (persistida por navegador) → cada
+   dispositivo tiene su propia identidad y su estado persistente al reabrir el link.
+2. Llama a `get_activity_guest_preview(p_code)` y muestra los datos de la actividad.
+3. Pide **nombre + teléfono** y llama a `request_guest_slot(p_code, p_name, p_phone)`,
+   que retiene un slot pendiente de aprobación por un admin.
+4. Muestra el estado (pendiente / aprobado / rechazado / lleno) y un botón
+   "Descargar la app" (`agora://activity/{code}`).
+
+### Requisitos de despliegue
+
+- **Auth anónima**: habilitar el provider *Anonymous* en el dashboard de Supabase
+  (Authentication → Providers). Sin esto, el `signInAnonymously()` falla.
+  Recomendado activar protección anti-abuso (CAPTCHA / rate limit) por ser un
+  endpoint público.
+- **Ruta dinámica `/a/*`**: `/a/{code}` lleva un segmento variable. El Worker de
+  Cloudflare debe servir `a/index.html` para CUALQUIER ruta `/a/*` (no basta con
+  subir el fichero estático, que solo respondería a `/a/`). La SPA lee el `{code}`
+  de `location.pathname`.
+- El intent-filter Android `pathPattern="/a/.*"` ya está en el manifest, así que
+  si la app está instalada el link abre la app en vez de esta landing.
 
 ## Estado por plataforma
 

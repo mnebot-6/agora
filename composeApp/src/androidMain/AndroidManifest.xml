@@ -30,6 +30,15 @@
                     android:scheme="agora"
                     android:host="invite" />
             </intent-filter>
+            <!-- Custom scheme: agora://activity/{code} (invitado a actividad) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="agora"
+                    android:host="activity" />
+            </intent-filter>
             <!--
                 HTTPS App Link: https://share-agora.app/c/{code}
                 Requiere subir /.well-known/assetlinks.json al servidor del dominio
@@ -43,6 +52,10 @@
                     android:scheme="https"
                     android:host="share-agora.app"
                     android:pathPattern="/c/.*" />
+                <data
+                    android:scheme="https"
+                    android:host="share-agora.app"
+                    android:pathPattern="/a/.*" />
             </intent-filter>
         </activity>
 
