@@ -9,6 +9,9 @@ enum class SlotStatus {
     @SerialName("available") AVAILABLE,
     @SerialName("reserved") RESERVED,
     @SerialName("paid") PAID,
+
+    /** Slot retenido por un invitado a la espera de aprobación de un admin. */
+    @SerialName("pending") PENDING,
 }
 
 @Serializable
@@ -35,10 +38,12 @@ data class Slot(
     val status: SlotStatus = SlotStatus.AVAILABLE,
     @SerialName("reserved_by") val reservedBy: String? = null,
     @SerialName("reserved_at") val reservedAt: Instant? = null,
+    @SerialName("is_guest") val isGuest: Boolean = false,
 ) {
     val isAvailable: Boolean get() = status == SlotStatus.AVAILABLE
     val isReserved: Boolean get() = status == SlotStatus.RESERVED
     val isPaid: Boolean get() = status == SlotStatus.PAID
+    val isPendingGuest: Boolean get() = status == SlotStatus.PENDING
 }
 
 @Serializable

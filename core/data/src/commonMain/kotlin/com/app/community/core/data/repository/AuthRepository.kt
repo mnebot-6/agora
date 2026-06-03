@@ -18,7 +18,27 @@ class AuthRepository {
         status is io.github.jan.supabase.auth.status.SessionStatus.Authenticated
     }
 
+    /**
+     * True cuando la sesión activa es de un invitado anónimo. Todas las cuentas
+     * reales se crean vía Email (siempre tienen email no nulo); los invitados
+     * anónimos no tienen email. Se usa para confinar la sesión de invitado fuera
+     * de la UI de miembro (ver App.kt).
+     */
+    val isGuestSession: Flow<Boolean> = auth.sessionStatus.map {
+        val user = auth.currentUserOrNull()
+        user != null && user.email.isNullOrBlank()
+    }
+
     fun currentUserId(): String? = auth.currentUserOrNull()?.id
+
+    fun isAnonymous(): Boolean {
+        val user = auth.currentUserOrNull() ?: return false
+        return user.email.isNullOrBlank()
+    }
+
+    /** Inicia sesión anónima (invitado). Cada dispositivo obtiene su identidad. */
+    suspend fun signInAnonymously(): AppResult<Unit> =
+        safeCall { auth.signInAnonymously() }
 
     suspend fun signUp(email: String, password: String, displayName: String): AppResult<Unit> =
         safeCall {
