@@ -35,3 +35,5 @@ supabase/.temp/
 keystore.properties
 *.jks
 *.keystore
+# Guest activity landing page — contains hardcoded Supabase anon key
+web/a/

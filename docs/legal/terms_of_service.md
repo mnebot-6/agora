@@ -51,7 +51,7 @@ By using the App you may receive push notifications related to your communities 
 
 ## 8. Intellectual property
 
-The App, its design, code, and brand ("Agora", logo, icons, color palette) are owned by [LEGAL_NAME]. You may not copy, modify, or reuse them without permission.
+The App, its design, code, and brand ("Agora", logo, icons, color palette) are owned by Miguel Nebot Chirivella. You may not copy, modify, or reuse them without permission.
 
 ## 9. Disclaimer
 
@@ -67,7 +67,7 @@ We may suspend or terminate your access to the App if you violate these Terms or
 
 ## 12. Governing law
 
-These Terms are governed by the laws of [COUNTRY], without regard to conflict-of-law rules. Disputes will be resolved in the courts of [JURISDICTION], unless your local law gives you the right to bring proceedings in your country of residence.
+These Terms are governed by the laws of Spain, without regard to conflict-of-law rules. Disputes will be resolved in the courts of Valencia, Spain, unless your local law gives you the right to bring proceedings in your country of residence.
 
 ## 13. Changes
 

@@ -10,9 +10,7 @@ If you do not agree with this Policy, do not use the App.
 
 ## 1. Who we are
 
-Agora is operated by [LEGAL_NAME / TRADING NAME], based in [COUNTRY]. You can contact us at **mnebotchirivella@gmail.com** for any privacy question or to exercise your rights.
-
-> *(Replace `[LEGAL_NAME / TRADING NAME]` and `[COUNTRY]` before publishing.)*
+Agora is operated by Miguel Nebot Chirivella, based in Spain. You can contact us at **mnebotchirivella@gmail.com** for any privacy question or to exercise your rights.
 
 ## 2. Data we collect
 
