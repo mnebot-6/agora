@@ -173,6 +173,10 @@ class NotificationListScreen : Screen {
                                         NotificationType.JOIN_REQUEST_APPROVED ->
                                             communityId?.let { navigator.push(CommunityDetailScreen(it)) }
                                         NotificationType.JOIN_REQUEST_REJECTED -> Unit
+                                        NotificationType.GUEST_REQUEST_RECEIVED ->
+                                            activityId?.let { navigator.push(ActivityDetailScreen(it)) }
+                                        NotificationType.GUEST_REQUEST_APPROVED,
+                                        NotificationType.GUEST_REQUEST_REJECTED -> Unit
                                         NotificationType.NEW_ACTIVITY,
                                         NotificationType.SLOT_RELEASED,
                                         NotificationType.SUBSTITUTE_PROMOTED,
@@ -264,6 +268,9 @@ private fun NotificationRow(
         NotificationType.JOIN_REQUEST_RECEIVED -> stringResource(Res.string.type_join_request_received)
         NotificationType.JOIN_REQUEST_APPROVED -> stringResource(Res.string.type_join_request_approved)
         NotificationType.JOIN_REQUEST_REJECTED -> stringResource(Res.string.type_join_request_rejected)
+        NotificationType.GUEST_REQUEST_RECEIVED -> stringResource(Res.string.type_guest_request_received)
+        NotificationType.GUEST_REQUEST_APPROVED -> stringResource(Res.string.type_guest_request_approved)
+        NotificationType.GUEST_REQUEST_REJECTED -> stringResource(Res.string.type_guest_request_rejected)
     }
 
     Row(

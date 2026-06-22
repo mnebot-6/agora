@@ -14,6 +14,9 @@ enum class NotificationType {
     @SerialName("join_request_received") JOIN_REQUEST_RECEIVED,
     @SerialName("join_request_approved") JOIN_REQUEST_APPROVED,
     @SerialName("join_request_rejected") JOIN_REQUEST_REJECTED,
+    @SerialName("guest_request_received") GUEST_REQUEST_RECEIVED,
+    @SerialName("guest_request_approved") GUEST_REQUEST_APPROVED,
+    @SerialName("guest_request_rejected") GUEST_REQUEST_REJECTED,
 }
 
 @Serializable

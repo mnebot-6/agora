@@ -44,12 +44,21 @@ data class GuestMyRequest(
     @SerialName("requested_at") val requestedAt: Instant,
 )
 
+/** Posición disponible para un invitado (limited_with_positions). */
+@Serializable
+data class GuestPositionInfo(
+    val id: String,
+    val name: String,
+    val available: Int = 0,
+)
+
 /** Respuesta de `get_activity_guest_preview`. `status` = "ok" | "not_found". */
 @Serializable
 data class GuestActivityPreview(
     val status: String,
     val activity: GuestActivityInfo? = null,
     val community: GuestCommunityInfo? = null,
+    val positions: List<GuestPositionInfo>? = null,
     @SerialName("is_member") val isMember: Boolean = false,
     @SerialName("my_request") val myRequest: GuestMyRequest? = null,
 )
@@ -72,4 +81,5 @@ data class PendingGuestRequest(
     @SerialName("guest_name") val guestName: String,
     @SerialName("guest_phone") val guestPhone: String,
     @SerialName("requested_at") val requestedAt: Instant,
+    @SerialName("requested_positions") val requestedPositions: List<String> = emptyList(),
 )

@@ -484,6 +484,13 @@ private fun GuestRequestRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (request.requestedPositions.isNotEmpty()) {
+                    Text(
+                        request.requestedPositions.joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
                 TextButton(onClick = onApprove) {
@@ -573,9 +580,10 @@ private fun SlotCard(
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
                     SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
+                        val guestChip = stringResource(Res.string.detail_guest_chip)
                         val name = when {
-                            slot.isGuest -> stringResource(Res.string.detail_guest_chip)
-                            else -> slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                            slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
+                            else -> slotWithProfile.profile?.displayName ?: guestChip
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -678,9 +686,10 @@ private fun PositionSlotCard(
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
                     SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
+                        val guestChip = stringResource(Res.string.detail_guest_chip)
                         val name = when {
-                            slot.isGuest -> stringResource(Res.string.detail_guest_chip)
-                            else -> slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+                            slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
+                            else -> slotWithProfile.profile?.displayName ?: guestChip
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(

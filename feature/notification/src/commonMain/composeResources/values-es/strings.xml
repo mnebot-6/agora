@@ -9,6 +9,9 @@
     <string name="type_join_request_received">Solicitud de unión</string>
     <string name="type_join_request_approved">Solicitud aprobada</string>
     <string name="type_join_request_rejected">Solicitud rechazada</string>
+    <string name="type_guest_request_received">Solicitud de invitado</string>
+    <string name="type_guest_request_approved">Invitado aprobado</string>
+    <string name="type_guest_request_rejected">Invitado rechazado</string>
     <string name="delete_all">Borrar todo</string>
     <string name="delete_confirm_title">¿Borrar todas las notificaciones?</string>
     <string name="delete_confirm_message">Esto eliminará permanentemente todas tus notificaciones.</string>

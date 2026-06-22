@@ -9,6 +9,9 @@
     <string name="type_join_request_received">Join request</string>
     <string name="type_join_request_approved">Request approved</string>
     <string name="type_join_request_rejected">Request rejected</string>
+    <string name="type_guest_request_received">Guest request</string>
+    <string name="type_guest_request_approved">Guest approved</string>
+    <string name="type_guest_request_rejected">Guest rejected</string>
     <string name="delete_all">Delete all</string>
     <string name="delete_confirm_title">Delete all notifications?</string>
     <string name="delete_confirm_message">This will permanently remove all your notifications.</string>
