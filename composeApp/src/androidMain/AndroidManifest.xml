@@ -39,6 +39,11 @@
                     android:scheme="agora"
                     android:host="activity" />
             </intent-filter>
+            <!-- FCM notification tap: click_action from push-notification Edge Function -->
+            <intent-filter>
+                <action android:name="OPEN_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <!--
                 HTTPS App Link: https://share-agora.app/c/{code}
                 Requiere subir /.well-known/assetlinks.json al servidor del dominio

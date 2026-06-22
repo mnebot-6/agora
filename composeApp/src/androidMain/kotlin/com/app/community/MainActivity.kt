@@ -54,7 +54,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLink(intent: Intent?) {
-        val data = intent?.data ?: return
+        if (intent == null) return
+
+        // FCM notification tap: data payload arrives as intent extras
+        val extras = intent.extras
+        val notificationType = extras?.getString("type")
+        val activityId = extras?.getString("activity_id")
+        if (notificationType != null && activityId != null) {
+            DeepLinkHandler.setNotificationActivityId(activityId)
+            return
+        }
+
+        val data = intent.data ?: return
         val segments = data.pathSegments
         when {
             // agora://invite/{code}

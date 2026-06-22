@@ -14,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Modifier
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.ProfileRepository
@@ -47,7 +49,8 @@ fun App() {
     val languageManager = koinInject<LanguagePreferenceManager>()
     val language by languageManager.language.collectAsState()
     val getAuthState = koinInject<GetAuthStateUseCase>()
-    val isAuthenticated by getAuthState().collectAsState(initial = false)
+    val isAuthenticated: Boolean? by remember { getAuthState().map { it as Boolean? } }
+        .collectAsState(initial = null)
 
     // Load theme + language preferences from profile when authenticated
     val authRepository = koinInject<AuthRepository>()
@@ -56,7 +59,7 @@ fun App() {
     val guestStore = koinInject<GuestSessionStore>()
     val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
     LaunchedEffect(isAuthenticated, isGuest) {
-        if (isAuthenticated && !isGuest) {
+        if (isAuthenticated == true && !isGuest) {
             val userId = authRepository.currentUserId() ?: return@LaunchedEffect
             profileRepository.getProfile(userId).onSuccess { profile ->
                 themeManager.setDarkMode(profile.darkMode == true)
@@ -86,8 +89,10 @@ fun App() {
                     darkIcons = isDarkMode, // dark mode primary is light → dark icons
                 )
                 when {
+                    // Supabase todavía restaurando sesión desde storage.
+                    isAuthenticated == null -> LoadingScreen()
                     // Sesión de invitado anónimo: UI confinada a la actividad.
-                    isAuthenticated && isGuest -> {
+                    isAuthenticated == true && isGuest -> {
                         LaunchedEffect(pendingActivityCode) {
                             if (pendingActivityCode != null) {
                                 guestStore.setActivityCode(pendingActivityCode)
@@ -106,7 +111,7 @@ fun App() {
                     // Usuario real: UI de miembro. El deep link de actividad se
                     // resuelve en ActivitiesTab (miembro → detalle; no miembro →
                     // flujo de invitado con su identidad real).
-                    isAuthenticated -> {
+                    isAuthenticated == true -> {
                         LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
                         MainContent()
                     }
@@ -166,6 +171,7 @@ private fun DeepLinkTabSwitcher() {
     val tabNavigator = LocalTabNavigator.current
     val pendingInviteCode by DeepLinkHandler.pendingInviteCode.collectAsState()
     val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
+    val pendingNotificationActivityId by DeepLinkHandler.pendingNotificationActivityId.collectAsState()
     LaunchedEffect(pendingInviteCode) {
         if (pendingInviteCode != null && tabNavigator.current != CommunitiesTab) {
             tabNavigator.current = CommunitiesTab
@@ -173,6 +179,11 @@ private fun DeepLinkTabSwitcher() {
     }
     LaunchedEffect(pendingActivityCode) {
         if (pendingActivityCode != null && tabNavigator.current != ActivitiesTab) {
+            tabNavigator.current = ActivitiesTab
+        }
+    }
+    LaunchedEffect(pendingNotificationActivityId) {
+        if (pendingNotificationActivityId != null && tabNavigator.current != ActivitiesTab) {
             tabNavigator.current = ActivitiesTab
         }
     }

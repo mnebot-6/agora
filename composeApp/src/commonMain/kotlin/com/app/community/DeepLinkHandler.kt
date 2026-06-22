@@ -31,4 +31,17 @@ object DeepLinkHandler {
         _pendingActivityCode.value = null
         return code
     }
+
+    private val _pendingNotificationActivityId = MutableStateFlow<String?>(null)
+    val pendingNotificationActivityId: StateFlow<String?> = _pendingNotificationActivityId.asStateFlow()
+
+    fun setNotificationActivityId(activityId: String) {
+        _pendingNotificationActivityId.value = activityId
+    }
+
+    fun consumeNotificationActivityId(): String? {
+        val id = _pendingNotificationActivityId.value
+        _pendingNotificationActivityId.value = null
+        return id
+    }
 }

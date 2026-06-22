@@ -25,6 +25,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.resources.stringResource
 import com.app.community.DeepLinkHandler
 import com.app.community.feature.activity.presentation.ActivityFeedScreen
+import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
@@ -88,13 +89,17 @@ object ActivitiesTab : Tab {
     override fun Content() {
         Navigator(ActivityFeedScreen()) { navigator ->
             val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
+            val pendingNotificationActivityId by DeepLinkHandler.pendingNotificationActivityId.collectAsState()
             LaunchedEffect(pendingActivityCode) {
                 val code = DeepLinkHandler.consumeActivityCode()
                 if (code != null) {
-                    // Usuario real abriendo un link de actividad: la pantalla de
-                    // invitado resuelve membresía (miembro → detalle; no miembro →
-                    // solicitud de invitado con identidad real).
                     navigator.push(GuestActivityScreen(code))
+                }
+            }
+            LaunchedEffect(pendingNotificationActivityId) {
+                val id = DeepLinkHandler.consumeNotificationActivityId()
+                if (id != null) {
+                    navigator.push(ActivityDetailScreen(id))
                 }
             }
             navigator.lastItem.Content()
