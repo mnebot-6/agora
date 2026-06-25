@@ -41,6 +41,12 @@ Commits locales sin push:
 
 ## 🟢 Para retomar mañana — Por orden
 
+### 0. Subir el .aab (no se pudo en sesión 2026-06-25)
+Drag-drop a la zona de "Arrastra aquí los app bundles" en
+[esta URL](https://play.google.com/console/u/0/developers/6831348944483601654/app/4974549159345002985/tracks/4701409257174316665/releases/1/prepare).
+Archivo: `C:\MyPrograms\AndroidStudioProjects\Agora\composeApp\build\outputs\bundle\release\composeApp-release.aab` (9.3 MB).
+Tras subir, rellenar **Detalles de la versión → Notas de la versión** con el copy del apéndice de Notas y warnings.
+
 ### 1. Cambiar nombre de la app en Play Console
 Está como "Agora — Comunidades" pero quiere ser "Agora" pelado. Navegar:
 Play Console → app → **Crecer → Presencia en la tienda → Ficha principal de Play Store** → editar nombre → guardar.
