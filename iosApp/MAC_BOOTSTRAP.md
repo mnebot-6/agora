@@ -36,7 +36,7 @@ Tiempo estimado: **2-4 horas** (incluyendo esperas de descarga/upload).
 
 1. Ve a https://console.firebase.google.com → proyecto **agora-70f4e**.
 2. Rueda abajo hasta **"Your apps"** → haz clic en **"Add app"** → selecciona el icono de **iOS**.
-3. **Apple bundle ID**: `com.app.agora` (mismo que el Android `applicationId`).
+3. **Apple bundle ID**: `app.shareagora.community` (mismo que el Android `applicationId`).
 4. Nombre de app: `Agora iOS` (solo para identificarlo en la consola).
 5. Haz clic en **"Register app"** → descarga `GoogleService-Info.plist`.
 6. **Coloca el archivo** en `iosApp/iosApp/GoogleService-Info.plist` (NO lo commitees — está en `.gitignore`; cada desarrollador lo descarga manualmente).
@@ -102,7 +102,7 @@ xcodegen generate
 ```
 
 Debería crear `iosApp/iosApp.xcodeproj` con:
-- Target `iosApp` — iOS 15.0+, bundle ID `com.app.agora`
+- Target `iosApp` — iOS 15.0+, bundle ID `app.shareagora.community`
 - Run Script que invoca `:composeApp:embedAndSignAppleFrameworkForXcode`
 - Referencias a los archivos Swift, Info.plist, Assets.xcassets
 

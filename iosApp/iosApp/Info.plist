@@ -52,7 +52,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.app.agora.invite</string>
+            <string>app.shareagora.community.invite</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>agora</string>

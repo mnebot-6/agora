@@ -99,12 +99,12 @@ Para que el deep link abra directo (sin chooser):
      "relation": ["delegate_permission/common.handle_all_urls"],
      "target": {
        "namespace": "android_app",
-       "package_name": "com.app.agora",
+       "package_name": "app.shareagora.community",
        "sha256_cert_fingerprints": ["AA:BB:CC:..."]
      }
    }]
    ```
-3. Verificar con: `adb shell pm get-app-links com.app.agora`
+3. Verificar con: `adb shell pm get-app-links app.shareagora.community`
 
 ### Crashlytics
 30 minutos de trabajo, ROI altísimo. Añadir en `composeApp/build.gradle.kts`:

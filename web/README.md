@@ -85,7 +85,7 @@ Cuando arranque la implementación iOS:
        "apps": [],
        "details": [
          {
-           "appID": "TEAMID.com.app.agora",
+           "appID": "TEAMID.app.shareagora.community",
            "paths": ["/c/*"]
          }
        ]
@@ -105,8 +105,8 @@ Cada cambio en los archivos requiere re-deploy.
 
 ### Android
 ```bash
-adb shell pm verify-app-links --re-verify com.app.agora
-adb shell pm get-app-links com.app.agora
+adb shell pm verify-app-links --re-verify app.shareagora.community
+adb shell pm get-app-links app.shareagora.community
 # Estado esperado: verified
 ```
 

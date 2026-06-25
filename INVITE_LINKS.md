@@ -14,8 +14,8 @@ en `share-agora.app` vía Cloudflare Workers.
 
 - **Dominio**: `share-agora.app` (Cloudflare Registrar, ~14 USD/año)
 - **Hosting**: Cloudflare Workers (proyecto `share-agora`)
-- **Android applicationId**: `com.app.agora`
-- **iOS bundleID**: `com.app.agora` (verificar en Xcode cuando arranque iOS)
+- **Android applicationId**: `app.shareagora.community`
+- **iOS bundleID**: `app.shareagora.community` (verificar en Xcode cuando arranque iOS)
 - **iOS Team ID**: pendiente — se obtiene de [Apple Developer Account → Membership](https://developer.apple.com/account/#!/membership)
 
 ## Estado actual
@@ -44,7 +44,7 @@ o el AASA iOS):
 3. Deploy
 
 El cambio es instantáneo pero los clientes pueden cachear:
-- Android: cache se invalida automáticamente al re-instalar la app o al ejecutar `adb shell pm verify-app-links --re-verify com.app.agora`
+- Android: cache se invalida automáticamente al re-instalar la app o al ejecutar `adb shell pm verify-app-links --re-verify app.shareagora.community`
 - iOS: AASA se cachea hasta 24h en producción; reinstalar la app fuerza refresh
 
 ## Pendiente Android — release
@@ -69,8 +69,8 @@ Cuando se prepare la primera release:
 4. Re-deploy de `web/`
 5. Verificar:
    ```bash
-   adb shell pm verify-app-links --re-verify com.app.agora
-   adb shell pm get-app-links com.app.agora
+   adb shell pm verify-app-links --re-verify app.shareagora.community
+   adb shell pm get-app-links app.shareagora.community
    ```
    Estado esperado: `verified`.
 
@@ -87,7 +87,7 @@ Cuando arranque la implementación iOS:
        "apps": [],
        "details": [
          {
-           "appID": "TEAMID.com.app.agora",
+           "appID": "TEAMID.app.shareagora.community",
            "paths": ["/c/*"]
          }
        ]

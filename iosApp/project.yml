@@ -51,7 +51,7 @@ targets:
           - "**/*.md"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.app.agora
+        PRODUCT_BUNDLE_IDENTIFIER: app.shareagora.community
         INFOPLIST_FILE: iosApp/Info.plist
         CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"    # iPhone + iPad

@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.app.agora",
+      "package_name": "app.shareagora.community",
       "sha256_cert_fingerprints": [
         "8F:B9:F3:DE:D2:C4:23:CD:72:FA:36:00:8E:70:64:55:51:7A:6C:AE:CA:12:30:A0:B3:07:19:D6:3C:5C:83:50"
       ]
