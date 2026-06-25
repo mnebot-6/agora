@@ -97,8 +97,11 @@ object ActivitiesTab : Tab {
                 }
             }
             LaunchedEffect(pendingNotificationActivityId) {
-                val id = DeepLinkHandler.consumeNotificationActivityId()
-                if (id != null) {
+                val id = DeepLinkHandler.consumeNotificationActivityId() ?: return@LaunchedEffect
+                val current = navigator.lastItem
+                if (current is ActivityDetailScreen && current.activityId == id) {
+                    navigator.replace(ActivityDetailScreen(id))
+                } else {
                     navigator.push(ActivityDetailScreen(id))
                 }
             }

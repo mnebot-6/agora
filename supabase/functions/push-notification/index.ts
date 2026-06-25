@@ -114,11 +114,14 @@ Deno.serve(async (req) => {
               title: record.title,
               body: record.body,
             },
-            data: record.data
-              ? Object.fromEntries(
-                  Object.entries(record.data).map(([k, v]) => [k, String(v)])
-                )
-              : {},
+            data: {
+              type: record.type,
+              ...(record.data
+                ? Object.fromEntries(
+                    Object.entries(record.data).map(([k, v]) => [k, String(v)])
+                  )
+                : {}),
+            },
             android: {
               priority: "high",
               notification: {

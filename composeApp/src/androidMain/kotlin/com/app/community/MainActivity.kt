@@ -8,11 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import android.content.Context
 import androidx.activity.result.contract.ActivityResultContracts
-import com.app.community.di.appModules
-import com.russhwolf.settings.SharedPreferencesSettings
-import org.koin.core.context.startKoin
 
 class MainActivity : ComponentActivity() {
 
@@ -26,13 +22,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
-
-        val settings = SharedPreferencesSettings(
-            getSharedPreferences("agora_prefs", Context.MODE_PRIVATE),
-        )
-        startKoin {
-            modules(appModules(settings))
-        }
 
         requestNotificationPermission()
         handleDeepLink(intent)
