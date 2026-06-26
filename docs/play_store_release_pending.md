@@ -39,9 +39,45 @@ Commits locales sin push:
 
 ---
 
+## 🟢 Estado al cierre de sesión 2026-06-26
+
+**Lo que está cerrado:**
+- ✅ Ficha de Play Store completa (Agora, descripciones, icono 512, feature graphic 1024×500, 4 capturas)
+- ✅ Categoría: Social · Email/Web de contacto: mnebotchirivella@gmail.com / share-agora.app
+- ✅ Política de privacidad, Datos de inicio de sesión (con cuenta `play-review@agora.com` / `pl4yr3view`), Anuncios (No), Clasificación de contenido (PEGI 12 / Teen 13+), Audiencia (13+), Aplicaciones gubernamentales/financieras/salud (No)
+- ✅ Seguridad de datos (Data Safety): Nombre, Email, IDs usuario, Otros mensajes, Fotos avatar, IDs dispositivo (FCM) — todos para Funcionalidad, no compartidos, cifrados en tránsito
+- ✅ Prueba interna activa con .aab v1.0.0 firmado (Play App Signing)
+- ✅ Prueba cerrada — canal Alpha configurado:
+  - **Testers**: lista "First Testers" con **11 emails** (Krisonic7, Marinallopissegura, Sr.panceto, gerunciovalero, gouindylan7, ivan.cuentatemporal, javichu111, marquezsanzdiego, mnebotchirivella, omegamnc, srchocapik)
+  - **País**: España incluida
+  - **Versión 1.0.0** importada desde Prueba interna + notas de versión
+  - **Estado**: **borrador guardado**, NO enviado a revisión todavía
+
+**1 advertencia conocida y aceptada en la versión**: símbolos NDK ausentes (no bloqueante, fix ya en código `composeApp/build.gradle.kts` para v1.0.1)
+
 ## 🟢 Para retomar mañana — Por orden
 
-### 0. Subir el .aab (no se pudo en sesión 2026-06-25)
+### 0a. Encontrar el tester #12
+
+La regla nueva de Play para Producción exige **≥12 testers reales** que mantengan la app instalada 14+ días. Hoy tienes 11 — falta 1 más en la lista "First Testers".
+
+Para añadirlo:
+- Play Console → Probar y publicar → Prueba cerrada → Alpha → pestaña Testers → editar "First Testers" → añadir email → Guardar
+
+### 0b. Enviar Prueba cerrada a revisión
+
+Cuando tengas los 12 testers, ir a **Resumen de publicación** y pulsar **"Enviar aplicación a revisión"** (botón azul arriba). Esto manda a Google:
+- La ficha de Play Store completa (revisión ~1-3 días la primera vez)
+- La versión 1.0.0 al canal Alpha
+- Todas las declaraciones (privacidad, anuncios, content rating, data safety, etc.)
+
+Tras la aprobación de Google:
+- El canal Alpha pasa de "Inactivo" a "Activo"
+- El **link de opt-in** se vuelve visible en la pestaña Testers (búscalo abajo del todo, dice "Copiar enlace")
+- Mandas ese link a tus 12 contactos por WhatsApp/email — al opt-in se activan
+- El **reloj de los 14 días** arranca cuando ≥12 testers han aceptado el opt-in (Play los cuenta automáticamente)
+
+### Subir el .aab (no se pudo en sesión 2026-06-25)
 Drag-drop a la zona de "Arrastra aquí los app bundles" en
 [esta URL](https://play.google.com/console/u/0/developers/6831348944483601654/app/4974549159345002985/tracks/4701409257174316665/releases/1/prepare).
 Archivo: `C:\MyPrograms\AndroidStudioProjects\Agora\composeApp\build\outputs\bundle\release\composeApp-release.aab` (9.3 MB).
