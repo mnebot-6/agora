@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agora — Feature graphic (1024×500)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #2b2622;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    h1 { font-size: 18px; margin: 0; opacity: 0.7; font-weight: 500; }
+    p.help {
+      max-width: 760px;
+      font-size: 14px;
+      opacity: 0.75;
+      line-height: 1.5;
+      margin: 0 0 8px;
+      text-align: center;
+    }
+    .graphic {
+      width: 1024px;
+      height: 500px;
+      background: linear-gradient(135deg, #f6f3ec 0%, #ebe3d2 100%);
+      position: relative;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #2b2622;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+    }
+    /* Decorative Greek column motif */
+    .column {
+      position: absolute;
+      right: -60px;
+      top: -60px;
+      width: 500px;
+      height: 620px;
+      transform: rotate(-8deg);
+      opacity: 0.55;
+    }
+    .column svg { width: 100%; height: 100%; }
+    .content {
+      position: absolute;
+      left: 64px;
+      top: 80px;
+      max-width: 560px;
+    }
+    .brand {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 92px;
+      font-weight: 700;
+      color: #5b3a29;
+      letter-spacing: 2px;
+      margin: 0 0 8px;
+      line-height: 1;
+    }
+    .tagline {
+      font-size: 28px;
+      color: #2b2622;
+      margin: 0 0 28px;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+    .features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      font-size: 18px;
+      color: #3d342c;
+    }
+    .features li::before { content: "• "; color: #9c6b3f; font-weight: 700; }
+    .domain {
+      position: absolute;
+      left: 64px;
+      bottom: 40px;
+      font-size: 18px;
+      color: #7a726a;
+      letter-spacing: 1px;
+    }
+    .laurel {
+      position: absolute;
+      left: 60px;
+      top: 60px;
+      width: 110px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Agora — Feature graphic 1024×500 px</h1>
+  <p class="help">
+    Captura SOLO el rectángulo crema (1024×500) con la herramienta de recorte de Windows
+    (Win+Shift+S) o el "Sniptool" del Start menu. El navegador debe estar al 100% de zoom
+    (Ctrl+0). Guarda como <code>feature_graphic.png</code>.
+  </p>
+
+  <div class="graphic">
+    <!-- Decorative column right side -->
+    <div class="column">
+      <svg viewBox="0 0 500 620" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="flutes" x="0" y="0" width="32" height="620" patternUnits="userSpaceOnUse">
+            <line x1="16" y1="0" x2="16" y2="620" stroke="#9c6b3f" stroke-width="3"/>
+          </pattern>
+        </defs>
+        <!-- Capital -->
+        <rect x="30" y="0" width="440" height="50" fill="#5b3a29"/>
+        <rect x="20" y="50" width="460" height="20" fill="#9c6b3f"/>
+        <!-- Shaft -->
+        <rect x="60" y="70" width="380" height="490" fill="#f0e6d2"/>
+        <rect x="60" y="70" width="380" height="490" fill="url(#flutes)" opacity="0.7"/>
+        <!-- Base -->
+        <rect x="40" y="560" width="420" height="20" fill="#9c6b3f"/>
+        <rect x="20" y="580" width="460" height="40" fill="#5b3a29"/>
+      </svg>
+    </div>
+
+    <div class="content">
+      <h2 class="brand">Agora</h2>
+      <p class="tagline">Organiza tu comunidad:<br/>actividades, plazas y chat en una.</p>
+      <ul class="features">
+        <li>Comunidades públicas y privadas</li>
+        <li>Plazas con aforo o posiciones</li>
+        <li>Lista de suplentes auto</li>
+        <li>Chat por comunidad</li>
+        <li>Invita sin instalar la app</li>
+        <li>Push notifications</li>
+      </ul>
+    </div>
+
+    <div class="domain">share-agora.app</div>
+  </div>
+</body>
+</html>
