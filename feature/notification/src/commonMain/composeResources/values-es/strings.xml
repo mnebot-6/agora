@@ -12,6 +12,11 @@
     <string name="type_guest_request_received">Solicitud de invitado</string>
     <string name="type_guest_request_approved">Invitado aprobado</string>
     <string name="type_guest_request_rejected">Invitado rechazado</string>
+    <string name="type_payment_confirmed">Pago confirmado</string>
+    <string name="type_slot_removed">Plaza cancelada</string>
+    <string name="type_activity_full">Actividad confirmada</string>
+    <string name="type_activity_cancelled">Actividad cancelada</string>
+    <string name="type_activity_updated">Cambio en la actividad</string>
     <string name="delete_all">Borrar todo</string>
     <string name="delete_confirm_title">¿Borrar todas las notificaciones?</string>
     <string name="delete_confirm_message">Esto eliminará permanentemente todas tus notificaciones.</string>

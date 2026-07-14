@@ -119,8 +119,8 @@
     <string name="guest_capacity">Spots: %1$d / %2$d</string>
     <string name="guest_capacity_unlimited">Open capacity</string>
     <string name="guest_name_label">Your name</string>
-    <string name="guest_phone_label">Phone number</string>
-    <string name="guest_form_error">Please enter your name and phone number.</string>
+    <string name="guest_email_label">Your email</string>
+    <string name="guest_form_error">Please enter your name and a valid email.</string>
     <string name="guest_request_button">Request to attend</string>
     <string name="guest_pending_title">Request sent</string>
     <string name="guest_pending_message">Your request to attend %1$s is awaiting approval from an admin.</string>

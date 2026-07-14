@@ -480,7 +480,7 @@ private fun GuestRequestRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(request.guestName, style = MaterialTheme.typography.titleSmall)
                 Text(
-                    request.guestPhone,
+                    request.guestEmail,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

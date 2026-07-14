@@ -49,14 +49,14 @@ class GuestRepository {
     suspend fun requestSlot(
         code: String,
         name: String,
-        phone: String,
+        email: String,
     ): AppResult<GuestRequestResult> = safeCall {
         val result = postgrest.rpc(
             function = "request_guest_slot",
             parameters = buildJsonObject {
                 put("p_code", code)
                 put("p_name", name)
-                put("p_phone", phone)
+                put("p_email", email)
             },
         )
         lenientJson.decodeFromString<GuestRequestResult>(result.data)

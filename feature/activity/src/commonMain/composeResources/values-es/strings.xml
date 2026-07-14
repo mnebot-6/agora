@@ -119,8 +119,8 @@
     <string name="guest_capacity">Plazas: %1$d / %2$d</string>
     <string name="guest_capacity_unlimited">Plazas abiertas</string>
     <string name="guest_name_label">Tu nombre</string>
-    <string name="guest_phone_label">Teléfono</string>
-    <string name="guest_form_error">Introduce tu nombre y tu teléfono.</string>
+    <string name="guest_email_label">Tu email</string>
+    <string name="guest_form_error">Introduce tu nombre y un email válido.</string>
     <string name="guest_request_button">Solicitar asistir</string>
     <string name="guest_pending_title">Solicitud enviada</string>
     <string name="guest_pending_message">Tu solicitud para asistir a %1$s está pendiente de que la apruebe un administrador.</string>

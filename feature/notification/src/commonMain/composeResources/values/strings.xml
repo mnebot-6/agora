@@ -12,6 +12,11 @@
     <string name="type_guest_request_received">Guest request</string>
     <string name="type_guest_request_approved">Guest approved</string>
     <string name="type_guest_request_rejected">Guest rejected</string>
+    <string name="type_payment_confirmed">Payment confirmed</string>
+    <string name="type_slot_removed">Spot cancelled</string>
+    <string name="type_activity_full">Activity confirmed</string>
+    <string name="type_activity_cancelled">Activity cancelled</string>
+    <string name="type_activity_updated">Activity changed</string>
     <string name="delete_all">Delete all</string>
     <string name="delete_confirm_title">Delete all notifications?</string>
     <string name="delete_confirm_message">This will permanently remove all your notifications.</string>

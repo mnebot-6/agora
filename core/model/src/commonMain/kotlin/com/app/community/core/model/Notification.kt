@@ -17,6 +17,11 @@ enum class NotificationType {
     @SerialName("guest_request_received") GUEST_REQUEST_RECEIVED,
     @SerialName("guest_request_approved") GUEST_REQUEST_APPROVED,
     @SerialName("guest_request_rejected") GUEST_REQUEST_REJECTED,
+    @SerialName("payment_confirmed") PAYMENT_CONFIRMED,
+    @SerialName("slot_removed") SLOT_REMOVED,
+    @SerialName("activity_full") ACTIVITY_FULL,
+    @SerialName("activity_cancelled") ACTIVITY_CANCELLED,
+    @SerialName("activity_updated") ACTIVITY_UPDATED,
 }
 
 @Serializable

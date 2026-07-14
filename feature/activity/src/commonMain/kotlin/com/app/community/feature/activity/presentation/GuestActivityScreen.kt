@@ -54,8 +54,8 @@ import agora.feature.activity.generated.resources.guest_invite_intro
 import agora.feature.activity.generated.resources.guest_name_label
 import agora.feature.activity.generated.resources.guest_not_found
 import agora.feature.activity.generated.resources.guest_pending_message
+import agora.feature.activity.generated.resources.guest_email_label
 import agora.feature.activity.generated.resources.guest_pending_title
-import agora.feature.activity.generated.resources.guest_phone_label
 import agora.feature.activity.generated.resources.guest_rejected_message
 import agora.feature.activity.generated.resources.guest_rejected_title
 import agora.feature.activity.generated.resources.guest_request_button
@@ -143,7 +143,7 @@ data class GuestActivityScreen(val code: String) : Screen {
     ) {
         val activity = state.preview.activity ?: return
         var name by remember { mutableStateOf("") }
-        var phone by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("") }
 
         Column(
             modifier = Modifier
@@ -195,11 +195,11 @@ data class GuestActivityScreen(val code: String) : Screen {
             )
             Spacer(Modifier.height(AgoraSpacing.sm))
             OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text(stringResource(Res.string.guest_phone_label)) },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text(stringResource(Res.string.guest_email_label)) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth(),
             )
             if (state.error != null) {
@@ -215,7 +215,7 @@ data class GuestActivityScreen(val code: String) : Screen {
             Spacer(Modifier.height(AgoraSpacing.lg))
             AgoraButton(
                 text = stringResource(Res.string.guest_request_button),
-                onClick = { onSubmit(name, phone) },
+                onClick = { onSubmit(name, email) },
                 variant = AgoraButtonVariant.Primary,
                 enabled = !state.submitting,
                 modifier = Modifier.fillMaxWidth(),

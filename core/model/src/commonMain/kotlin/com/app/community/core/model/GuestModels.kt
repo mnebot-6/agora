@@ -79,7 +79,7 @@ data class PendingGuestRequest(
     @SerialName("activity_id") val activityId: String,
     @SerialName("slot_id") val slotId: String? = null,
     @SerialName("guest_name") val guestName: String,
-    @SerialName("guest_phone") val guestPhone: String,
+    @SerialName("guest_email") val guestEmail: String,
     @SerialName("requested_at") val requestedAt: Instant,
     @SerialName("requested_positions") val requestedPositions: List<String> = emptyList(),
 )

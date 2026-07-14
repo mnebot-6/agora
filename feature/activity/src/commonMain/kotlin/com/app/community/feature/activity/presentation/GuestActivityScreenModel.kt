@@ -74,16 +74,16 @@ class GuestActivityScreenModel(
         }
     }
 
-    fun submit(name: String, phone: String) {
+    fun submit(name: String, email: String) {
         val current = _state.value as? UiState.Form ?: return
         val activity = current.preview.activity ?: return
-        if (name.isBlank() || phone.isBlank()) {
+        if (name.isBlank() || !isValidEmail(email)) {
             _state.value = current.copy(error = "validation")
             return
         }
         _state.value = current.copy(submitting = true, error = null)
         screenModelScope.launch {
-            guestRepository.requestSlot(code, name.trim(), phone.trim())
+            guestRepository.requestSlot(code, name.trim(), email.trim())
                 .onSuccess { result ->
                     _state.value = when (result.status) {
                         "pending" -> UiState.Pending(activity.name, name.trim())
@@ -99,3 +99,7 @@ class GuestActivityScreenModel(
         }
     }
 }
+
+private val GUEST_EMAIL_REGEX = Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+
+private fun isValidEmail(value: String): Boolean = GUEST_EMAIL_REGEX.matches(value.trim())

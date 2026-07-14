@@ -180,7 +180,12 @@ class NotificationListScreen : Screen {
                                         NotificationType.NEW_ACTIVITY,
                                         NotificationType.SLOT_RELEASED,
                                         NotificationType.SUBSTITUTE_PROMOTED,
-                                        NotificationType.ACTIVITY_REMINDER ->
+                                        NotificationType.ACTIVITY_REMINDER,
+                                        NotificationType.PAYMENT_CONFIRMED,
+                                        NotificationType.SLOT_REMOVED,
+                                        NotificationType.ACTIVITY_FULL,
+                                        NotificationType.ACTIVITY_CANCELLED,
+                                        NotificationType.ACTIVITY_UPDATED ->
                                             activityId?.let { navigator.push(ActivityDetailScreen(it)) }
                                     }
                                 },
@@ -271,6 +276,11 @@ private fun NotificationRow(
         NotificationType.GUEST_REQUEST_RECEIVED -> stringResource(Res.string.type_guest_request_received)
         NotificationType.GUEST_REQUEST_APPROVED -> stringResource(Res.string.type_guest_request_approved)
         NotificationType.GUEST_REQUEST_REJECTED -> stringResource(Res.string.type_guest_request_rejected)
+        NotificationType.PAYMENT_CONFIRMED -> stringResource(Res.string.type_payment_confirmed)
+        NotificationType.SLOT_REMOVED -> stringResource(Res.string.type_slot_removed)
+        NotificationType.ACTIVITY_FULL -> stringResource(Res.string.type_activity_full)
+        NotificationType.ACTIVITY_CANCELLED -> stringResource(Res.string.type_activity_cancelled)
+        NotificationType.ACTIVITY_UPDATED -> stringResource(Res.string.type_activity_updated)
     }
 
     Row(
