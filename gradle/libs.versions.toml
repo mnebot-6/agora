@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.3"
+agp = "8.13.2"
 kotlin = "2.1.10"
 compose-multiplatform = "1.7.3"
 koin = "4.0.2"

@@ -33,10 +33,27 @@ invitado:
 1. Inicia una sesión **anónima** de Supabase (persistida por navegador) → cada
    dispositivo tiene su propia identidad y su estado persistente al reabrir el link.
 2. Llama a `get_activity_guest_preview(p_code)` y muestra los datos de la actividad.
-3. Pide **nombre + teléfono** y llama a `request_guest_slot(p_code, p_name, p_phone)`,
-   que retiene un slot pendiente de aprobación por un admin.
-4. Muestra el estado (pendiente / aprobado / rechazado / lleno) y un botón
-   "Descargar la app" (`agora://activity/{code}`).
+3. Pide **nombre + email** y llama a `request_guest_slot(p_code, p_name, p_email)`,
+   que retiene un slot pendiente de aprobación por un admin y guarda el email en el
+   perfil del invitado (`profiles.guest_email`).
+4. Muestra el estado (pendiente / aprobado / rechazado / lleno) y botones de tienda
+   (Google Play con enlace real; App Store muestra "Próximamente").
+
+### Avisos por email al invitado
+
+Los invitados son usuarios anónimos sin token FCM, así que no reciben push. En su lugar
+la edge function `supabase/functions/notify-guest-email` (disparada por un Database Webhook
+de INSERT en `notifications`) les envía por **email** cualquier notificación (aprobación,
+rechazo, pago, expulsión, …) leyendo `profiles.guest_email`. Es genérica: reutiliza
+`title`/`body` ya localizados, así los tipos nuevos funcionan sin tocar código.
+
+Setup (una vez):
+1. Verificar el dominio `share-agora.app` en [Resend](https://resend.com) → añadir los
+   registros **SPF/DKIM** en el DNS de Cloudflare.
+2. Crear el secret `RESEND_API_KEY` en Supabase (y opcionalmente `EMAIL_FROM`).
+3. Desplegar la función: `supabase functions deploy notify-guest-email`.
+4. Crear el Database Webhook: tabla `notifications`, evento INSERT → Edge Function
+   `notify-guest-email` (independiente del webhook de `push-notification`).
 
 ### Requisitos de despliegue
 
