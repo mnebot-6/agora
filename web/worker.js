@@ -15,6 +15,9 @@ export default {
     if (url.pathname === "/terms" || url.pathname === "/terms/") {
       return env.ASSETS.fetch(new URL("/terms/index.html", url));
     }
+    if (url.pathname === "/child-safety" || url.pathname === "/child-safety/") {
+      return env.ASSETS.fetch(new URL("/child-safety/index.html", url));
+    }
 
     return env.ASSETS.fetch(request);
   },
