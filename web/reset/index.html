@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Agora — Restablecer contraseña</title>
+  <style>
+    :root {
+      --bg: #f6f3ec;
+      --card: #fffdf8;
+      --primary: #5b3a29;
+      --accent: #9c6b3f;
+      --text: #2b2622;
+      --muted: #7a726a;
+      --error: #b3261e;
+      --border: #e3dccd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 28px 24px;
+      box-shadow: 0 8px 30px rgba(91, 58, 41, 0.08);
+    }
+    .intro { color: var(--muted); font-size: 14px; margin: 0 0 4px; }
+    h1 { color: var(--primary); font-size: 22px; margin: 0 0 16px; }
+    .muted { color: var(--muted); }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 4px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: default; }
+    .error { color: var(--error); font-size: 13px; margin-top: 8px; }
+    .status-title { color: var(--primary); font-size: 20px; margin: 0 0 8px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card" id="root">
+    <p class="intro" id="loading">Cargando…</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://ckuwetftnkhbndolcnjw.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrdXdldGZ0bmtoYm5kb2xjbmp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1ODE0MzIsImV4cCI6MjA5MTE1NzQzMn0.xMzdqqfoanGUE7GG1OZp0F4jGAaj0O1v4Oajq5lJKIs";
+
+    // persistSession: false para no pisar la sesión anónima de invitado
+    // (misma origin que /a/*) y porque la sesión de recovery es de un solo uso.
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+
+    const root = document.getElementById("root");
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => (
+        { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+      ));
+    }
+
+    function renderMessage(title, message) {
+      root.innerHTML = `
+        <h2 class="status-title">${esc(title)}</h2>
+        <p class="muted">${esc(message)}</p>`;
+    }
+
+    function renderForm(onSubmit) {
+      root.innerHTML = `
+        <p class="intro">Agora</p>
+        <h1>Restablecer contraseña</h1>
+        <label for="pass1">Nueva contraseña</label>
+        <input id="pass1" type="password" autocomplete="new-password" minlength="6" />
+        <label for="pass2">Repite la contraseña</label>
+        <input id="pass2" type="password" autocomplete="new-password" minlength="6" />
+        <div class="error hidden" id="err"></div>
+        <button id="submit">Cambiar contraseña</button>`;
+
+      const submit = document.getElementById("submit");
+      const err = document.getElementById("err");
+      const showErr = (msg) => { err.textContent = msg; err.classList.remove("hidden"); };
+
+      submit.onclick = async () => {
+        const p1 = document.getElementById("pass1").value;
+        const p2 = document.getElementById("pass2").value;
+        if (p1.length < 6) { showErr("La contraseña debe tener al menos 6 caracteres."); return; }
+        if (p1 !== p2) { showErr("Las contraseñas no coinciden."); return; }
+        err.classList.add("hidden");
+        submit.disabled = true;
+        submit.textContent = "Cambiando…";
+        try {
+          await onSubmit(p1);
+          renderMessage("Contraseña cambiada",
+            "Tu contraseña se ha actualizado. Vuelve a la app de Agora e inicia sesión con la nueva contraseña.");
+        } catch (e) {
+          const msg = String(e && e.message || e);
+          if (/expired|invalid/i.test(msg)) {
+            renderMessage("Enlace caducado",
+              "Este enlace ya no es válido. Vuelve a la app y solicita un nuevo email de restablecimiento.");
+          } else {
+            showErr(msg || "No se pudo cambiar la contraseña.");
+            submit.disabled = false;
+            submit.textContent = "Cambiar contraseña";
+          }
+        }
+      };
+    }
+
+    async function main() {
+      const query = new URLSearchParams(location.search);
+      const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+
+      // El email nuevo (plantilla con token_hash): el token NO se verifica hasta
+      // que el usuario envía el formulario, así los escáneres de email no lo consumen.
+      const tokenHash = query.get("token_hash");
+
+      // Compatibilidad con el flujo implícito (tokens en el fragment).
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+      const hashError = hash.get("error_description") || query.get("error_description");
+
+      if (tokenHash) {
+        renderForm(async (password) => {
+          const { error: vErr } = await client.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+          if (vErr) throw vErr;
+          const { error: uErr } = await client.auth.updateUser({ password });
+          if (uErr) throw uErr;
+        });
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        const { error: sErr } = await client.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sErr) {
+          renderMessage("Enlace caducado",
+            "Este enlace ya no es válido. Vuelve a la app y solicita un nuevo email de restablecimiento.");
+          return;
+        }
+        renderForm(async (password) => {
+          const { error: uErr } = await client.auth.updateUser({ password });
+          if (uErr) throw uErr;
+        });
+        return;
+      }
+
+      if (hashError) {
+        renderMessage("Enlace caducado",
+          "Este enlace ya no es válido o ha expirado. Vuelve a la app y solicita un nuevo email de restablecimiento.");
+        return;
+      }
+
+      renderMessage("Enlace no válido", "Este enlace no es correcto.");
+    }
+
+    main().catch((e) => renderMessage("Error", String(e)));
+  </script>
+</body>
+</html>

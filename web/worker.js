@@ -7,6 +7,12 @@ export default {
       return env.ASSETS.fetch(new URL("/a/index.html", url));
     }
 
+    // Serve c/index.html for any /c/* path (community invite codes):
+    // landing for recipients without the app installed.
+    if (url.pathname.startsWith("/c/") && url.pathname.length > 3) {
+      return env.ASSETS.fetch(new URL("/c/index.html", url));
+    }
+
     // Static legal pages (Google Play requirement). Map /privacy and /terms
     // (with or without trailing slash) to their index.html.
     if (url.pathname === "/privacy" || url.pathname === "/privacy/") {
@@ -17,6 +23,11 @@ export default {
     }
     if (url.pathname === "/child-safety" || url.pathname === "/child-safety/") {
       return env.ASSETS.fetch(new URL("/child-safety/index.html", url));
+    }
+
+    // Supabase password recovery landing (email template points here)
+    if (url.pathname === "/reset" || url.pathname === "/reset/") {
+      return env.ASSETS.fetch(new URL("/reset/index.html", url));
     }
 
     return env.ASSETS.fetch(request);
