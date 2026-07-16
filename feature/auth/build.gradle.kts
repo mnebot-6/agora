@@ -19,6 +19,8 @@ kotlin {
             isStatic = true
         }
     }
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs { browser() }
 
     sourceSets {
         commonMain.dependencies {
@@ -45,9 +47,6 @@ kotlin {
             implementation(libs.voyager.screenmodel)
             implementation(libs.voyager.koin)
             implementation(libs.voyager.transitions)
-
-            implementation(libs.supabase.compose.auth)
-            implementation(libs.supabase.compose.auth.ui)
         }
     }
 }
