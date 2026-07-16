@@ -894,6 +894,7 @@ Verificación exploratoria guiada por checklist; los bugs que salgan se arreglan
 | Perfil | editar, **tema oscuro** (recomposición), **cambio de idioma** (LocalAppLocale web), logout |
 | Imágenes | **Coil**: avatares/imágenes de comunidad cargan desde Supabase Storage |
 | Compartir | botón compartir invitación → Web Share (Chrome) o copia al portapapeles (Firefox) |
+| ⚠️ Compartir link de invitado | **En Safari iOS específicamente** (hallazgo de code review): el flujo hace una llamada de red (generar link) ANTES de `navigator.share()`, y la *activación de usuario transitoria* puede caducar → share rechaza en silencio. Verificar en Safari real; si falla, reestructurar el flujo web para que `share()` corra dentro del gesto (pre-generar link o UI en dos pasos "generar → compartir"). |
 | Reservas | pantallas del feature reservation |
 
 - [ ] **Step 2: Registrar los hallazgos**
@@ -1061,7 +1062,7 @@ git commit -m "feat(web): service worker with network-first shell caching"
 
 Guion (el criterio de éxito de la spec, ampliado):
 1. Recibir un link de invitación `share-agora.app/c/{code}` (p. ej. por WhatsApp) → abrir → "Abrir Agora en el navegador" → registrarse/login → unirse a la comunidad.
-2. Ver actividades, apuntarse a una, borrarse.
+2. Ver actividades, apuntarse a una, borrarse. **Incluir: compartir el link de invitado de una actividad (gap de activación de usuario en Safari — ver tabla del barrido de paridad).**
 3. Chat de comunidad: enviar y recibir en vivo.
 4. Perfil: cambiar tema e idioma.
 5. Tab de notificaciones muestra los eventos.
