@@ -1,5 +1,6 @@
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -24,6 +25,16 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser {
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+            }
+        }
+        binaries.executable()
     }
 
     sourceSets {
@@ -90,6 +101,11 @@ kotlin {
 
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            implementation(libs.kotlinx.browser)
         }
     }
 }
