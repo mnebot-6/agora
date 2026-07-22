@@ -176,3 +176,10 @@ android {
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
+
+// Copia la distribución web (wasm) a web/app para desplegarla con `wrangler deploy`.
+tasks.register<Sync>("syncWebApp") {
+    dependsOn("wasmJsBrowserDistribution")
+    from(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    into(rootProject.layout.projectDirectory.dir("web/app"))
+}

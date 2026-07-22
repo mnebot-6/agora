@@ -11,6 +11,8 @@ local.properties
 /composeApp/build
 /core/*/build
 /feature/*/build
+# Distribución web wasm (se regenera con :composeApp:syncWebApp)
+/web/app/
 *.apk
 *.aab
 *.hprof
