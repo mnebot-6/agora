@@ -806,6 +806,14 @@ git commit -m "docs(web): record milestone 1 iPhone checkpoint result"
 
 ### Task 11: Persistencia de sesión web
 
+> **RESUELTA POR ANÁLISIS (2026-07-22): persiste por defecto, sin cambios de código.** En
+> supabase-kt 3.1.1, `Auth.createDefaultSessionManager()` (source set `settingsMain`, que incluye
+> wasmJs) devuelve `SettingsSessionManager` (localStorage) salvo cuando `IS_NODE` → el navegador
+> wasmJs usa localStorage. El log de consola confirma un backend de storage activo
+> ("Trying to load latest session from storage"). NO hace falta el Step 2 (no se toca
+> `SupabaseProvider`, con lo que Android queda intacto). Solo falta confirmación empírica del
+> usuario: login → recargar → sigue dentro.
+
 - [ ] **Step 1: Verificar el comportamiento actual**
 
 Con el dev server corriendo (`http://localhost:8080`), hacer login y recargar la página.
