@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#2E6B3A">
+    <title>Agora</title>
+    <script>
+        // Permite a LocalAppLocale (wasmJs) cambiar el idioma en runtime:
+        // Compose lee navigator.languages; lo interceptamos con window.__customLocale.
+        var currentLanguagesImplementation = Object.getOwnPropertyDescriptor(Navigator.prototype, "languages");
+        var newLanguagesImplementation = Object.assign({}, currentLanguagesImplementation, {
+            get: function () {
+                if (window.__customLocale) {
+                    return [window.__customLocale];
+                } else {
+                    return currentLanguagesImplementation.get.apply(this);
+                }
+            }
+        });
+        Object.defineProperty(Navigator.prototype, "languages", newLanguagesImplementation);
+    </script>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #F6F2EA; }
+        #agora-loading {
+            position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            color: #2E6B3A; background: #F6F2EA; text-align: center; padding: 0 1.5rem;
+        }
+        #agora-loading .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(46, 107, 58, 0.2);
+            border-top-color: #2E6B3A; border-radius: 50%;
+            animation: agora-spin 0.8s linear infinite;
+        }
+        @keyframes agora-spin { to { transform: rotate(360deg); } }
+        #agora-loading-hint { display: none; color: #555; font-size: 0.9rem; max-width: 320px; }
+    </style>
+    <script type="application/javascript" src="composeApp.js"></script>
+</head>
+<body>
+<div id="agora-loading">
+    <div class="spinner"></div>
+    <div>Cargando Agora…</div>
+    <div id="agora-loading-hint">
+        ¿Sigue cargando? Agora web necesita un navegador reciente:
+        iOS/Safari 18.2+, Chrome 119+ o Firefox 120+.
+    </div>
+</div>
+<script>
+    // Si tras 20s Compose no ha retirado el loader, probablemente el navegador
+    // no soporta WasmGC → mostrar pista de versión mínima.
+    setTimeout(function () {
+        var hint = document.getElementById("agora-loading-hint");
+        if (hint) hint.style.display = "block";
+    }, 20000);
+</script>
+</body>
+</html>
