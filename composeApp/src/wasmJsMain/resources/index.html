@@ -61,5 +61,13 @@
         if (hint) hint.style.display = "block";
     }, 20000);
 </script>
+<script>
+    // Solo en producción (bajo /app/): cacheo del shell para PWA/offline.
+    if ("serviceWorker" in navigator && location.pathname.startsWith("/app")) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/app/sw.js");
+        });
+    }
+</script>
 </body>
 </html>
