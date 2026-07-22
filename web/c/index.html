@@ -99,20 +99,22 @@
       content.innerHTML = `<p>Este enlace no es correcto.</p>`;
     } else {
       content.innerHTML = `
-        <p>Instala Agora y únete con este código de invitación:</p>
+        <p>Ábrela en el navegador y únete con este código, o instala la app:</p>
         <div class="code">${esc(code)}</div>
-        <button id="openApp">Abrir en la app</button>
-        <button class="secondary" id="getPlay">Descargar en Google Play</button>
-        <button class="secondary" id="getAppStore">Descargar en App Store</button>`;
+        <a class="btn" id="openWeb" href="/app/?c=${encodeURIComponent(code)}">Abrir en el navegador</a>
+        <button class="secondary" id="openApp">Abrir en la app</button>
+        <button class="secondary" id="getPlay">Descargar en Google Play</button>`;
 
-      // Si la app está instalada, el enlace https ya la abre por App Link;
-      // este botón es el plan B vía custom scheme para quien acabe en el navegador.
+      // "Abrir en el navegador" (principal, sobre todo para iOS): la web app pide
+      // login/registro y auto-une a la comunidad con el código (App.kt lo resuelve
+      // vía AutoJoinByInviteScreen). Es un <a> con href real para que funcione
+      // aunque el JS falle y sea enlazable/compartible.
+      // "Abrir en la app": plan B vía custom scheme para quien tenga la app nativa
+      // y acabe en el navegador (en Android el App Link ya la abre directamente).
       document.getElementById("openApp").onclick = () => {
         location.href = "agora://invite/" + encodeURIComponent(code);
       };
       document.getElementById("getPlay").onclick = () => { location.href = PLAY_STORE_URL; };
-      const appStoreBtn = document.getElementById("getAppStore");
-      appStoreBtn.onclick = () => { appStoreBtn.textContent = "Próximamente"; appStoreBtn.disabled = true; };
     }
   </script>
 </body>
