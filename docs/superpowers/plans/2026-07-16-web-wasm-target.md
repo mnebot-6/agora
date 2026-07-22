@@ -1081,13 +1081,22 @@ Sección `## Resultado QA Hito 4` en este plan: qué pasó, qué falló, decisi�
 
 ---
 
+## Desviaciones aplicadas durante la ejecución (Task 8)
+
+Al compilar la **distribución de producción** por primera vez surgieron dos problemas de infra que el plan no anticipó del todo. Ambos resueltos y commiteados:
+
+1. **Descarga del toolchain wasm bloqueada por `PREFER_SETTINGS`** (commit `c6cc8e2`). `wasmJsBrowserDistribution` necesita Node.js, Yarn y binaryen, que los plugins de Kotlin descargan de `nodejs.org` / GitHub releases. Con `repositoriesMode = PREFER_SETTINGS` en `settings.gradle.kts`, Gradle ignora esos repos y busca los binarios como artefactos Maven → falla (`Could not find org.nodejs:node`, luego `com.github.webassembly:binaryen`). Fix: 3 repos Ivy scopeados por contenido (`org.nodejs:node`, `com.yarnpkg:yarn`, `com.github.webassembly:binaryen`) en `settings.gradle.kts`. No afecta a Android (gate verificado). Los `compileKotlinWasmJs` de Tasks 2–7 no lo detectaron porque no usan Node.
+2. **OOM del daemon de Kotlin** (commit `c6cc8e2`). El compile de producción (con binaryen) petaba a `-Xmx2048M`. Fix aplicado según contingencia, pero sobre `kotlin.daemon.jvmargs` (no `org.gradle.jvmargs`): daemon de Kotlin a 4096M, Gradle a 3072M. RAM del equipo: 15.7 GB.
+
+**Resultado Task 8:** distribución de producción `BUILD SUCCESSFUL` (wasm ~15 MiB combinado). Smoke test en navegador desktop (sirviendo la dist de producción con `python -m http.server`, porque el 8080 lo ocupa Adminer): la app monta (loader retirado, canvas 1280×720), `SupabaseClient created!`, Auth lee localStorage, sin errores fatales. Login con credenciales reales pendiente → se cubre en el checkpoint de iPhone (Task 10). Screenshots del canvas Compose se cuelgan (bucle de render); verificación hecha vía DOM+consola.
+
 ## Contingencias (no ejecutar salvo que se dispare la condición)
 
 | Condición | Acción |
 |---|---|
 | Algún módulo no compila para wasm por una dependencia (error de resolución o de linkage) | Identificar el artefacto exacto en el error. Voyager: subir SOLO voyager a la beta más reciente (`1.1.0-beta03` → última) y recompilar Android. Si es Compose MP: subir CMP a 1.8.x (requiere Kotlin 2.1.20+: subir ambos en el mismo commit), luego `./gradlew :composeApp:assembleDebug` + smoke Android completo antes de seguir con web. |
 | Checkpoint iPhone falla por teclado/scroll/foco | Escalera de la spec: workaround → CMP 1.8/1.9 (mejoras de texto en web) → re-test → si sigue fallando, brainstorming de pivote a web DOM. |
-| `wasmJsBrowserDistribution` falla por memoria (Gradle OOM) | Subir `org.gradle.jvmargs` a `-Xmx4096M` en `gradle.properties` (probar antes que cualquier otra cosa). |
+| `wasmJsBrowserDistribution` falla por memoria (Gradle OOM) | ✅ APLICADO en Task 8: `kotlin.daemon.jvmargs=-Xmx4096M` en `gradle.properties`. |
 | La sesión no persiste tras recargar | Task 11 Step 2 (SettingsSessionManager explícito). |
 | `outputFileName` no existe en `commonWebpackConfig` (API distinta en esta versión) | Quitar el bloque `commonWebpackConfig` — el nombre por defecto ya es `composeApp.js` (nombre del módulo Gradle). |
 | `js()` con `?? undefined` no compila en `setCustomLocale` | Variante: dos funciones — `fun clearCustomLocale(): Unit = js("delete window.__customLocale")` y `fun setCustomLocaleValue(value: String): Unit = js("window.__customLocale = value")` — y elegir en Kotlin según `value == null`. |
