@@ -796,6 +796,10 @@ git commit -m "docs(web): record milestone 1 iPhone checkpoint result"
 - ✅ **Pasa (login + scroll + teclado usables):** continuar al Hito 2.
 - ❌ **Falla:** parar. Aplicar la escalera de mitigación de la spec, en orden: (1) buscar workaround puntual; (2) subir Compose MP (1.8.x mejoró el texto en web — ver Contingencias) y re-testear; (3) último recurso: sesión de brainstorming para pivotar a web DOM. No cablear más features sobre una base que no funciona en el dispositivo objetivo.
 
+## Resultado checkpoint Hito 1
+
+**2026-07-22 — ✅ PASA (preliminar).** El usuario probó `https://share-agora.app/app/` en su iPhone real (Safari) y reporta que "parece que va bien": login + scroll + teclado usables. Gate superado → se continúa al Hito 2. El pase exhaustivo (con un usuario iOS de la comunidad y todos los flujos) queda para la Task 16 (QA). Además se adelantó la Task 12 (botón "Abrir en el navegador" en las landings `/c` y `/a`) a petición del usuario, ya desplegada.
+
 ---
 
 # HITO 2 — Paridad
