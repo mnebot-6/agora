@@ -239,9 +239,33 @@
       }
     }
 
+    /**
+     * ¿Hay sesión de la web app? La app (supabase-kt) guarda la sesión en
+     * localStorage con su propia clave (sb-<url>-session), distinta de la que
+     * usa supabase-js aquí (sb-<ref>-auth-token), así que este cliente no la ve
+     * y trataría como invitado a alguien que ya tiene cuenta. Se detecta por
+     * patrón para no depender del formato exacto de la clave.
+     */
+    function hasAppSession() {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("sb-") && k.endsWith("-session")) return true;
+        }
+      } catch (e) { /* localStorage bloqueado: seguir como invitado */ }
+      return false;
+    }
+
     async function main() {
       const code = getCode();
       if (!code) { renderMessage("Enlace no válido", "Este enlace no es correcto."); return; }
+
+      // Usuario con cuenta: que abra la actividad con su identidad real en la
+      // app, en vez del flujo de invitado anónimo.
+      if (hasAppSession()) {
+        location.replace("/app/?a=" + encodeURIComponent(code));
+        return;
+      }
 
       const { data: sessionData } = await client.auth.getSession();
       if (!sessionData.session) {
