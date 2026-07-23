@@ -8,6 +8,7 @@ import com.app.community.core.model.Profile
 import com.app.community.core.ui.locale.AppLanguage
 import com.app.community.core.ui.locale.LanguagePreferenceManager
 import com.app.community.core.ui.theme.ThemeManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +32,7 @@ class ProfileScreenModel(
     private val profileRepository: ProfileRepository,
     private val themeManager: ThemeManager,
     private val languageManager: LanguagePreferenceManager,
+    private val appScope: CoroutineScope,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -145,8 +147,14 @@ class ProfileScreenModel(
         _state.value = _state.value.copy(isDarkMode = newValue)
         themeManager.setDarkMode(newValue)
         val userId = authRepository.currentUserId() ?: return
-        screenModelScope.launch {
+        // appScope y no screenModelScope: cambiar el tema recompone el árbol bajo
+        // key(isDarkMode), lo que destruye este ScreenModel y cancelaría la
+        // escritura antes de que llegue a Supabase.
+        appScope.launch {
             profileRepository.updateDarkMode(userId, newValue)
+                .onError { msg, _ ->
+                    _state.value = _state.value.copy(actionMessage = "Error: $msg")
+                }
         }
     }
 
@@ -155,13 +163,18 @@ class ProfileScreenModel(
         _state.value = _state.value.copy(language = language)
         languageManager.setLanguage(language)
         val userId = authRepository.currentUserId() ?: return
-        screenModelScope.launch {
+        // Mismo motivo que en toggleDarkMode: key(locale) destruye este
+        // ScreenModel en cuanto cambia el idioma.
+        appScope.launch {
             val code = when (language) {
                 AppLanguage.AUTO -> "auto"
                 AppLanguage.ES -> "es"
                 AppLanguage.EN -> "en"
             }
             profileRepository.updateLanguagePreference(userId, code)
+                .onError { msg, _ ->
+                    _state.value = _state.value.copy(actionMessage = "Error: $msg")
+                }
         }
     }
 

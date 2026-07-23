@@ -43,10 +43,17 @@ import com.app.community.feature.community.presentation.MemberManagementScreenMo
 import com.app.community.feature.notification.presentation.NotificationListScreenModel
 import com.app.community.dashboard.DashboardScreenModel
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
 
 fun repositoryModule(settings: Settings) = module {
     single<Settings> { settings }
+    // Scope de aplicación: sobrevive a la destrucción de cualquier ScreenModel.
+    // Necesario para escrituras que no deben cancelarse cuando la recomposición
+    // forzada por key(isDarkMode)/key(locale) desmonta la pantalla.
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     single { ThemeManager(get()) }
     single { LanguagePreferenceManager(get()) }
     single { AuthRepository() }
@@ -199,6 +206,7 @@ val screenModelModule = module {
             profileRepository = get(),
             themeManager = get(),
             languageManager = get(),
+            appScope = get(),
         )
     }
     factory {

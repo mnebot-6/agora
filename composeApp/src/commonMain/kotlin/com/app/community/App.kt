@@ -14,7 +14,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.map
 import androidx.compose.ui.Modifier
 import com.app.community.core.data.repository.AuthRepository
@@ -76,6 +78,12 @@ fun App() {
         }
     }
 
+    // La pestaña seleccionada vive por encima de key(locale) y key(isDarkMode):
+    // esos key() descartan el subárbol al cambiar tema/idioma y con él el
+    // Navigator de Voyager, que volvería siempre a su tab inicial (dashboard).
+    // Al elevarla aquí, la selección sobrevive a la recomposición forzada.
+    var selectedTab by remember { mutableStateOf<Tab>(AgoraTab) }
+
     AppLocaleProvider(locale = language.toLocaleCode()) {
         AppTheme(darkTheme = isDarkMode) {
             // key(isDarkMode) fuerza la recomposición completa del subárbol cuando
@@ -113,7 +121,10 @@ fun App() {
                     // flujo de invitado con su identidad real).
                     isAuthenticated == true -> {
                         LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
-                        MainContent()
+                        MainContent(
+                            selectedTab = selectedTab,
+                            onSelectTab = { selectedTab = it },
+                        )
                     }
                     // No autenticado: si llega un link de actividad, entrar como
                     // invitado anónimo; si no, login.
@@ -136,18 +147,21 @@ fun App() {
 }
 
 @Composable
-private fun MainContent() {
-    TabNavigator(AgoraTab) {
-        DeepLinkTabSwitcher()
+private fun MainContent(selectedTab: Tab, onSelectTab: (Tab) -> Unit) {
+    // El tab inicial viene del estado elevado en App(), no de una constante: así
+    // al reconstruirse el TabNavigator (key(isDarkMode)/key(locale)) se restaura
+    // la pestaña en la que estaba el usuario.
+    TabNavigator(selectedTab) {
+        DeepLinkTabSwitcher(onSelectTab)
         Scaffold(
             contentWindowInsets = WindowInsets.navigationBars,
             bottomBar = {
                 AgoraNavigationBar {
-                    TabNavigationItem(AgoraTab)
-                    TabNavigationItem(CommunitiesTab)
-                    TabNavigationItem(ActivitiesTab)
-                    TabNavigationItem(NotificationsTab)
-                    TabNavigationItem(ProfileTab)
+                    TabNavigationItem(AgoraTab, onSelectTab)
+                    TabNavigationItem(CommunitiesTab, onSelectTab)
+                    TabNavigationItem(ActivitiesTab, onSelectTab)
+                    TabNavigationItem(NotificationsTab, onSelectTab)
+                    TabNavigationItem(ProfileTab, onSelectTab)
                 }
             },
         ) { paddingValues ->
@@ -167,7 +181,7 @@ private fun MainContent() {
  * automáticamente a Comunidades para que el AutoJoinByInviteScreen se monte.
  */
 @Composable
-private fun DeepLinkTabSwitcher() {
+private fun DeepLinkTabSwitcher(onSelectTab: (Tab) -> Unit) {
     val tabNavigator = LocalTabNavigator.current
     val pendingInviteCode by DeepLinkHandler.pendingInviteCode.collectAsState()
     val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
@@ -175,27 +189,33 @@ private fun DeepLinkTabSwitcher() {
     LaunchedEffect(pendingInviteCode) {
         if (pendingInviteCode != null && tabNavigator.current != CommunitiesTab) {
             tabNavigator.current = CommunitiesTab
+            onSelectTab(CommunitiesTab)
         }
     }
     LaunchedEffect(pendingActivityCode) {
         if (pendingActivityCode != null && tabNavigator.current != ActivitiesTab) {
             tabNavigator.current = ActivitiesTab
+            onSelectTab(ActivitiesTab)
         }
     }
     LaunchedEffect(pendingNotificationActivityId) {
         if (pendingNotificationActivityId != null && tabNavigator.current != ActivitiesTab) {
             tabNavigator.current = ActivitiesTab
+            onSelectTab(ActivitiesTab)
         }
     }
 }
 
 @Composable
-private fun RowScope.TabNavigationItem(tab: Tab) {
+private fun RowScope.TabNavigationItem(tab: Tab, onSelectTab: (Tab) -> Unit) {
     val tabNavigator = LocalTabNavigator.current
 
     AgoraNavigationBarItem(
         selected = tabNavigator.current == tab,
-        onClick = { tabNavigator.current = tab },
+        onClick = {
+            tabNavigator.current = tab
+            onSelectTab(tab)
+        },
         icon = {
             tab.options.icon?.let { painter ->
                 Icon(painter = painter, contentDescription = tab.options.title)
