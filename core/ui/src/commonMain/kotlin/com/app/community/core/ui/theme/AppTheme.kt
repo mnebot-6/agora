@@ -2,6 +2,7 @@ package com.app.community.core.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -74,9 +75,18 @@ private val AgoraDarkScheme = darkColorScheme(
     onErrorContainer = Color(0xFFFFDAD6),
 )
 
+/**
+ * @param typography permite resolver la tipografia FUERA de este composable. Importante en web:
+ * las fuentes de compose-resources se cargan de forma asincrona en una corrutina atada al
+ * `rememberCoroutineScope()` del composable donde se invoca `Font(...)`. Si ese composable se
+ * destruye a media carga (p. ej. por los `key(isDarkMode)`/`key(locale)` al aplicar el perfil),
+ * la carga se cancela y la fuente se queda en la vacia de relleno -> todo el texto sale como
+ * cuadraditos. Resolviendola por encima de esos `key()` su scope no muere y la carga termina.
+ */
 @Composable
 fun AppTheme(
     darkTheme: Boolean = false,
+    typography: Typography = AgoraTypography,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) AgoraDarkScheme else AgoraLightScheme
@@ -86,7 +96,7 @@ fun AppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         shapes = AgoraShapes,
-        typography = AgoraTypography,
+        typography = typography,
     ) {
         CompositionLocalProvider(
             LocalSlotStatusColors provides slotStatusColors,

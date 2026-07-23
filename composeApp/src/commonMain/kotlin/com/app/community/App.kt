@@ -34,6 +34,7 @@ import com.app.community.core.domain.auth.GetAuthStateUseCase
 import com.app.community.core.ui.components.AgoraNavigationBar
 import com.app.community.core.ui.components.AgoraNavigationBarItem
 import com.app.community.core.ui.components.LoadingScreen
+import com.app.community.core.ui.theme.AgoraTypography
 import com.app.community.core.ui.theme.AppTheme
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.auth.presentation.LoginScreen
@@ -84,8 +85,16 @@ fun App() {
     // Al elevarla aquí, la selección sobrevive a la recomposición forzada.
     var selectedTab by remember { mutableStateOf<Tab>(AgoraTab) }
 
+    // La tipografía se resuelve AQUÍ, por encima de los key(), por el mismo motivo.
+    // En web las fuentes cargan en una corrutina atada al rememberCoroutineScope()
+    // del composable que invoca Font(...): si se resolviera dentro de AppTheme, el
+    // key() la destruiría a media carga (tarda ~1,4 s) al aplicarse el perfil, la
+    // corrutina se cancelaría y la fuente quedaría en la vacía de relleno, pintando
+    // todo el texto de Cinzel como cuadraditos. Aquí su scope no muere nunca.
+    val typography = AgoraTypography
+
     AppLocaleProvider(locale = language.toLocaleCode()) {
-        AppTheme(darkTheme = isDarkMode) {
+        AppTheme(darkTheme = isDarkMode, typography = typography) {
             // key(isDarkMode) fuerza la recomposición completa del subárbol cuando
             // cambia el tema, garantizando que la pantalla actual se re-pinte sin
             // tener que navegar fuera y volver. Workaround robusto frente a stale
