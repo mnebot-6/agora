@@ -3,3 +3,24 @@
 # application/octet-stream porque el archivo no tiene extensión.
 /.well-known/apple-app-site-association
   Content-Type: application/json
+
+# --- Caché de la web app (Compose wasm) ---
+# Los .wasm llevan hash de contenido en el nombre, así que son inmutables y se
+# pueden cachear para siempre. En cambio index.html, composeApp.js y sw.js NO
+# llevan hash: si el navegador se queda con un composeApp.js viejo, apuntará a
+# hashes de .wasm que ya no le corresponden y la app se rompe de formas sutiles
+# (texto que no renderiza, pantallas en blanco). Por eso deben revalidar siempre.
+/app/*.wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/app/index.html
+  Cache-Control: no-cache
+
+/app/composeApp.js
+  Cache-Control: no-cache
+
+/app/sw.js
+  Cache-Control: no-cache
+
+/app/manifest.json
+  Cache-Control: no-cache

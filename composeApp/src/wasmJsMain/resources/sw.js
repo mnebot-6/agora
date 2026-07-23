@@ -1,6 +1,14 @@
 // Service worker de Agora web: network-first con fallback a caché.
 // Cachea en runtime todo GET bajo /app/ que responda OK.
-const CACHE = "agora-app-v1";
+//
+// Al estar online siempre se sirve de red, así que la caché es solo un fallback
+// para offline y no puede devolver un shell obsoleto mientras haya conexión (la
+// frescura de index.html/composeApp.js la garantizan además las cabeceras
+// Cache-Control de web/_headers).
+//
+// Subir este número purga las cachés anteriores en el 'activate': úsalo si una
+// versión desplegada pudo dejar assets inconsistentes cacheados.
+const CACHE = "agora-app-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 
