@@ -4,6 +4,7 @@ import agora.core.ui.generated.resources.Res
 import agora.core.ui.generated.resources.cinzel
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -21,13 +22,22 @@ import org.jetbrains.compose.resources.Font
  */
 val CinzelFamily: FontFamily
     @Composable
-    get() = FontFamily(
-        Font(Res.font.cinzel, FontWeight.Normal),
-        Font(Res.font.cinzel, FontWeight.Medium),
-        Font(Res.font.cinzel, FontWeight.SemiBold),
-        Font(Res.font.cinzel, FontWeight.Bold),
-        Font(Res.font.cinzel, FontWeight.Black),
-    )
+    get() {
+        // OJO: el FontFamily debe recordarse. En web (wasm) las fuentes de
+        // compose-resources se cargan de forma ASINCRONA, asi que construir un
+        // FontFamily nuevo en cada recomposicion descarta la fuente ya resuelta
+        // y reinicia la carga; mientras tanto el texto se pinta vacio. Se nota
+        // sobre todo tras cambiar tema o idioma, que recomponen todo el arbol.
+        // En Android no daba la cara porque alli la resolucion es sincrona.
+        val normal = Font(Res.font.cinzel, FontWeight.Normal)
+        val medium = Font(Res.font.cinzel, FontWeight.Medium)
+        val semiBold = Font(Res.font.cinzel, FontWeight.SemiBold)
+        val bold = Font(Res.font.cinzel, FontWeight.Bold)
+        val black = Font(Res.font.cinzel, FontWeight.Black)
+        return remember(normal, medium, semiBold, bold, black) {
+            FontFamily(normal, medium, semiBold, bold, black)
+        }
+    }
 
 val AgoraTypography: Typography
     @Composable
