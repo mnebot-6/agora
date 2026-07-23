@@ -19,9 +19,24 @@ import org.jetbrains.compose.resources.Font
  * Body y labels con la fuente por defecto del sistema para maxima
  * legibilidad en texto corrido.
  */
+/**
+ * Permite inyectar la familia Cinzel ya cargada antes de que arranque la UI.
+ *
+ * En web, `Font(Res.font.cinzel, ...)` carga de forma asincrona y, mientras tanto,
+ * compose-resources devuelve una fuente vacia de relleno (sin glifos) que hace que
+ * el texto salga como cuadraditos. Esa carga ademas va en una corrutina cancelable,
+ * asi que puede no completarse nunca. Precargando los bytes antes del primer frame
+ * (ver `preloadAgoraFonts()` en wasmJsMain) se elimina la asincronia por completo.
+ *
+ * En Android/iOS la carga es sincrona y esto se queda a null: no cambia nada.
+ */
+object AgoraFonts {
+    var preloadedCinzel: FontFamily? = null
+}
+
 val CinzelFamily: FontFamily
     @Composable
-    get() = FontFamily(
+    get() = AgoraFonts.preloadedCinzel ?: FontFamily(
         Font(Res.font.cinzel, FontWeight.Normal),
         Font(Res.font.cinzel, FontWeight.Medium),
         Font(Res.font.cinzel, FontWeight.SemiBold),
