@@ -924,6 +924,21 @@ Expected: `BUILD SUCCESSFUL`. Además, smoke manual en dispositivo/emulador Andr
 
 ---
 
+## Hallazgos barrido de paridad
+
+**2026-07-29 — ✅ SIN HALLAZGOS ABIERTOS.** El usuario reporta el barrido completo pasado y
+correcto. Los bugs que salieron durante la ejecución se arreglaron sobre la marcha, cada uno con
+su commit y su gate Android:
+
+| Bug | Fix |
+|---|---|
+| Tema e idioma se perdían al recrear el tema; se perdía la pestaña seleccionada | `374762e` |
+| Links de actividad no abrían en la app teniendo sesión | `a75debe` |
+| Compartir en desktop no hacía nada (sin Web Share API) | `ba2deed` (copia al portapapeles) |
+| Tofu (cuadraditos) en Cinzel por carrera de carga asíncrona de fuente | `db53729` (preload antes de montar la UI) |
+
+---
+
 # HITO 3 — PWA + deploy final
 
 ### Task 14: Manifest, iconos y meta tags de PWA
@@ -1090,6 +1105,18 @@ Sección `## Resultado QA Hito 4` en este plan: qué pasó, qué falló, decisi�
 - Actualizar memoria del proyecto (estado del target web: COMPLETADO/estado real).
 - Skill superpowers:finishing-a-development-branch si se trabajó en rama.
 - Anotar mejoras diferidas conocidas: Web Push (iOS 16.4+ con PWA), icono 512, cache-headers de Cloudflare para `.wasm`.
+
+---
+
+## Resultado QA Hito 4
+
+**2026-07-29 — ✅ PASA.** El usuario da el testeo por bueno y cierra la etapa. La rama
+`feature/web-wasm-target` (28 commits) se mergea a `main`.
+
+**Mejoras diferidas conocidas** (no bloquean, para v2):
+- Web Push en iOS (requiere PWA instalada, iOS 16.4+); hoy el actual de `PushTokenProvider` en web es un stub.
+- Icono 512×512 en el manifest (hoy solo 192).
+- Cache-headers de Cloudflare afinados para `.wasm`.
 
 ---
 
