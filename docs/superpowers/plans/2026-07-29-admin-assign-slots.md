@@ -1214,6 +1214,33 @@ Tres eran bugs **preexistentes**, no introducidos por esta feature:
    plazas que se reordenan solas entre refrescos.
 7. Migraciones sin `BEGIN`/`COMMIT`, a diferencia de sus hermanas.
 
+### Hallazgos de la revisión final de rama (2026-07-31)
+
+Dos callejones sin salida que **introdujo esta feature**, ambos por el estado nuevo
+`reserved_by = NULL`, y ambos arreglados antes del merge (`0b491fd`, `8214736`):
+
+1. **Una plaza de etiqueta marcada como PAGADA se quedaba sin ningún botón, para todo el
+   mundo.** El `when` de acciones tenía tres ramas: `AVAILABLE`, `isMySlot` (falso, porque
+   `null == currentUserId`) y `isAdmin && status == RESERVED`. Ninguna casaba → plaza congelada
+   hasta borrar la actividad. Antes no podía pasar: una plaza `PAID` siempre tenía dueño y el
+   dueño la liberaba. Arreglado con `Slot.isAdminReleasable`, que espeja la lógica de
+   `release_slot` en un solo sitio en vez de repetir la condición en tres.
+2. **En modo ilimitado, un invitado sin cuenta no se podía quitar de ninguna forma.**
+   `ParticipantRow` nunca tuvo botón de liberar, y `leaveUnlimited` sólo encuentra tu propia
+   plaza (`reservedBy == userId`). Un invitado no tiene cuenta ni dispositivo con el que
+   irse solo. Arreglado con un botón de liberar sólo para admin en esa fila.
+3. **Los errores de los RPC salían en inglés crudo** en una UI en español, incumpliendo lo que
+   la spec prometía. Arreglado con `assignErrorMessage`, cuyos cinco `contains` se verificaron
+   contra el texto real de los `RAISE EXCEPTION` de la migración.
+
+**Follow-ups conocidos, NO hechos** (ninguno bloquea):
+- El diálogo ofrece miembros que ya tienen plaza en la actividad; el error llega del servidor.
+- "Hay **1 personas** en la cola de suplentes" — plural mal en ambos idiomas.
+- El nombre de invitado no tiene tope de longitud (columna `text` sin CHECK, campo sin
+  `maxLength`): un texto pegado rompe la maquetación de la tarjeta.
+- El contenido del diálogo no hace scroll; en horizontal el campo de nombre puede quedar
+  cortado.
+
 ## Qué NO hace este plan (a propósito)
 
 - **Los tres huecos de promoción automática de suplentes.** `promote_substitute` sólo se llama desde `release_slot` y no hay trigger en `slots`, así que una plaza queda libre con la cola llena cuando la posición no casa, cuando se crean plazas por `INSERT` directo, o cuando se rechaza a un invitado. Tarea aparte, ya acordada.
