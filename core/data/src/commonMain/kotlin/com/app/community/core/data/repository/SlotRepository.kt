@@ -133,6 +133,41 @@ class SlotRepository {
             Unit
         }
 
+    /** Devuelve false si la plaza dejó de estar libre mientras el diálogo estaba abierto. */
+    suspend fun adminAssignSlot(
+        slotId: String,
+        userId: String?,
+        guestLabel: String?,
+    ): AppResult<Boolean> =
+        safeCall {
+            val result = postgrest.rpc(
+                function = "admin_assign_slot",
+                parameters = buildJsonObject {
+                    put("p_slot_id", slotId)
+                    userId?.let { put("p_user_id", it) }
+                    guestLabel?.let { put("p_guest_label", it) }
+                },
+            ).data
+            result.trim().toBoolean()
+        }
+
+    /** Modo ilimitado: crea la plaza y la asigna en la misma transacción. Devuelve su id. */
+    suspend fun adminAssignNewSlot(
+        activityId: String,
+        userId: String?,
+        guestLabel: String?,
+    ): AppResult<String> =
+        safeCall {
+            postgrest.rpc(
+                function = "admin_assign_new_slot",
+                parameters = buildJsonObject {
+                    put("p_activity_id", activityId)
+                    userId?.let { put("p_user_id", it) }
+                    guestLabel?.let { put("p_guest_label", it) }
+                },
+            ).data.trim().trim('"')
+        }
+
     // --- Slot Creation (admin) ---
 
     suspend fun createSlots(activityId: String, count: Int): AppResult<Unit> =

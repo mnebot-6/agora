@@ -39,6 +39,7 @@ data class Slot(
     @SerialName("reserved_by") val reservedBy: String? = null,
     @SerialName("reserved_at") val reservedAt: Instant? = null,
     @SerialName("is_guest") val isGuest: Boolean = false,
+    @SerialName("guest_label") val guestLabel: String? = null,
 ) {
     val isAvailable: Boolean get() = status == SlotStatus.AVAILABLE
     val isReserved: Boolean get() = status == SlotStatus.RESERVED
