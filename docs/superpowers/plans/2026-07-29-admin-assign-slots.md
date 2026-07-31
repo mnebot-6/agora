@@ -332,6 +332,15 @@ END;
 $$;
 ```
 
+> **CORRECCIÓN aplicada durante la ejecución (2026-07-29).** El cuerpo de arriba se escribió
+> desde el baseline, pero la versión viva de `release_slot` es la de
+> `supabase/migrations/20260630120000_more_guest_notifications.sql`, que añade un aviso
+> `slot_removed` a la persona expulsada cuando un admin le libera la plaza. Escribirlo tal cual
+> **habría borrado ese aviso**. La migración real parte de la versión viva y le aplica sólo los
+> tres cambios intencionados, más `SET search_path`. Antes de cualquier
+> `CREATE OR REPLACE FUNCTION`, comprobar cuál es la definición **más reciente**, no la del
+> baseline.
+
 - [ ] **Step 3: Aplicar la migración**
 
 Run: `supabase db push`
@@ -362,6 +371,13 @@ Run: `supabase migration new admin_assign_slot_rpcs`
 Expected: imprime la ruta del `.sql` creado.
 
 - [ ] **Step 2: Escribir los dos RPC**
+
+> **CORRECCIÓN aplicada durante la ejecución (2026-07-29).** `notifications.type` tiene una
+> constraint `notifications_type_check` con la lista cerrada de tipos permitidos, definida en
+> `supabase/migrations/20260630120000_more_guest_notifications.sql:15-22`. Sin añadir
+> `'slot_assigned'` a esa lista, **cada `INSERT INTO notifications` de estos RPC falla en
+> runtime**. La migración real empieza con un `DROP CONSTRAINT IF EXISTS` + `ADD CONSTRAINT`
+> que reproduce los 15 valores existentes y añade el nuevo.
 
 Contenido del archivo:
 
