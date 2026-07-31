@@ -316,6 +316,16 @@ class ActivityDetailScreenModel(
         }
     }
 
+    /** Los RPC levantan excepciones en ingles; esto es lo unico que ve el admin. */
+    private fun assignErrorMessage(msg: String): String = when {
+        msg.contains("already has a slot") -> "Esa persona ya tiene plaza en esta actividad"
+        msg.contains("not a member") -> "Esa persona ya no es miembro de la comunidad"
+        msg.contains("Only community admins") -> "No tienes permisos de administrador"
+        msg.contains("Guest label cannot be empty") -> "Escribe un nombre"
+        msg.contains("unlimited-capacity") -> "Esta actividad no es de aforo abierto"
+        else -> "Error: $msg"
+    }
+
     fun assignSlot(slotId: String, userId: String?, guestLabel: String?) {
         screenModelScope.launch {
             slotRepository.adminAssignSlot(slotId, userId, guestLabel)
@@ -325,7 +335,7 @@ class ActivityDetailScreenModel(
                     load()
                 }
                 .onError { msg, _ ->
-                    _actionMessage.value = "Error: $msg"
+                    _actionMessage.value = assignErrorMessage(msg)
                 }
         }
     }
@@ -338,7 +348,7 @@ class ActivityDetailScreenModel(
                     load()
                 }
                 .onError { msg, _ ->
-                    _actionMessage.value = "Error: $msg"
+                    _actionMessage.value = assignErrorMessage(msg)
                 }
         }
     }
