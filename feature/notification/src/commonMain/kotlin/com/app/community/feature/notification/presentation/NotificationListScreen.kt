@@ -185,8 +185,10 @@ class NotificationListScreen : Screen {
                                         NotificationType.SLOT_REMOVED,
                                         NotificationType.ACTIVITY_FULL,
                                         NotificationType.ACTIVITY_CANCELLED,
-                                        NotificationType.ACTIVITY_UPDATED ->
+                                        NotificationType.ACTIVITY_UPDATED,
+                                        NotificationType.SLOT_ASSIGNED ->
                                             activityId?.let { navigator.push(ActivityDetailScreen(it)) }
+                                        NotificationType.UNKNOWN -> Unit
                                     }
                                 },
                                 onDismiss = { screenModel.deleteNotification(notification.id) },
@@ -281,6 +283,8 @@ private fun NotificationRow(
         NotificationType.ACTIVITY_FULL -> stringResource(Res.string.type_activity_full)
         NotificationType.ACTIVITY_CANCELLED -> stringResource(Res.string.type_activity_cancelled)
         NotificationType.ACTIVITY_UPDATED -> stringResource(Res.string.type_activity_updated)
+        NotificationType.SLOT_ASSIGNED -> stringResource(Res.string.type_slot_assigned)
+        NotificationType.UNKNOWN -> stringResource(Res.string.type_notification_generic)
     }
 
     Row(

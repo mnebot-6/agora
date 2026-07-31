@@ -1,27 +1,53 @@
 package com.app.community.core.model
 
 import kotlinx.datetime.Instant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonObject
 
-@Serializable
-enum class NotificationType {
-    @SerialName("new_activity") NEW_ACTIVITY,
-    @SerialName("slot_released") SLOT_RELEASED,
-    @SerialName("substitute_promoted") SUBSTITUTE_PROMOTED,
-    @SerialName("activity_reminder") ACTIVITY_REMINDER,
-    @SerialName("join_request_received") JOIN_REQUEST_RECEIVED,
-    @SerialName("join_request_approved") JOIN_REQUEST_APPROVED,
-    @SerialName("join_request_rejected") JOIN_REQUEST_REJECTED,
-    @SerialName("guest_request_received") GUEST_REQUEST_RECEIVED,
-    @SerialName("guest_request_approved") GUEST_REQUEST_APPROVED,
-    @SerialName("guest_request_rejected") GUEST_REQUEST_REJECTED,
-    @SerialName("payment_confirmed") PAYMENT_CONFIRMED,
-    @SerialName("slot_removed") SLOT_REMOVED,
-    @SerialName("activity_full") ACTIVITY_FULL,
-    @SerialName("activity_cancelled") ACTIVITY_CANCELLED,
-    @SerialName("activity_updated") ACTIVITY_UPDATED,
+/**
+ * El servidor puede empezar a emitir tipos nuevos antes de que la app se actualice. Con un enum
+ * cerrado, decodeList tumba la lista ENTERA ante un valor desconocido, no solo la fila mala.
+ * UNKNOWN y su serializer son load-bearing: no los quites.
+ */
+@Serializable(with = NotificationTypeSerializer::class)
+enum class NotificationType(val wire: String) {
+    NEW_ACTIVITY("new_activity"),
+    SLOT_RELEASED("slot_released"),
+    SUBSTITUTE_PROMOTED("substitute_promoted"),
+    ACTIVITY_REMINDER("activity_reminder"),
+    JOIN_REQUEST_RECEIVED("join_request_received"),
+    JOIN_REQUEST_APPROVED("join_request_approved"),
+    JOIN_REQUEST_REJECTED("join_request_rejected"),
+    GUEST_REQUEST_RECEIVED("guest_request_received"),
+    GUEST_REQUEST_APPROVED("guest_request_approved"),
+    GUEST_REQUEST_REJECTED("guest_request_rejected"),
+    PAYMENT_CONFIRMED("payment_confirmed"),
+    SLOT_REMOVED("slot_removed"),
+    ACTIVITY_FULL("activity_full"),
+    ACTIVITY_CANCELLED("activity_cancelled"),
+    ACTIVITY_UPDATED("activity_updated"),
+    SLOT_ASSIGNED("slot_assigned"),
+    UNKNOWN("unknown"),
+}
+
+object NotificationTypeSerializer : KSerializer<NotificationType> {
+    private val byWire = NotificationType.entries.associateBy { it.wire }
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("NotificationType", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: NotificationType) =
+        encoder.encodeString(value.wire)
+
+    override fun deserialize(decoder: Decoder): NotificationType =
+        byWire[decoder.decodeString()] ?: NotificationType.UNKNOWN
 }
 
 @Serializable

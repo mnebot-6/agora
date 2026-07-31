@@ -22,4 +22,6 @@
     <string name="delete_confirm_message">This will permanently remove all your notifications.</string>
     <string name="delete_confirm_yes">Delete</string>
     <string name="delete_confirm_no">Cancel</string>
+    <string name="type_slot_assigned">Added to activity</string>
+    <string name="type_notification_generic">Notification</string>
 </resources>
