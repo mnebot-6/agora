@@ -31,4 +31,12 @@ class NotificationTypeTest {
         assertEquals(NotificationType.NEW_ACTIVITY, decoded[0].type)
         assertEquals(NotificationType.UNKNOWN, decoded[1].type)
     }
+
+    @Test
+    fun every_entry_has_a_distinct_wire_value() {
+        assertEquals(
+            NotificationType.entries.size,
+            NotificationType.entries.map { it.wire }.toSet().size,
+        )
+    }
 }

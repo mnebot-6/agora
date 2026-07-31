@@ -186,9 +186,9 @@ class NotificationListScreen : Screen {
                                         NotificationType.ACTIVITY_FULL,
                                         NotificationType.ACTIVITY_CANCELLED,
                                         NotificationType.ACTIVITY_UPDATED,
-                                        NotificationType.SLOT_ASSIGNED ->
+                                        NotificationType.SLOT_ASSIGNED,
+                                        NotificationType.UNKNOWN ->
                                             activityId?.let { navigator.push(ActivityDetailScreen(it)) }
-                                        NotificationType.UNKNOWN -> Unit
                                     }
                                 },
                                 onDismiss = { screenModel.deleteNotification(notification.id) },
