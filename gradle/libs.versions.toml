@@ -69,6 +69,12 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
 
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version = "1.9.3" }
+# activity 1.9.3 arrastra fragment 1.1.0 (2019). lintVitalRelease lo rechaza con
+# InvalidFragmentVersionForActivityResult porque MainActivity usa registerForActivityResult.
+# No es un bug real aqui (MainActivity extiende ComponentActivity, no FragmentActivity), pero
+# ese artefacto viejo se estaba empaquetando igualmente. Antes lo subia supabase-compose-auth,
+# que se elimino por no usarse al anadir el target web.
+androidx-fragment = { module = "androidx.fragment:fragment", version = "1.8.6" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
