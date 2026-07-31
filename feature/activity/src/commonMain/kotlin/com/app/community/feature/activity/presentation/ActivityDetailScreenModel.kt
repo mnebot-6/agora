@@ -11,6 +11,7 @@ import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
+import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
 import com.app.community.core.model.PendingGuestRequest
@@ -54,6 +55,7 @@ sealed class ActivityDetailUiState {
         val isUserJoined: Boolean = false,
         val isPublicCommunity: Boolean = false,
         val pendingGuestRequests: List<PendingGuestRequest> = emptyList(),
+        val members: List<CommunityMember> = emptyList(),
     ) : ActivityDetailUiState()
 
     data class Error(val message: String) : ActivityDetailUiState()
@@ -84,6 +86,7 @@ class ActivityDetailScreenModel(
 
     private var isPublicCommunity: Boolean = false
     private var pendingGuestRequests: List<PendingGuestRequest> = emptyList()
+    private var members: List<CommunityMember> = emptyList()
 
     init {
         load()
@@ -110,7 +113,7 @@ class ActivityDetailScreenModel(
 
             // Check if user is admin
             val membersResult = communityRepository.getMembers(activity.communityId)
-            val members = membersResult.getOrNull() ?: emptyList()
+            members = membersResult.getOrNull() ?: emptyList()
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
 
             // Comunidad pública → habilita compartir/invitados; carga la cola FIFO si soy admin
@@ -142,6 +145,7 @@ class ActivityDetailScreenModel(
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
                     pendingGuestRequests = pendingGuestRequests,
+                    members = members,
                 )
             }
 
@@ -157,6 +161,7 @@ class ActivityDetailScreenModel(
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
                     pendingGuestRequests = pendingGuestRequests,
+                    members = members,
                 )
             }
 
@@ -192,6 +197,7 @@ class ActivityDetailScreenModel(
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
                     pendingGuestRequests = pendingGuestRequests,
+                    members = members,
                 )
             }
         }
@@ -307,6 +313,33 @@ class ActivityDetailScreenModel(
         val mySlot = currentState.slots.firstOrNull { it.slot.reservedBy == userId }
         if (mySlot != null) {
             releaseSlot(mySlot.slot.id)
+        }
+    }
+
+    fun assignSlot(slotId: String, userId: String?, guestLabel: String?) {
+        screenModelScope.launch {
+            slotRepository.adminAssignSlot(slotId, userId, guestLabel)
+                .onSuccess { assigned ->
+                    _actionMessage.value =
+                        if (assigned) "Persona apuntada" else "Esa plaza ya está ocupada"
+                    load()
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
+        }
+    }
+
+    fun assignNewSlot(userId: String?, guestLabel: String?) {
+        screenModelScope.launch {
+            slotRepository.adminAssignNewSlot(activityId, userId, guestLabel)
+                .onSuccess {
+                    _actionMessage.value = "Persona apuntada"
+                    load()
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
         }
     }
 
