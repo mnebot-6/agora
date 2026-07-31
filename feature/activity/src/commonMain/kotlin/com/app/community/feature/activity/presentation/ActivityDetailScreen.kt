@@ -51,6 +51,7 @@ import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.Position
+import com.app.community.core.model.Slot
 import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotStatus
 import com.app.community.core.model.SubstituteEntry
@@ -79,6 +80,15 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
+
+/**
+ * Espeja la logica de release_slot: un admin puede liberar una plaza reservada, o cualquier
+ * plaza sin dueno (etiqueta de invitado) sea cual sea su estado. Una plaza PAGADA con dueno
+ * sigue siendo cosa suya. Sin la segunda condicion, una plaza de etiqueta marcada como pagada
+ * se quedaba sin ningun boton y era imposible de liberar.
+ */
+private val Slot.isAdminReleasable: Boolean
+    get() = reservedBy == null || status == SlotStatus.RESERVED
 
 @Serializable
 data class ActivityDetailScreen(val activityId: String) : Screen {
@@ -347,7 +357,12 @@ private fun ActivityDetailContent(
 
             // Participant list
             items(state.slots.filter { it.slot.reservedBy != null || it.slot.guestLabel != null }) { slotWithProfile ->
-                ParticipantRow(slotWithProfile, state.currentUserId)
+                ParticipantRow(
+                    slotWithProfile = slotWithProfile,
+                    currentUserId = state.currentUserId,
+                    isAdmin = state.isAdmin,
+                    onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
+                )
             }
         }
 
@@ -477,13 +492,19 @@ private fun ActivityDetailContent(
 }
 
 @Composable
-private fun ParticipantRow(slotWithProfile: SlotWithProfile, currentUserId: String) {
+private fun ParticipantRow(
+    slotWithProfile: SlotWithProfile,
+    currentUserId: String,
+    isAdmin: Boolean = false,
+    onRelease: (() -> Unit)? = null,
+) {
     val name = slotWithProfile.profile?.displayName
         ?: slotWithProfile.slot.guestLabel
         ?: stringResource(Res.string.unknown_user)
     val isMe = slotWithProfile.slot.reservedBy == currentUserId
     Row(
         Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -491,6 +512,15 @@ private fun ParticipantRow(slotWithProfile: SlotWithProfile, currentUserId: Stri
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
         )
+        if (isAdmin && onRelease != null && slotWithProfile.slot.isAdminReleasable) {
+            TextButton(onClick = onRelease) {
+                Text(
+                    stringResource(Res.string.slot_release),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
     }
 }
 
@@ -679,9 +709,9 @@ private fun SlotCard(
                         Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                isAdmin && slot.status == SlotStatus.RESERVED -> {
+                isAdmin && slot.isAdminReleasable -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (hasCost) {
+                        if (hasCost && slot.status == SlotStatus.RESERVED) {
                             TextButton(onClick = onMarkPaid) {
                                 Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
                             }
@@ -807,9 +837,9 @@ private fun PositionSlotCard(
                         Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                isAdmin && slot.status == SlotStatus.RESERVED -> {
+                isAdmin && slot.isAdminReleasable -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (hasCost) {
+                        if (hasCost && slot.status == SlotStatus.RESERVED) {
                             TextButton(onClick = onMarkPaid) {
                                 Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
                             }
