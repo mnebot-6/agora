@@ -1,3 +1,9 @@
+-- ============================================================================
+-- RPCs para que un admin apunte a alguien en un hueco.
+-- ============================================================================
+
+BEGIN;
+
 -- Nuevo tipo de notificacion: sin esto, el CHECK notifications_type_check rechaza cada
 -- INSERT de las RPC de abajo. Se repite la lista de 20260630120000 y se anade slot_assigned.
 ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
@@ -33,6 +39,12 @@ BEGIN
 
     IF (p_user_id IS NULL) = (p_guest_label IS NULL) THEN
         RAISE EXCEPTION 'Provide exactly one of p_user_id or p_guest_label';
+    END IF;
+
+    -- El XOR de arriba acepta '' y '   ': una plaza ocupada por nadie que solo un admin
+    -- puede liberar. Misma convencion que request_guest_slot: rechazar y guardar trim().
+    IF p_guest_label IS NOT NULL AND length(trim(p_guest_label)) = 0 THEN
+        RAISE EXCEPTION 'Guest label cannot be empty';
     END IF;
 
     SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
@@ -73,7 +85,7 @@ BEGIN
     UPDATE slots
     SET status = 'reserved',
         reserved_by = p_user_id,
-        guest_label = p_guest_label,
+        guest_label = trim(p_guest_label),
         reserved_at = now()
     WHERE id = p_slot_id;
 
@@ -123,7 +135,16 @@ BEGIN
         RAISE EXCEPTION 'Provide exactly one of p_user_id or p_guest_label';
     END IF;
 
-    SELECT * INTO v_activity FROM activities WHERE id = p_activity_id;
+    -- El XOR de arriba acepta '' y '   ': una plaza ocupada por nadie que solo un admin
+    -- puede liberar. Misma convencion que request_guest_slot: rechazar y guardar trim().
+    IF p_guest_label IS NOT NULL AND length(trim(p_guest_label)) = 0 THEN
+        RAISE EXCEPTION 'Guest label cannot be empty';
+    END IF;
+
+    -- FOR UPDATE serializa el max(sort_order)+1 de mas abajo, igual que request_guest_slot:
+    -- sin el, dos llamadas concurrentes calculan el mismo sort_order y, como no hay indice
+    -- unico, las filas empatan y getSlots (que ordena solo por sort_order) las baraja.
+    SELECT * INTO v_activity FROM activities WHERE id = p_activity_id FOR UPDATE;
     IF v_activity IS NULL THEN
         RAISE EXCEPTION 'Activity not found';
     END IF;
@@ -135,6 +156,13 @@ BEGIN
           AND role = 'admin'
     ) THEN
         RAISE EXCEPTION 'Only community admins can assign slots';
+    END IF;
+
+    -- En modo limited esto anadiria una plaza por encima del aforo, y en
+    -- limited_with_positions crearia una plaza sin filas en slot_positions, que ya no
+    -- casaria nunca con la consulta de posiciones de approve_guest_request.
+    IF v_activity.slot_mode <> 'unlimited' THEN
+        RAISE EXCEPTION 'admin_assign_new_slot only applies to unlimited-capacity activities';
     END IF;
 
     IF p_user_id IS NOT NULL THEN
@@ -157,7 +185,7 @@ BEGIN
     FROM slots WHERE activity_id = p_activity_id;
 
     INSERT INTO slots (activity_id, sort_order, status, reserved_by, guest_label, reserved_at)
-    VALUES (p_activity_id, v_sort_order, 'reserved', p_user_id, p_guest_label, now())
+    VALUES (p_activity_id, v_sort_order, 'reserved', p_user_id, trim(p_guest_label), now())
     RETURNING id INTO v_slot_id;
 
     IF p_user_id IS NOT NULL THEN
@@ -181,3 +209,5 @@ $$;
 ALTER FUNCTION public.admin_assign_new_slot(uuid, uuid, text) OWNER TO postgres;
 GRANT ALL ON FUNCTION public.admin_assign_new_slot(uuid, uuid, text) TO authenticated;
 GRANT ALL ON FUNCTION public.admin_assign_new_slot(uuid, uuid, text) TO service_role;
+
+COMMIT;
