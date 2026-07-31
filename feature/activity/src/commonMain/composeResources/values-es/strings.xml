@@ -132,4 +132,13 @@
     <string name="guest_full_message">Esta actividad no tiene plazas disponibles ahora mismo.</string>
     <string name="guest_exit">Cerrar</string>
     <string name="guest_get_app">Descargar la app</string>
+
+    <!-- Admin apunta a alguien en un hueco -->
+    <string name="assign_button">Apuntar a alguien</string>
+    <string name="assign_dialog_title">Apuntar a alguien en esta plaza</string>
+    <string name="assign_search_member">Buscar miembro</string>
+    <string name="assign_guest_name">…o escribe un nombre</string>
+    <string name="assign_queue_warning">Hay %1$d personas en la cola de suplentes.</string>
+    <string name="assign_confirm">Apuntar</string>
+    <string name="assign_confirm_anyway">Apuntar igualmente</string>
 </resources>

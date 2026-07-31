@@ -132,4 +132,13 @@
     <string name="guest_full_message">This activity has no available spots right now.</string>
     <string name="guest_exit">Close</string>
     <string name="guest_get_app">Get the app</string>
+
+    <!-- Admin assigns someone to a slot -->
+    <string name="assign_button">Add someone</string>
+    <string name="assign_dialog_title">Add someone to this slot</string>
+    <string name="assign_search_member">Search member</string>
+    <string name="assign_guest_name">…or type a name</string>
+    <string name="assign_queue_warning">There are %1$d people in the substitute queue.</string>
+    <string name="assign_confirm">Add</string>
+    <string name="assign_confirm_anyway">Add anyway</string>
 </resources>

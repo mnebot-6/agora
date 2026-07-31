@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,6 +49,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
+import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.Position
 import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotStatus
@@ -152,6 +156,7 @@ private fun ActivityDetailContent(
     modifier: Modifier = Modifier,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var assignTarget by remember { mutableStateOf<AssignTarget?>(null) }
     val activity = state.activity
     val localDateTime = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
 
@@ -313,25 +318,35 @@ private fun ActivityDetailContent(
         // Unlimited mode
         if (activity.slotMode == SlotMode.UNLIMITED) {
             item {
-                if (state.isUserJoined) {
-                    AgoraButton(
-                        text = stringResource(Res.string.detail_leave),
-                        onClick = screenModel::leaveUnlimited,
-                        variant = AgoraButtonVariant.Danger,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    AgoraButton(
-                        text = stringResource(Res.string.detail_join),
-                        onClick = screenModel::joinUnlimited,
-                        variant = AgoraButtonVariant.Primary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                    if (state.isUserJoined) {
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_leave),
+                            onClick = screenModel::leaveUnlimited,
+                            variant = AgoraButtonVariant.Danger,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        AgoraButton(
+                            text = stringResource(Res.string.detail_join),
+                            onClick = screenModel::joinUnlimited,
+                            variant = AgoraButtonVariant.Primary,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (state.isAdmin) {
+                        AgoraButton(
+                            text = stringResource(Res.string.assign_button),
+                            onClick = { assignTarget = AssignTarget.NewSlot },
+                            variant = AgoraButtonVariant.Secondary,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
 
             // Participant list
-            items(state.slots.filter { it.slot.reservedBy != null }) { slotWithProfile ->
+            items(state.slots.filter { it.slot.reservedBy != null || it.slot.guestLabel != null }) { slotWithProfile ->
                 ParticipantRow(slotWithProfile, state.currentUserId)
             }
         }
@@ -349,6 +364,7 @@ private fun ActivityDetailContent(
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                     onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
+                    onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
                 )
             }
 
@@ -395,6 +411,7 @@ private fun ActivityDetailContent(
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                         onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
+                        onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
                     )
                 }
             }
@@ -443,11 +460,27 @@ private fun ActivityDetailContent(
             },
         )
     }
+
+    assignTarget?.let { target ->
+        AssignSlotDialog(
+            members = state.members,
+            queueSize = state.substituteQueue.size,
+            onDismiss = { assignTarget = null },
+            onConfirm = { userId, label ->
+                when (target) {
+                    is AssignTarget.ExistingSlot -> screenModel.assignSlot(target.slotId, userId, label)
+                    AssignTarget.NewSlot -> screenModel.assignNewSlot(userId, label)
+                }
+            },
+        )
+    }
 }
 
 @Composable
 private fun ParticipantRow(slotWithProfile: SlotWithProfile, currentUserId: String) {
-    val name = slotWithProfile.profile?.displayName ?: stringResource(Res.string.unknown_user)
+    val name = slotWithProfile.profile?.displayName
+        ?: slotWithProfile.slot.guestLabel
+        ?: stringResource(Res.string.unknown_user)
     val isMe = slotWithProfile.slot.reservedBy == currentUserId
     Row(
         Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.xs),
@@ -550,6 +583,7 @@ private fun SlotCard(
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
+    onAssign: () -> Unit,
 ) {
     val slot = slotWithProfile.slot
     val isMySlot = slot.reservedBy == currentUserId
@@ -583,13 +617,21 @@ private fun SlotCard(
                         val guestChip = stringResource(Res.string.detail_guest_chip)
                         val name = when {
                             slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
-                            else -> slotWithProfile.profile?.displayName ?: guestChip
+                            else -> slotWithProfile.profile?.displayName ?: slot.guestLabel ?: guestChip
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
                                 style = MaterialTheme.typography.titleSmall,
                             )
+                            if (slot.guestLabel != null) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = guestChip,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             if (slot.status == SlotStatus.PENDING) {
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Text(
@@ -613,12 +655,24 @@ private fun SlotCard(
             }
 
             when {
-                slot.status == SlotStatus.AVAILABLE && !hasReservation -> {
-                    AgoraButton(
-                        text = stringResource(Res.string.slot_reserve),
-                        onClick = onReserve,
-                        variant = AgoraButtonVariant.Primary,
-                    )
+                slot.status == SlotStatus.AVAILABLE -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                        if (!hasReservation) {
+                            AgoraButton(
+                                text = stringResource(Res.string.slot_reserve),
+                                onClick = onReserve,
+                                variant = AgoraButtonVariant.Primary,
+                            )
+                        }
+                        if (isAdmin) {
+                            TextButton(onClick = onAssign) {
+                                Text(
+                                    stringResource(Res.string.assign_button),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            }
+                        }
+                    }
                 }
                 isMySlot -> {
                     TextButton(onClick = onRelease) {
@@ -653,6 +707,7 @@ private fun PositionSlotCard(
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
+    onAssign: () -> Unit,
 ) {
     val slot = slotWithProfile.slot
     val isMySlot = slot.reservedBy == currentUserId
@@ -689,13 +744,21 @@ private fun PositionSlotCard(
                         val guestChip = stringResource(Res.string.detail_guest_chip)
                         val name = when {
                             slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
-                            else -> slotWithProfile.profile?.displayName ?: guestChip
+                            else -> slotWithProfile.profile?.displayName ?: slot.guestLabel ?: guestChip
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
                                 style = MaterialTheme.typography.titleSmall,
                             )
+                            if (slot.guestLabel != null) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = guestChip,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             if (slot.status == SlotStatus.PENDING) {
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Text(
@@ -720,12 +783,24 @@ private fun PositionSlotCard(
             }
 
             when {
-                slot.status == SlotStatus.AVAILABLE && !hasReservation -> {
-                    AgoraButton(
-                        text = stringResource(Res.string.slot_reserve),
-                        onClick = onReserve,
-                        variant = AgoraButtonVariant.Primary,
-                    )
+                slot.status == SlotStatus.AVAILABLE -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                        if (!hasReservation) {
+                            AgoraButton(
+                                text = stringResource(Res.string.slot_reserve),
+                                onClick = onReserve,
+                                variant = AgoraButtonVariant.Primary,
+                            )
+                        }
+                        if (isAdmin) {
+                            TextButton(onClick = onAssign) {
+                                Text(
+                                    stringResource(Res.string.assign_button),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            }
+                        }
+                    }
                 }
                 isMySlot -> {
                     TextButton(onClick = onRelease) {
@@ -831,4 +906,107 @@ private fun SubstituteQueueSection(
             }
         }
     }
+}
+
+/** Qué plaza va a recibir la asignación: una existente, o una nueva en modo ilimitado. */
+private sealed interface AssignTarget {
+    data class ExistingSlot(val slotId: String) : AssignTarget
+    data object NewSlot : AssignTarget
+}
+
+@Composable
+private fun AssignSlotDialog(
+    members: List<CommunityMember>,
+    queueSize: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (userId: String?, guestLabel: String?) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    var selectedUserId by remember { mutableStateOf<String?>(null) }
+    var guestName by remember { mutableStateOf("") }
+
+    val filtered = remember(members, query) {
+        if (query.isBlank()) members
+        else members.filter { it.profiles?.displayName?.contains(query, ignoreCase = true) == true }
+    }
+    val canConfirm = selectedUserId != null || guestName.isNotBlank()
+    val unknownUserLabel = stringResource(Res.string.unknown_user)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.assign_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+                if (queueSize > 0) {
+                    Text(
+                        text = stringResource(Res.string.assign_queue_warning, queueSize),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text(stringResource(Res.string.assign_search_member)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                    items(filtered, key = { it.userId }) { member ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedUserId = member.userId
+                                    guestName = ""
+                                }
+                                .padding(vertical = AgoraSpacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = selectedUserId == member.userId,
+                                onClick = {
+                                    selectedUserId = member.userId
+                                    guestName = ""
+                                },
+                            )
+                            Text(
+                                text = member.profiles?.displayName ?: unknownUserLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = guestName,
+                    onValueChange = {
+                        guestName = it
+                        if (it.isNotBlank()) selectedUserId = null
+                    },
+                    label = { Text(stringResource(Res.string.assign_guest_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = canConfirm,
+                onClick = {
+                    onConfirm(selectedUserId, guestName.takeIf { it.isNotBlank() })
+                    onDismiss()
+                },
+            ) {
+                Text(
+                    stringResource(
+                        if (queueSize > 0) Res.string.assign_confirm_anyway
+                        else Res.string.assign_confirm
+                    )
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.label_cancel)) }
+        },
+    )
 }
