@@ -1169,6 +1169,51 @@ git push origin main
 
 ---
 
+## Resultado
+
+**2026-07-31 — migraciones aplicadas a producción y feature probada en Android.**
+
+Las dos migraciones se aplicaron con `supabase db push` (`supabase migration list` da Local =
+Remote en las 7). Verificado **contra el esquema real** volcado con `supabase db dump`, no
+contra la salida del CLI: los 2 RPC existen, la columna `guest_label` y la constraint
+`slots_no_owner_and_label` están, `notifications_type_check` incluye `slot_assigned` junto a
+los 15 anteriores, `release_slot` lleva los cuatro arreglos (`IS DISTINCT FROM` ×2, limpia
+`guest_label`, resetea `is_guest`, protege `pending`), `reject_guest_request` limpia la
+etiqueta, y `admin_assign_new_slot` tiene el guardia de `slot_mode`, el `FOR UPDATE` y la
+validación de etiqueta vacía.
+
+Probado por el usuario en Android, modo de aforo limitado:
+
+| Caso | Resultado |
+|---|---|
+| Apuntar a un miembro de la comunidad | ✅ y le llegó la notificación |
+| Marcar esa plaza como pagada | ✅ y le llegó la notificación |
+| Apuntar un nombre suelto (invitado sin cuenta) | ✅ |
+| Liberar esa plaza de etiqueta siendo admin | ✅ |
+
+**No verificado desde la app** (ni por el usuario ni por nadie): los caminos negativos —
+no-admin liberando una plaza de etiqueta, persona que ya tiene plaza, nombre vacío, aviso de
+cola de suplentes— y los modos `unlimited` y `limited_with_positions`. Están cubiertos por
+código y por la revisión adversarial del SQL, pero no ejecutados. Los casos están escritos en
+`docs/admin_assign_slots_smoke_check.sql` por si se quieren pasar más adelante.
+
+### Hallazgos de la revisión adversarial del SQL (los 7, todos arreglados antes del push)
+
+Tres eran bugs **preexistentes**, no introducidos por esta feature:
+
+1. `reject_guest_request` no limpiaba `guest_label` → plaza libre con etiqueta pegada, que
+   viola la constraint nueva en cuanto alguien la reserve, y sin policy de DELETE para limpiarla.
+2. `release_slot` no comprobaba permisos para `status='pending'`: la cadena
+   `IF reserved_by IS NULL / ELSIF paid / ELSIF reserved` no casaba, el `IF` caía directo al
+   UPDATE y **cualquier autenticado podía liberar la plaza retenida por un invitado**.
+3. `release_slot` no reseteaba `is_guest`, así que el siguiente ocupante de una plaza que tuvo
+   invitado salía marcado como invitado.
+4. `admin_assign_new_slot` no comprobaba `slot_mode` → podía crear plazas por encima del aforo.
+5. `p_guest_label` sin validar aceptaba `''` y `'   '`.
+6. `admin_assign_new_slot` sin `FOR UPDATE` sobre la actividad → `sort_order` duplicado y
+   plazas que se reordenan solas entre refrescos.
+7. Migraciones sin `BEGIN`/`COMMIT`, a diferencia de sus hermanas.
+
 ## Qué NO hace este plan (a propósito)
 
 - **Los tres huecos de promoción automática de suplentes.** `promote_substitute` sólo se llama desde `release_slot` y no hay trigger en `slots`, así que una plaza queda libre con la cola llena cuando la posición no casa, cuando se crean plazas por `INSERT` directo, o cuando se rechaza a un invitado. Tarea aparte, ya acordada.
