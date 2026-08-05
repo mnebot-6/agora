@@ -1,10 +1,9 @@
 name: iOS Build
 
+# Solo manual. El build falla en CI porque :core:data:generateSupabaseConfig
+# declara local.properties (gitignored) como input obligatorio. Volver a
+# activar push/pull_request cuando se retome iOS y se arregle ese input.
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
