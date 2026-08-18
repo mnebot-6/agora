@@ -79,6 +79,10 @@ class DashboardScreen : Screen {
 
         LaunchedEffect(Unit) { screenModel.refresh() }
 
+        // El avatar de la topbar conserva el ultimo nombre conocido: load() pasa por
+        // Loading en cada refresco y, sin esto, parpadearia al icono generico justo al
+        // volver de Perfil. Solo escribe cuando el nombre no es nulo, asi que un fallo
+        // puntual al cargar el perfil mantiene la inicial en vez de degradar el avatar.
         var lastKnownDisplayName by remember { mutableStateOf<String?>(null) }
         SideEffect {
             (uiState as? DashboardScreenModel.UiState.Content)?.displayName?.let {
