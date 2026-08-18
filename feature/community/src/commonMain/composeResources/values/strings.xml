@@ -162,7 +162,7 @@
     <!-- CommunityIconField -->
     <string name="community_icon_label">Icon</string>
     <string name="community_icon_name_volleyball">Volleyball</string>
-    <string name="community_icon_name_soccer">Football</string>
+    <string name="community_icon_name_soccer">Soccer</string>
     <string name="community_icon_name_basketball">Basketball</string>
     <string name="community_icon_name_running">Running</string>
     <string name="community_icon_name_group">Group</string>
@@ -178,4 +178,6 @@
     <string name="community_icon_name_pet">Pets</string>
     <string name="community_icon_name_generic">General</string>
     <string name="community_icon_name_none">No icon</string>
+    <string name="community_icon_expand">Show icons</string>
+    <string name="community_icon_collapse">Hide icons</string>
 </resources>
