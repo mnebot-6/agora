@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Text
@@ -28,7 +27,6 @@ import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
 import com.app.community.feature.community.presentation.JoinCommunityScreen
-import com.app.community.feature.auth.presentation.ProfileScreen
 import com.app.community.feature.notification.presentation.NotificationListScreen
 import com.app.community.dashboard.DashboardScreen
 
@@ -99,26 +97,11 @@ object NotificationsTab : Tab {
         get() {
             val icon = rememberVectorPainter(Icons.Default.Campaign)
             val title = stringResource(Res.string.tab_notifications)
-            return remember(title) { TabOptions(index = 3u, title = title, icon = icon) }
+            return remember(title) { TabOptions(index = 2u, title = title, icon = icon) }
         }
 
     @Composable
     override fun Content() {
         Navigator(NotificationListScreen())
-    }
-}
-
-object ProfileTab : Tab {
-    override val options: TabOptions
-        @Composable
-        get() {
-            val icon = rememberVectorPainter(Icons.Default.AccountCircle)
-            val title = stringResource(Res.string.tab_profile)
-            return remember(title) { TabOptions(index = 4u, title = title, icon = icon) }
-        }
-
-    @Composable
-    override fun Content() {
-        Navigator(ProfileScreen())
     }
 }

@@ -22,7 +22,6 @@ import com.app.community.core.domain.community.GetMyCommunitiesUseCase
 import com.app.community.core.domain.community.JoinCommunityUseCase
 import com.app.community.GuestSessionStore
 import com.app.community.feature.activity.presentation.ActivityDetailScreenModel
-import com.app.community.feature.activity.presentation.ActivityFeedScreenModel
 import com.app.community.feature.activity.presentation.CreateActivityScreenModel
 import com.app.community.feature.activity.presentation.EditActivityScreenModel
 import com.app.community.feature.activity.presentation.GuestActivityScreenModel
@@ -119,13 +118,6 @@ val screenModelModule = module {
         GuestActivityScreenModel(
             code = params.get(),
             guestRepository = get(),
-        )
-    }
-    factory {
-        ActivityFeedScreenModel(
-            activityRepository = get(),
-            authRepository = get(),
-            communityRepository = get(),
         )
     }
     factory { params ->

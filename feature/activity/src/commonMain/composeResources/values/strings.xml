@@ -26,12 +26,6 @@
     <string name="slot_mode_limited">Limited</string>
     <string name="slot_mode_positions">Positions</string>
 
-    <!-- Feed screen -->
-    <string name="feed_title">Activities</string>
-    <string name="feed_empty">No upcoming activities in your agora</string>
-    <string name="feed_create_activity">Create activity</string>
-    <string name="feed_select_community">Select community</string>
-
     <!-- Detail screen -->
     <string name="detail_title_fallback">Activity</string>
     <string name="detail_duration_hours_minutes">Duration: %1$dh %2$dmin</string>

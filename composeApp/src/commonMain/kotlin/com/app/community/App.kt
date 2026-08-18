@@ -41,7 +41,6 @@ import com.app.community.feature.auth.presentation.LoginScreen
 import com.app.community.navigation.AgoraTab
 import com.app.community.navigation.CommunitiesTab
 import com.app.community.navigation.NotificationsTab
-import com.app.community.navigation.ProfileTab
 import org.koin.compose.koinInject
 
 @Composable
@@ -168,7 +167,6 @@ private fun MainContent(selectedTab: Tab, onSelectTab: (Tab) -> Unit) {
                     TabNavigationItem(AgoraTab, onSelectTab)
                     TabNavigationItem(CommunitiesTab, onSelectTab)
                     TabNavigationItem(NotificationsTab, onSelectTab)
-                    TabNavigationItem(ProfileTab, onSelectTab)
                 }
             },
         ) { paddingValues ->
