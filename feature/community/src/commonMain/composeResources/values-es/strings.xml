@@ -159,8 +159,23 @@
     <string name="member_remove_confirm">Expulsar</string>
     <string name="member_remove_cancel">Cancelar</string>
 
-    <!-- CommunityIconPicker -->
-    <string name="community_icon_picker_title">Elige un icono</string>
-    <string name="community_icon_picker_clear">Sin icono</string>
+    <!-- CommunityIconField -->
     <string name="community_icon_label">Icono</string>
+    <string name="community_icon_name_volleyball">Voleibol</string>
+    <string name="community_icon_name_soccer">Futbol</string>
+    <string name="community_icon_name_basketball">Baloncesto</string>
+    <string name="community_icon_name_running">Correr</string>
+    <string name="community_icon_name_group">Grupo</string>
+    <string name="community_icon_name_home">Casa</string>
+    <string name="community_icon_name_coffee">Cafe</string>
+    <string name="community_icon_name_party">Fiesta</string>
+    <string name="community_icon_name_music">Musica</string>
+    <string name="community_icon_name_theater">Teatro</string>
+    <string name="community_icon_name_book">Libro</string>
+    <string name="community_icon_name_art">Arte</string>
+    <string name="community_icon_name_work">Trabajo</string>
+    <string name="community_icon_name_travel">Viajes</string>
+    <string name="community_icon_name_pet">Mascotas</string>
+    <string name="community_icon_name_generic">General</string>
+    <string name="community_icon_name_none">Sin icono</string>
 </resources>

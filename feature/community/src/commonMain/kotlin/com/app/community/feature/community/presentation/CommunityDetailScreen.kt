@@ -71,7 +71,6 @@ import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraFabMenu
 import com.app.community.core.ui.components.AgoraTopBar
-import com.app.community.core.ui.components.CommunityAvatar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FabMenuItem
 import com.app.community.core.ui.components.FabMenuItemVariant
@@ -549,19 +548,6 @@ private fun EditCommunityDialog(
     state: CommunityDetailScreenModel.UiState.Content,
     screenModel: CommunityDetailScreenModel,
 ) {
-    var showIconPicker by remember { mutableStateOf(false) }
-
-    if (showIconPicker) {
-        CommunityIconPickerDialog(
-            selectedKey = state.editIconKey,
-            onSelect = screenModel::onEditIconKeyChange,
-            onDismiss = { showIconPicker = false },
-            title = stringResource(Res.string.community_icon_picker_title),
-            clearLabel = stringResource(Res.string.community_icon_picker_clear),
-            cancelLabel = stringResource(Res.string.community_detail_edit_cancel),
-        )
-    }
-
     AlertDialog(
         onDismissRequest = screenModel::dismissEditDialog,
         title = { Text(stringResource(Res.string.community_detail_edit_title)) },
@@ -573,18 +559,12 @@ private fun EditCommunityDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CommunityAvatar(
-                        communityId = state.community.id,
-                        name = state.editName.ifBlank { "?" },
-                        iconKey = state.editIconKey,
-                        size = 48.dp,
-                    )
-                    Spacer(Modifier.width(AgoraSpacing.md))
-                    TextButton(onClick = { showIconPicker = true }) {
-                        Text(stringResource(Res.string.community_icon_label))
-                    }
-                }
+                CommunityIconField(
+                    communityId = state.community.id,
+                    name = state.community.name,
+                    selectedKey = state.editIconKey,
+                    onSelect = screenModel::onEditIconKeyChange,
+                )
                 OutlinedTextField(
                     value = state.editName,
                     onValueChange = screenModel::onEditNameChange,
