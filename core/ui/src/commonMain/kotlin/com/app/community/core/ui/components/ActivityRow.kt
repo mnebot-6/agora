@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,12 +43,17 @@ fun ActivityRow(
         modifier = modifier.fillMaxWidth().padding(AgoraSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Saturado (primary), no pastel: los avatares de comunidad usan siempre
+        // roles *Container, asi que el color separa las dos siluetas por si solo.
+        // widthIn en vez de width: a 2x de escala de fuente "18" no cabe en 48dp
+        // y se partiria en dos lineas.
         Column(
             modifier = Modifier
-                .width(48.dp)
+                .widthIn(min = 48.dp)
                 .clip(RoundedCornerShape(AgoraSpacing.sm))
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(vertical = AgoraSpacing.sm),
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(vertical = AgoraSpacing.sm, horizontal = AgoraSpacing.xs)
+                .semantics(mergeDescendants = true) {},
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -54,14 +61,16 @@ fun ActivityRow(
                 text = day,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = MaterialTheme.colorScheme.onPrimary,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
             )
             Text(
                 text = month,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = MaterialTheme.colorScheme.onPrimary,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
             )
         }
 

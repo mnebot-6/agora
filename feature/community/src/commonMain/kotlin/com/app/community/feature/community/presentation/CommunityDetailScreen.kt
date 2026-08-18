@@ -770,7 +770,12 @@ private fun ActivityCard(
             day = localDateTime.dayOfMonth.toString(),
             month = localDateTime.monthNumber.toString().padStart(2, '0'),
             title = activity.name,
-            subtitle = activity.locationName,
+            // La hora baja al subtitulo: el bloque de fecha solo lleva dia y mes,
+            // y la hora es el dato mas util al ojear que hay esta semana.
+            subtitle = listOfNotNull(
+                "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}",
+                activity.locationName?.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
             trailing = {
                 val slotText = when {
                     activity.maxSlots != null -> stringResource(Res.string.community_detail_slots, activity.maxSlots!!)

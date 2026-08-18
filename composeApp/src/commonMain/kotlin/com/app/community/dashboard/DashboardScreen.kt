@@ -322,10 +322,12 @@ private fun CompactActivityCard(
             day = localDt.dayOfMonth.toString(),
             month = localDt.monthNumber.toString().padStart(2, '0'),
             title = activity.name,
-            // El dia de la semana baja al subtitulo: el bloque de fecha significa
-            // lo mismo en todas las pantallas (dia sobre mes) y "mie" sigue visible.
+            // Dia de la semana y hora bajan al subtitulo: el bloque de fecha
+            // significa lo mismo en todas las pantallas (dia sobre mes) y no se
+            // pierde nada de lo que la fila mostraba antes.
             subtitle = listOfNotNull(
                 dayOfWeekAbbr(localDt.dayOfWeek),
+                "${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
                 activity.locationName?.takeIf { it.isNotBlank() },
             ).joinToString(" · "),
             trailing = {
