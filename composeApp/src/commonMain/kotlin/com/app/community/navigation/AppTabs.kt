@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +23,6 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.resources.stringResource
 import com.app.community.DeepLinkHandler
-import com.app.community.feature.activity.presentation.ActivityFeedScreen
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
@@ -45,7 +43,26 @@ object AgoraTab : Tab {
 
     @Composable
     override fun Content() {
-        Navigator(DashboardScreen())
+        Navigator(DashboardScreen()) { navigator ->
+            val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
+            val pendingNotificationActivityId by DeepLinkHandler.pendingNotificationActivityId.collectAsState()
+            LaunchedEffect(pendingActivityCode) {
+                val code = DeepLinkHandler.consumeActivityCode()
+                if (code != null) {
+                    navigator.push(GuestActivityScreen(code))
+                }
+            }
+            LaunchedEffect(pendingNotificationActivityId) {
+                val id = DeepLinkHandler.consumeNotificationActivityId() ?: return@LaunchedEffect
+                val current = navigator.lastItem
+                if (current is ActivityDetailScreen && current.activityId == id) {
+                    navigator.replace(ActivityDetailScreen(id))
+                } else {
+                    navigator.push(ActivityDetailScreen(id))
+                }
+            }
+            navigator.lastItem.Content()
+        }
     }
 }
 
@@ -69,40 +86,6 @@ object CommunitiesTab : Tab {
                     // comunidad requiere aprobación). El usuario nunca ve la
                     // pantalla manual de "introducir código".
                     navigator.push(AutoJoinByInviteScreen(inviteCode = code))
-                }
-            }
-            navigator.lastItem.Content()
-        }
-    }
-}
-
-object ActivitiesTab : Tab {
-    override val options: TabOptions
-        @Composable
-        get() {
-            val icon = rememberVectorPainter(Icons.Default.Event)
-            val title = stringResource(Res.string.tab_activities)
-            return remember(title) { TabOptions(index = 2u, title = title, icon = icon) }
-        }
-
-    @Composable
-    override fun Content() {
-        Navigator(ActivityFeedScreen()) { navigator ->
-            val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
-            val pendingNotificationActivityId by DeepLinkHandler.pendingNotificationActivityId.collectAsState()
-            LaunchedEffect(pendingActivityCode) {
-                val code = DeepLinkHandler.consumeActivityCode()
-                if (code != null) {
-                    navigator.push(GuestActivityScreen(code))
-                }
-            }
-            LaunchedEffect(pendingNotificationActivityId) {
-                val id = DeepLinkHandler.consumeNotificationActivityId() ?: return@LaunchedEffect
-                val current = navigator.lastItem
-                if (current is ActivityDetailScreen && current.activityId == id) {
-                    navigator.replace(ActivityDetailScreen(id))
-                } else {
-                    navigator.push(ActivityDetailScreen(id))
                 }
             }
             navigator.lastItem.Content()
