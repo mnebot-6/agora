@@ -35,7 +35,7 @@
 | `core/ui/src/commonMain/kotlin/com/app/community/core/ui/components/CommunityAvatar.kt` | Pinta el icono de una comunidad (o su inicial de fallback) a un tamaño dado. |
 | `core/ui/src/commonMain/kotlin/com/app/community/core/ui/components/CommunityRow.kt` | Silueta única de "fila de comunidad": avatar + nombre + subtítulo. |
 | `core/ui/src/commonMain/kotlin/com/app/community/core/ui/components/ActivityRow.kt` | Silueta única de "fila de actividad": bloque de fecha + nombre + badge. |
-| `feature/community/src/commonMain/kotlin/com/app/community/feature/community/presentation/CommunityIconPicker.kt` | Diálogo con grid 4x4 de iconos. |
+| `feature/community/.../presentation/CommunityIconField.kt` | Campo inline plegable con los 17 tiles de icono. Se planeó como diálogo (`CommunityIconPicker.kt`) y se cambió al implementarlo; ver la nota del final. |
 | `supabase/migrations/<timestamp>_community_icon_key.sql` | Columna `icon_key` + redefinición de las dos funciones que enumeran columnas. |
 
 **Modificar:**
@@ -1511,3 +1511,39 @@ git commit -m "fix(ui): ajustes tras la verificacion manual"
 **La migración es aditiva.** Una versión antigua de la app en el móvil de alguien ignora `icon_key` sin romperse, porque el campo del modelo tiene default `null`. No hace falta coordinar el despliegue de app y base de datos.
 
 **Riesgo de copiar mal las funciones SQL.** La Task 5 pide copiar dos cuerpos de función del baseline. Si al copiar cambias la firma, `CREATE OR REPLACE` crea una función nueva en vez de reemplazar y explorar deja de funcionar. Compara la firma carácter a carácter antes de hacer `db push`.
+
+---
+
+## Desviaciones respecto a lo planeado
+
+El cuerpo de arriba es lo que se instruyó, no siempre lo que se construyó. Cuatro
+cosas cambiaron al implementarlas, todas por motivos que solo aparecieron con el
+código delante:
+
+1. **El selector de iconos no es un diálogo, es un campo inline plegable**
+   (`CommunityIconField.kt`). En la pantalla de edición habría sido un
+   `AlertDialog` sobre otro, sin precedente en la app y frágil en wasmJs, donde
+   Compose pinta los diálogos como overlays de la misma composición. Y la rejilla
+   pasó de `LazyVerticalGrid` a `FlowRow`: la columna del diálogo de edición
+   lleva `verticalScroll`, y un lazy scrollable dentro de otro scrollable lanza
+   excepción por constraint infinito.
+
+2. **El icono se guarda con `updateCommunityIcon`, no con `updateCommunity`.**
+   Meterlo en `updateCommunity` con parámetro por defecto borraba el icono al
+   editar solo el nombre; protegerlo con `iconKey?.let` rompía el botón de "sin
+   icono". Un método propio, como visibilidad y tags, no tiene ninguno de los dos
+   problemas.
+
+3. **El bloque de fecha usa `primary` saturado, no `primaryContainer`.** La
+   paleta de `CommunityAvatar` usa los cuatro roles `*Container`, así que
+   cualquier container chocaba con algún avatar y las dos siluetas se veían
+   iguales. Saturado contra pastel sí distingue.
+
+4. **La línea del árbol necesita `height(IntrinsicSize.Min)` en su `Row`.** El
+   snippet original tenía `fillMaxHeight()` contra una altura no acotada, que
+   habría pintado cero píxeles.
+
+Pendiente como seguimiento, fuera de esta rama: el contador de miembros de la
+lista de comunidades. El diseño lo pide, pero `getMyCommunities` selecciona
+`communities(*)` y `member_count` no es columna de esa tabla, solo lo calculan
+dos RPC. Los bloques que lo pintaban eran código muerto y se borraron.

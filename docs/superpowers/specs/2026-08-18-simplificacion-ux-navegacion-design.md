@@ -138,9 +138,27 @@ migrar datos.
 
 #### Selector
 
-Grid de 4x4 en un diálogo, un toque para elegir. Aparece en dos sitios: en
-`CreateCommunityScreen` al crear, y en el diálogo de edición de admin que ya
-llama a `updateCommunity` desde `CommunityDetailScreenModel:211`.
+Campo inline (`CommunityIconField`), no un diálogo: avatar y etiqueta en una fila
+que se pliega y despliega, y debajo un `FlowRow` de 17 tiles — los 16 iconos más
+uno de "sin icono". Un toque elige. Aparece en dos sitios: en
+`CreateCommunityScreen` al crear, y dentro del diálogo de edición de admin en
+`CommunityDetailScreen`.
+
+Se descartó el diálogo con el que empezó el diseño por dos motivos que solo
+salieron al implementarlo. En la pantalla de edición habría sido un `AlertDialog`
+encima de otro, y no hay ningún precedente de diálogos apilados en la app: en
+wasmJs Compose los pinta como overlays de la misma composición, no como ventanas
+del sistema, y los popups anidados son terreno frágil ahí. Y la rejilla tenía que
+ser un `FlowRow` y no un `LazyVerticalGrid`, porque la columna del diálogo de
+edición lleva `verticalScroll` y un scrollable lazy dentro de otro scrollable
+lanza excepción por constraint infinito. Con 17 tiles la laziness no aporta nada.
+
+El icono no se guarda con `updateCommunity`, sino con un `updateCommunityIcon`
+propio, siguiendo el patrón que `saveCommunity()` ya usa para visibilidad y tags:
+cada grupo de campos se compara por separado y se guarda con su propia llamada.
+Colarlo en `updateCommunity` con un parámetro por defecto borraba el icono al
+renombrar una comunidad, y protegerlo con `iconKey?.let` rompía en silencio el
+botón de "sin icono".
 
 #### Fallback
 
