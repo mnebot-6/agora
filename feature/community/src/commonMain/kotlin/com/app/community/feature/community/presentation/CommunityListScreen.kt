@@ -224,22 +224,14 @@ private fun CommunityCard(
                     size = 40.dp,
                 )
                 Spacer(Modifier.width(AgoraSpacing.md))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = community.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    community.memberCount?.let { count ->
-                        Text(
-                            text = stringResource(Res.string.community_detail_members_header, count),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                Text(
+                    text = community.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             if (!community.description.isNullOrBlank()) {
@@ -302,20 +294,12 @@ private fun NestedChildRow(
             size = 24.dp,
         )
         Spacer(Modifier.width(AgoraSpacing.sm))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = community.name,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            community.memberCount?.let { count ->
-                Text(
-                    text = stringResource(Res.string.community_detail_members_header, count),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Text(
+            text = community.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
