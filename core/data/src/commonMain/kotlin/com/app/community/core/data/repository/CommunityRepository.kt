@@ -55,19 +55,6 @@ class CommunityRepository {
                 .decodeList<Community>()
         }
 
-    suspend fun getMyAdminCommunities(userId: String): AppResult<List<Community>> =
-        safeCall {
-            postgrest.from("community_members")
-                .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("community_id, communities(*)")) {
-                    filter {
-                        eq("user_id", userId)
-                        eq("role", "admin")
-                    }
-                }
-                .decodeList<CommunityMemberWithCommunity>()
-                .mapNotNull { it.communities }
-        }
-
     suspend fun getCommunity(communityId: String): AppResult<Community> =
         safeCall {
             val community = postgrest.from("communities")

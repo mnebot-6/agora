@@ -26,7 +26,6 @@ import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
-import com.app.community.feature.community.presentation.JoinCommunityScreen
 import com.app.community.feature.notification.presentation.NotificationListScreen
 import com.app.community.dashboard.DashboardScreen
 
