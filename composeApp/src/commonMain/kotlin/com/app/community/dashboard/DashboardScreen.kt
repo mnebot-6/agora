@@ -1,6 +1,8 @@
 package com.app.community.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,11 +15,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import agora.composeapp.generated.resources.Res
 import agora.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.pluralStringResource
@@ -52,6 +58,7 @@ import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.slotStatusColors
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
+import com.app.community.feature.auth.presentation.ProfileScreen
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -74,6 +81,12 @@ class DashboardScreen : Screen {
                             "Agora",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
+                        )
+                    },
+                    actions = {
+                        ProfileAvatarButton(
+                            displayName = (uiState as? DashboardScreenModel.UiState.Content)?.displayName,
+                            onClick = { navigator.push(ProfileScreen()) },
                         )
                     },
                 )
@@ -389,4 +402,35 @@ private fun dayOfWeekAbbr(dow: kotlinx.datetime.DayOfWeek): String = when (dow) 
     kotlinx.datetime.DayOfWeek.SATURDAY -> stringResource(Res.string.day_sat_abbr)
     kotlinx.datetime.DayOfWeek.SUNDAY -> stringResource(Res.string.day_sun_abbr)
     else -> dow.name.take(3)
+}
+
+@Composable
+private fun ProfileAvatarButton(
+    displayName: String?,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        val initial = displayName?.trim()?.firstOrNull()?.uppercaseChar()
+        if (initial == null) {
+            Icon(
+                Icons.Default.AccountCircle,
+                contentDescription = stringResource(Res.string.tab_profile),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = initial.toString(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
 }
