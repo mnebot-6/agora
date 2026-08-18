@@ -320,9 +320,14 @@ private fun CompactActivityCard(
     ) {
         ActivityRow(
             day = localDt.dayOfMonth.toString(),
-            month = dayOfWeekAbbr(localDt.dayOfWeek),
+            month = localDt.monthNumber.toString().padStart(2, '0'),
             title = activity.name,
-            subtitle = activity.locationName,
+            // El dia de la semana baja al subtitulo: el bloque de fecha significa
+            // lo mismo en todas las pantallas (dia sobre mes) y "mie" sigue visible.
+            subtitle = listOfNotNull(
+                dayOfWeekAbbr(localDt.dayOfWeek),
+                activity.locationName?.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
             trailing = {
                 val (chipColorPair, chipText) = when {
                     info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
