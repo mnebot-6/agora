@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -60,7 +62,11 @@ fun CommunityIcon.vector(): ImageVector = when (this) {
  * distingue de una actividad: una actividad NUNCA lleva este avatar.
  *
  * Sin icono elegido cae a la inicial del nombre sobre un color derivado del id,
- * de forma que dos comunidades distintas nunca se ven iguales.
+ * de forma que comunidades distintas se distingan entre si la mayoria de las veces.
+ *
+ * `contentDescription` es null por defecto porque el uso mas comun (filas de
+ * lista) ya trae el nombre de la comunidad como texto visible al lado: el
+ * avatar es decorativo ahi. Un caller sin texto adyacente debe pasarlo.
  */
 @Composable
 fun CommunityAvatar(
@@ -69,6 +75,7 @@ fun CommunityAvatar(
     iconKey: String?,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
+    contentDescription: String? = null,
 ) {
     // Un solo listado de pares: fondo y contenido no pueden desincronizarse.
     // El modulo protege el indice aunque el tamano de la paleta cambie.
@@ -91,16 +98,21 @@ fun CommunityAvatar(
         if (icon != null) {
             Icon(
                 imageVector = icon.vector(),
-                contentDescription = null,
+                contentDescription = contentDescription,
                 tint = foreground,
                 modifier = Modifier.size(size * 0.55f),
             )
         } else {
             Text(
-                text = name.trim().firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
+                text = name.trim().firstOrNull()?.uppercaseChar()?.toString().orEmpty().ifEmpty { "?" },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = foreground,
+                modifier = if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                },
             )
         }
     }
