@@ -79,6 +79,7 @@ class CommunityRepository {
         visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
         tagIds: List<String> = emptyList(),
         parentId: String? = null,
+        iconKey: String? = null,
     ): AppResult<Community> =
         safeCall {
             val inviteCode = generateInviteCode()
@@ -90,6 +91,7 @@ class CommunityRepository {
                     put("created_by", createdBy)
                     put("visibility", visibility.serialized())
                     parentId?.let { put("parent_id", it) }
+                    iconKey?.let { put("icon_key", it) }
                 }) { select() }
                 .decodeSingle<Community>()
 
@@ -218,12 +220,25 @@ class CommunityRepository {
                 }
         }
 
-    suspend fun updateCommunity(id: String, name: String, description: String?): AppResult<Unit> =
+    /**
+     * [iconKey] null significa "no lo toques", no "bórralo": los parámetros por
+     * defecto de Kotlin no distinguen omitido de null, y quien edita solo el
+     * nombre o la descripción no debe perder el icono ya elegido.
+     * Techo conocido: por eso mismo no hay forma de volver a "sin icono" desde
+     * aquí; si el selector llega a necesitarlo, hará falta una señal aparte.
+     */
+    suspend fun updateCommunity(
+        id: String,
+        name: String,
+        description: String?,
+        iconKey: String? = null,
+    ): AppResult<Unit> =
         safeCall {
             postgrest.from("communities")
                 .update({
                     set("name", name)
                     set("description", description)
+                    iconKey?.let { set("icon_key", it) }
                 }) { filter { eq("id", id) } }
         }
 

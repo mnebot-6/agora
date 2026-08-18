@@ -16,9 +16,10 @@ class CreateCommunityUseCase(
         visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
         tagIds: List<String> = emptyList(),
         parentId: String? = null,
+        iconKey: String? = null,
     ): AppResult<Community> {
         val userId = authRepository.currentUserId()
             ?: return AppResult.Error("Not authenticated")
-        return communityRepository.createCommunity(name, description, userId, visibility, tagIds, parentId)
+        return communityRepository.createCommunity(name, description, userId, visibility, tagIds, parentId, iconKey)
     }
 }
