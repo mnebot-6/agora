@@ -1489,10 +1489,11 @@ Este paso no se puede automatizar y es el que protege los links que ya circulan.
 2. El avatar de la topbar de Agora abre Perfil, y atrás vuelve a Agora.
 3. Crear una comunidad eligiendo icono: aparece en la lista con ese icono.
 4. Una comunidad sin icono muestra su inicial, y dos comunidades distintas muestran colores distintos.
-5. Una comunidad con hijas muestra la línea de conexión y las hijas más pequeñas.
+5. Una comunidad con hijas muestra la línea de conexión y las hijas más pequeñas. Mira de cerca el icono de una hija: a 24dp el dibujo queda en 13,2dp y los iconos con más línea interior (baloncesto, voleibol) pueden emborronarse. Si pasa, sube el factor de `CommunityAvatar` o el tamaño de la hija.
 6. Editar una comunidad y cambiarle el icono se refleja en la lista al volver.
-7. Repetir 1-6 en modo oscuro.
-8. Repetir 1-6 en la web.
+7. Explorar comunidades y la previsualización de una invitación cargan sin error. Esto verifica de paso que las dos funciones SQL redefinidas en la migración siguen sanas: no se pudo comprobar antes si alguien las había editado a mano en el dashboard de Supabase, porque Docker no arranca en esta máquina.
+8. Repetir 1-7 en modo oscuro.
+9. Repetir 1-7 en la web.
 
 - [ ] **Step 6: Commit final si hubo arreglos**
 
