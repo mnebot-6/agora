@@ -5,13 +5,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Celebration
-import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalCafe
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Pets
@@ -28,12 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.app.community.core.model.AVATAR_COLOR_COUNT
 import com.app.community.core.model.CommunityIcon
 import com.app.community.core.model.avatarColorIndex
 
@@ -42,14 +40,14 @@ fun CommunityIcon.vector(): ImageVector = when (this) {
     CommunityIcon.VOLLEYBALL -> Icons.Default.SportsVolleyball
     CommunityIcon.SOCCER -> Icons.Default.SportsSoccer
     CommunityIcon.BASKETBALL -> Icons.Default.SportsBasketball
-    CommunityIcon.RUNNING -> Icons.Default.DirectionsRun
+    CommunityIcon.RUNNING -> Icons.AutoMirrored.Filled.DirectionsRun
     CommunityIcon.GROUP -> Icons.Default.Groups
     CommunityIcon.HOME -> Icons.Default.Home
     CommunityIcon.COFFEE -> Icons.Default.LocalCafe
     CommunityIcon.PARTY -> Icons.Default.Celebration
     CommunityIcon.MUSIC -> Icons.Default.MusicNote
     CommunityIcon.THEATER -> Icons.Default.TheaterComedy
-    CommunityIcon.BOOK -> Icons.Default.MenuBook
+    CommunityIcon.BOOK -> Icons.AutoMirrored.Filled.MenuBook
     CommunityIcon.ART -> Icons.Default.Palette
     CommunityIcon.WORK -> Icons.Default.Work
     CommunityIcon.TRAVEL -> Icons.Default.Flight
@@ -72,24 +70,15 @@ fun CommunityAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
 ) {
-    // Debe tener AVATAR_COLOR_COUNT entradas: avatarColorIndex() devuelve un
-    // índice en 0 until AVATAR_COLOR_COUNT y se usa directamente contra esta lista.
+    // Un solo listado de pares: fondo y contenido no pueden desincronizarse.
+    // El modulo protege el indice aunque el tamano de la paleta cambie.
     val palette = listOf(
-        MaterialTheme.colorScheme.primaryContainer,
-        MaterialTheme.colorScheme.secondaryContainer,
-        MaterialTheme.colorScheme.tertiaryContainer,
-        MaterialTheme.colorScheme.surfaceVariant,
+        MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer,
+        MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer,
+        MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer,
+        MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    val onPalette = listOf(
-        MaterialTheme.colorScheme.onPrimaryContainer,
-        MaterialTheme.colorScheme.onSecondaryContainer,
-        MaterialTheme.colorScheme.onTertiaryContainer,
-        MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    check(palette.size == AVATAR_COLOR_COUNT && onPalette.size == AVATAR_COLOR_COUNT)
-    val index = avatarColorIndex(communityId)
-    val background: Color = palette[index]
-    val foreground: Color = onPalette[index]
+    val (background, foreground) = palette[avatarColorIndex(communityId) % palette.size]
 
     Box(
         modifier = modifier
