@@ -43,8 +43,7 @@ const val AVATAR_COLOR_COUNT: Int = 4
 /**
  * Índice de color estable para una comunidad sin icono elegido.
  *
- * Se pasa por Long antes del módulo: `Int.MIN_VALUE.absoluteValue` sigue siendo
- * negativo en Kotlin, y un índice negativo reventaría el acceso a la paleta.
+ * `mod` (no `%`) porque `hashCode()` puede ser negativo y el resto de `%`
+ * conservaría el signo: un índice negativo reventaría el acceso a la paleta.
  */
-fun avatarColorIndex(id: String): Int =
-    ((id.hashCode().toLong() and 0x7FFFFFFFL) % AVATAR_COLOR_COUNT).toInt()
+fun avatarColorIndex(id: String): Int = id.hashCode().mod(AVATAR_COLOR_COUNT)
