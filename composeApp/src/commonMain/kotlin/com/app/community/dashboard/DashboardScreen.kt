@@ -28,11 +28,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import agora.composeapp.generated.resources.Res
 import agora.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.pluralStringResource
@@ -73,6 +79,13 @@ class DashboardScreen : Screen {
 
         LaunchedEffect(Unit) { screenModel.refresh() }
 
+        var lastKnownDisplayName by remember { mutableStateOf<String?>(null) }
+        SideEffect {
+            (uiState as? DashboardScreenModel.UiState.Content)?.displayName?.let {
+                lastKnownDisplayName = it
+            }
+        }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
@@ -85,7 +98,7 @@ class DashboardScreen : Screen {
                     },
                     actions = {
                         ProfileAvatarButton(
-                            displayName = (uiState as? DashboardScreenModel.UiState.Content)?.displayName,
+                            displayName = lastKnownDisplayName,
                             onClick = { navigator.push(ProfileScreen()) },
                         )
                     },
@@ -409,12 +422,16 @@ private fun ProfileAvatarButton(
     displayName: String?,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick) {
+    val label = stringResource(Res.string.tab_profile)
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.clearAndSetSemantics { contentDescription = label },
+    ) {
         val initial = displayName?.trim()?.firstOrNull()?.uppercaseChar()
         if (initial == null) {
             Icon(
                 Icons.Default.AccountCircle,
-                contentDescription = stringResource(Res.string.tab_profile),
+                contentDescription = null,
             )
         } else {
             Box(
