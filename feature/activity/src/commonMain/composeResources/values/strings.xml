@@ -4,7 +4,6 @@
     <string name="back_cd">Back</string>
     <string name="slots_header">Slots</string>
     <string name="slot_mode_unlimited">Unlimited</string>
-    <string name="slot_mode_limited_count">%1$d slots</string>
     <string name="slot_available">Available</string>
     <string name="slot_reserve">Reserve</string>
     <string name="slot_release">Release</string>
