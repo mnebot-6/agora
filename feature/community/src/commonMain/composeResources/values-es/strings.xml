@@ -9,6 +9,7 @@
     <string name="community_list_empty_title">Tu agora esta vacia</string>
     <string name="community_list_empty_subtitle">Crea una comunidad o unete con un codigo de invitacion.</string>
     <string name="community_list_join_button">Unirse con codigo de invitacion</string>
+    <string name="community_list_child_cd">%1$s, subcomunidad de %2$s</string>
 
     <!-- CommunityDetailScreen -->
     <string name="community_detail_default_title">Comunidad</string>

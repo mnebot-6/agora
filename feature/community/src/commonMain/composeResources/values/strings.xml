@@ -9,6 +9,7 @@
     <string name="community_list_empty_title">Your agora is empty</string>
     <string name="community_list_empty_subtitle">Create a community or join with an invite code.</string>
     <string name="community_list_join_button">Join with invite code</string>
+    <string name="community_list_child_cd">%1$s, subcommunity of %2$s</string>
 
     <!-- CommunityDetailScreen -->
     <string name="community_detail_default_title">Community</string>
