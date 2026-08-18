@@ -26,6 +26,7 @@ class CreateCommunityScreenModel(
         val visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
         val selectedTagIds: Set<String> = emptySet(),
         val availableTags: List<Tag> = emptyList(),
+        val iconKey: String? = null,
     )
 
     sealed class UiState {
@@ -53,6 +54,7 @@ class CreateCommunityScreenModel(
     fun onNameChange(value: String) = _form.update { it.copy(name = value) }
     fun onDescriptionChange(value: String) = _form.update { it.copy(description = value) }
     fun onVisibilityChange(value: CommunityVisibility) = _form.update { it.copy(visibility = value) }
+    fun onIconKeyChange(value: String?) = _form.update { it.copy(iconKey = value) }
 
     fun onTagToggle(tagId: String) = _form.update { state ->
         val newSet = when {
@@ -77,6 +79,7 @@ class CreateCommunityScreenModel(
                 visibility = state.visibility,
                 tagIds = state.selectedTagIds.toList(),
                 parentId = parentId,
+                iconKey = state.iconKey,
             )
                 .onSuccess { community ->
                     if (parentId != null) {

@@ -26,12 +26,17 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -40,11 +45,16 @@ import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.CommunityAvatar
 import com.app.community.core.ui.components.IonicVoluteHeader
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.agoraColors
 import agora.feature.community.generated.resources.Res
 import agora.feature.community.generated.resources.back_cd
+import agora.feature.community.generated.resources.community_detail_edit_cancel
+import agora.feature.community.generated.resources.community_icon_label
+import agora.feature.community.generated.resources.community_icon_picker_clear
+import agora.feature.community.generated.resources.community_icon_picker_title
 import agora.feature.community.generated.resources.create_community_button
 import agora.feature.community.generated.resources.create_community_description_label
 import agora.feature.community.generated.resources.create_community_header
@@ -82,6 +92,7 @@ data class CreateCommunityScreen(
         }
 
         val isLoading = uiState is CreateCommunityScreenModel.UiState.Loading
+        var showIconPicker by remember { mutableStateOf(false) }
 
         Scaffold(
             topBar = {
@@ -125,6 +136,35 @@ data class CreateCommunityScreen(
                     IonicVoluteHeader(title = headerTitle)
 
                     Spacer(Modifier.height(AgoraSpacing.xxl))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CommunityAvatar(
+                            communityId = "new",
+                            name = form.name.ifBlank { "?" },
+                            iconKey = form.iconKey,
+                            size = 48.dp,
+                        )
+                        Spacer(Modifier.width(AgoraSpacing.md))
+                        TextButton(
+                            onClick = { showIconPicker = true },
+                            enabled = !isLoading,
+                        ) {
+                            Text(stringResource(Res.string.community_icon_label))
+                        }
+                    }
+
+                    if (showIconPicker) {
+                        CommunityIconPickerDialog(
+                            selectedKey = form.iconKey,
+                            onSelect = screenModel::onIconKeyChange,
+                            onDismiss = { showIconPicker = false },
+                            title = stringResource(Res.string.community_icon_picker_title),
+                            clearLabel = stringResource(Res.string.community_icon_picker_clear),
+                            cancelLabel = stringResource(Res.string.community_detail_edit_cancel),
+                        )
+                    }
+
+                    Spacer(Modifier.height(AgoraSpacing.lg))
 
                     OutlinedTextField(
                         value = form.name,
