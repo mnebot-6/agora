@@ -53,6 +53,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.SlotMode
+import com.app.community.core.ui.components.ActivityRow
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
@@ -317,56 +318,29 @@ private fun CompactActivityCard(
         elevation = AgoraElevation.none,
         onClick = onClick,
     ) {
-        Row(
-            modifier = Modifier
-                .padding(AgoraSpacing.md)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${dayOfWeekAbbr(localDt.dayOfWeek)} ${localDt.dayOfMonth}, ${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+        ActivityRow(
+            day = localDt.dayOfMonth.toString(),
+            month = dayOfWeekAbbr(localDt.dayOfWeek),
+            title = activity.name,
+            subtitle = activity.locationName,
+            trailing = {
+                val (chipColorPair, chipText) = when {
+                    info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
+                    info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
+                        slotColors.reservedByOther to stringResource(Res.string.dashboard_status_full)
+                    }
+                    activity.slotMode == SlotMode.UNLIMITED -> {
+                        slotColors.available to stringResource(Res.string.dashboard_status_open)
+                    }
+                    else -> slotColors.available to stringResource(Res.string.dashboard_status_slots, info.availableSlots)
+                }
+                SlotStatusBadge(
+                    text = chipText,
+                    colorPair = chipColorPair,
+                    isCompact = true,
                 )
-                Text(
-                    text = activity.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                activity.locationName?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            Spacer(Modifier.width(AgoraSpacing.sm))
-
-            // Status chip
-            val (chipColorPair, chipText) = when {
-                info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
-                info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
-                    slotColors.reservedByOther to stringResource(Res.string.dashboard_status_full)
-                }
-                activity.slotMode == SlotMode.UNLIMITED -> {
-                    slotColors.available to stringResource(Res.string.dashboard_status_open)
-                }
-                else -> slotColors.available to stringResource(Res.string.dashboard_status_slots, info.availableSlots)
-            }
-
-            SlotStatusBadge(
-                text = chipText,
-                colorPair = chipColorPair,
-                isCompact = true,
-            )
-        }
+            },
+        )
     }
 }
 
