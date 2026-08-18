@@ -220,25 +220,12 @@ class CommunityRepository {
                 }
         }
 
-    /**
-     * [iconKey] null significa "no lo toques", no "bórralo": los parámetros por
-     * defecto de Kotlin no distinguen omitido de null, y quien edita solo el
-     * nombre o la descripción no debe perder el icono ya elegido.
-     * Techo conocido: por eso mismo no hay forma de volver a "sin icono" desde
-     * aquí; si el selector llega a necesitarlo, hará falta una señal aparte.
-     */
-    suspend fun updateCommunity(
-        id: String,
-        name: String,
-        description: String?,
-        iconKey: String? = null,
-    ): AppResult<Unit> =
+    suspend fun updateCommunity(id: String, name: String, description: String?): AppResult<Unit> =
         safeCall {
             postgrest.from("communities")
                 .update({
                     set("name", name)
                     set("description", description)
-                    iconKey?.let { set("icon_key", it) }
                 }) { filter { eq("id", id) } }
         }
 
@@ -370,6 +357,14 @@ class CommunityRepository {
                 set("visibility", visibility.serialized())
             }) { filter { eq("id", communityId) } }
     }
+
+    // Aparte de updateCommunity, como visibility y tags: llamarla ya significa que
+    // el icono cambia, asi que aqui null si es "borrar" y nadie lo pisa sin querer.
+    suspend fun updateCommunityIcon(id: String, iconKey: String?): AppResult<Unit> =
+        safeCall {
+            postgrest.from("communities")
+                .update({ set("icon_key", iconKey) }) { filter { eq("id", id) } }
+        }
 
     suspend fun updateCommunityTags(
         communityId: String,
