@@ -581,31 +581,26 @@ En `CommunityRepository.createCommunity`, añade `iconKey: String? = null` a la 
                     iconKey?.let { put("icon_key", it) }
 ```
 
-Reemplaza `updateCommunity` entera:
+En un insert, clave ausente y `null` significan lo mismo, así que el `?.let` es correcto aquí.
+
+**`updateCommunity` NO se toca.** El icono va en un método propio, siguiendo el patrón que el archivo ya usa para visibilidad y tags (`updateCommunityVisibility`, `updateCommunityTags`). Añádelo junto a ellos:
 
 ```kotlin
-    suspend fun updateCommunity(
-        id: String,
-        name: String,
-        description: String?,
-        iconKey: String? = null,
-    ): AppResult<Unit> =
+    suspend fun updateCommunityIcon(id: String, iconKey: String?): AppResult<Unit> =
         safeCall {
             postgrest.from("communities")
-                .update({
-                    set("name", name)
-                    set("description", description)
-                    set("icon_key", iconKey)
-                }) { filter { eq("id", id) } }
+                .update({ set("icon_key", iconKey) }) { filter { eq("id", id) } }
         }
 ```
+
+Este sí escribe `null` deliberadamente: que lo llamen significa que ese es el valor que se quiere. Meter el icono dentro de `updateCommunity` con un parámetro por defecto sería una trampa — `CommunityDetailScreenModel.saveCommunity()` lo llama al cambiar solo el nombre, y borraría el icono sin querer; y si se protege con `iconKey?.let`, entonces el botón "Sin icono" del selector de la Task 7 deja de funcionar en silencio. Un método aparte no tiene ninguno de los dos problemas.
 
 En `CreateCommunityUseCase`, añade `iconKey: String? = null` a la firma de `invoke` y pásalo como último argumento de `communityRepository.createCommunity(...)`.
 
 - [ ] **Step 6: Compilar**
 
 ```bash
-./gradlew :core:data:compileKotlinAndroid :core:domain:compileKotlinAndroid
+./gradlew :core:data:compileDebugKotlinAndroid :core:domain:compileDebugKotlinAndroid
 ```
 
 Esperado: BUILD SUCCESSFUL.
@@ -761,7 +756,7 @@ La paleta sale de `MaterialTheme.colorScheme`, no de hexadecimales nuevos: así 
 - [ ] **Step 3: Compilar**
 
 ```bash
-./gradlew :core:ui:compileKotlinAndroid
+./gradlew :core:ui:compileDebugKotlinAndroid
 ```
 
 Esperado: BUILD SUCCESSFUL. Si sale `Unresolved reference: SportsVolleyball`, falta el paso 1.
@@ -971,29 +966,25 @@ En `CommunityDetailScreenModel`, junto a `editName` y `editDescription` en el es
     }
 ```
 
-En `saveCommunity()`, la condición de cambio y la llamada pasan a incluir el icono:
+En `saveCommunity()`, el icono se guarda con su propia llamada guardada por su propia bandera, exactamente igual que ya se hace con visibilidad y tags. `updateCommunity` se queda como está:
 
 ```kotlin
-            val nameOrDescChanged = name != current.community.name ||
-                current.editDescription.trim().ifBlank { null } != current.community.description ||
-                current.editIconKey != current.community.iconKey
+            val iconChanged = current.editIconKey != current.community.iconKey
 
-            if (nameOrDescChanged) {
-                communityRepository.updateCommunity(
-                    id = communityId,
-                    name = name,
-                    description = current.editDescription.trim().ifBlank { null },
-                    iconKey = current.editIconKey,
-                ).onError { msg, _ -> firstError = firstError ?: msg }
+            if (firstError == null && iconChanged) {
+                communityRepository.updateCommunityIcon(communityId, current.editIconKey)
+                    .onError { msg, _ -> firstError = firstError ?: msg }
             }
 ```
+
+Colócalo junto a los bloques de `updateCommunityVisibility` y `updateCommunityTags`, respetando la misma cadena de `firstError == null &&` que usan ellos.
 
 En el `AlertDialog` de edición de `CommunityDetailScreen.kt` (empieza en la línea 551), añade la misma fila avatar + botón del paso 4 encima del primer `OutlinedTextField`, usando `state.editIconKey` y `screenModel::onEditIconKeyChange`.
 
 - [ ] **Step 6: Compilar**
 
 ```bash
-./gradlew :feature:community:compileKotlinAndroid
+./gradlew :feature:community:compileDebugKotlinAndroid
 ```
 
 Esperado: BUILD SUCCESSFUL.
@@ -1152,7 +1143,7 @@ Quita `import androidx.compose.material.icons.filled.SubdirectoryArrowRight` y, 
 - [ ] **Step 3: Compilar los dos targets**
 
 ```bash
-./gradlew :feature:community:compileKotlinAndroid :feature:community:compileKotlinWasmJs
+./gradlew :feature:community:compileDebugKotlinAndroid :feature:community:compileKotlinWasmJs
 ```
 
 Esperado: BUILD SUCCESSFUL en ambos. `fillMaxHeight()` dentro de un `Row` toma la altura del hermano más alto, que es justo lo que queremos para la línea.
