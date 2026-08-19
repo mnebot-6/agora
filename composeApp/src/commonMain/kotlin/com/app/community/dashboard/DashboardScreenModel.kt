@@ -6,6 +6,7 @@ import com.app.community.core.common.AppResult
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
@@ -22,6 +23,7 @@ class DashboardScreenModel(
     private val slotRepository: SlotRepository,
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
+    private val communityRepository: CommunityRepository,
 ) : ScreenModel {
 
     sealed class UiState {
@@ -63,6 +65,14 @@ class DashboardScreenModel(
             // Profile (best-effort: si falla, saludo sin nombre)
             val displayName = profileRepository.getProfile(userId).getOrNull()?.displayName
 
+            // Nombre de comunidad por id. getUpcomingActivities solo devuelve
+            // actividades de comunidades a las que pertenezco, asi que el nombre
+            // siempre esta aqui y no hace falta tocar la consulta de actividades.
+            val communityNames = communityRepository.getMyCommunities(userId)
+                .getOrNull()
+                .orEmpty()
+                .associate { it.id to it.name }
+
             when (val result = activityRepository.getUpcomingActivities()) {
                 is AppResult.Success -> {
                     val activities = result.data
@@ -73,7 +83,7 @@ class DashboardScreenModel(
 
                     // Enrich each activity with slot info
                     val enriched = activities.map { activity ->
-                        enrichActivity(activity, userId)
+                        enrichActivity(activity, userId, communityNames[activity.communityId])
                     }
 
                     // Resumen semanal: actividades en los proximos 7 dias
@@ -99,9 +109,13 @@ class DashboardScreenModel(
         }
     }
 
-    private suspend fun enrichActivity(activity: Activity, userId: String): ActivityWithSlotInfo {
+    private suspend fun enrichActivity(
+        activity: Activity,
+        userId: String,
+        communityName: String?,
+    ): ActivityWithSlotInfo {
         if (activity.slotMode == SlotMode.UNLIMITED) {
-            return ActivityWithSlotInfo(activity = activity)
+            return ActivityWithSlotInfo(activity = activity, communityName = communityName)
         }
 
         return when (val slotsResult = slotRepository.getSlots(activity.id)) {
@@ -126,10 +140,11 @@ class DashboardScreenModel(
                     availableSlots = available,
                     isUserReserved = isReserved,
                     userQueuePosition = queuePosition,
+                    communityName = communityName,
                 )
             }
 
-            is AppResult.Error -> ActivityWithSlotInfo(activity = activity)
+            is AppResult.Error -> ActivityWithSlotInfo(activity = activity, communityName = communityName)
         }
     }
 }

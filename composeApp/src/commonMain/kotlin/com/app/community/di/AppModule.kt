@@ -86,6 +86,7 @@ val screenModelModule = module {
             slotRepository = get(),
             authRepository = get(),
             profileRepository = get(),
+            communityRepository = get(),
         )
     }
     factory { params ->

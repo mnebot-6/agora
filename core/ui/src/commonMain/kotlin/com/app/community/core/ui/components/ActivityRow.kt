@@ -37,6 +37,7 @@ fun ActivityRow(
     title: String,
     subtitle: String?,
     modifier: Modifier = Modifier,
+    overline: String? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
@@ -77,6 +78,17 @@ fun ActivityRow(
         Spacer(Modifier.width(AgoraSpacing.md))
 
         Column(modifier = Modifier.weight(1f)) {
+            // El overline lleva el contexto (de que comunidad es la actividad) y va
+            // encima del nombre a proposito: es lo que situa, no lo que identifica.
+            if (!overline.isNullOrBlank()) {
+                Text(
+                    text = overline,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
