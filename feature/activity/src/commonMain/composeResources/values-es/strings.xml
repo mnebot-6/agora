@@ -3,20 +3,20 @@
     <!-- Shared across activity screens -->
     <string name="back_cd">Volver</string>
     <string name="slots_header">Plazas</string>
-    <string name="slot_mode_unlimited">Sin limite</string>
+    <string name="slot_mode_unlimited">Sin límite</string>
     <string name="slot_available">Libre</string>
     <string name="slot_reserve">Reservar</string>
     <string name="slot_release">Liberar</string>
     <string name="slot_paid">Pagado</string>
     <string name="unknown_user">Usuario</string>
-    <string name="name_is_me">%1$s (tu)</string>
-    <string name="no_position">Sin posicion</string>
+    <string name="name_is_me">%1$s (tú)</string>
+    <string name="no_position">Sin posición</string>
     <string name="label_name_required">Nombre *</string>
-    <string name="label_description">Descripcion</string>
+    <string name="label_description">Descripción</string>
     <string name="placeholder_markdown">Soporta formato Markdown</string>
     <string name="label_date_required">Fecha *</string>
     <string name="label_time_required">Hora *</string>
-    <string name="label_duration">Duracion</string>
+    <string name="label_duration">Duración</string>
     <string name="label_location">Lugar</string>
     <string name="label_cost">Coste</string>
     <string name="label_delete">Eliminar</string>
@@ -27,11 +27,11 @@
 
     <!-- Detail screen -->
     <string name="detail_title_fallback">Actividad</string>
-    <string name="detail_duration_hours_minutes">Duracion: %1$dh %2$dmin</string>
-    <string name="detail_duration_hours">Duracion: %1$dh</string>
+    <string name="detail_duration_hours_minutes">Duración: %1$dh %2$dmin</string>
+    <string name="detail_duration_hours">Duración: %1$dh</string>
     <string name="detail_location">Lugar: %1$s</string>
     <string name="detail_cost">Coste: %1$s</string>
-    <string name="detail_location_cd">Abrir ubicacion en mapas</string>
+    <string name="detail_location_cd">Abrir ubicación en mapas</string>
     <string name="detail_status_archived">Archivada</string>
     <string name="detail_status_label">Estado: %1$s</string>
     <string name="detail_edit">Editar</string>
@@ -42,17 +42,17 @@
     <string name="detail_leave">Salir</string>
     <string name="detail_join">Unirse</string>
     <string name="detail_slot_index">Plaza %1$d</string>
-    <string name="detail_position_slot_index">Hueco %1$d</string>
+    <string name="detail_position_slot_index">Puesto %1$d</string>
     <string name="detail_delete_dialog_title">Eliminar actividad</string>
-    <string name="detail_delete_dialog_message">Esta accion no se puede deshacer. Se eliminaran todas las plazas y reservas.</string>
+    <string name="detail_delete_dialog_message">Esta acción no se puede deshacer. Se eliminarán todas las plazas y reservas.</string>
     <string name="detail_substitute_queue_header">Cola de suplentes</string>
     <string name="detail_no_substitutes">No hay suplentes en cola</string>
     <string name="detail_substitute_entry">%1$d. %2$s</string>
     <string name="detail_substitute_entry_position">%1$d. %2$s (%3$s)</string>
-    <string name="detail_substitute_me">Tu</string>
+    <string name="detail_substitute_me">Tú</string>
     <string name="detail_leave_queue">Salir de la cola</string>
     <string name="detail_join_substitute_for">Apuntarme de suplente para:</string>
-    <string name="detail_any_position">Cualquier posicion</string>
+    <string name="detail_any_position">Cualquier posición</string>
     <string name="detail_join_substitute">Apuntarme de suplente</string>
 
     <!-- Create screen -->
@@ -60,31 +60,31 @@
     <string name="create_name_placeholder">Ej: Voley Mixto</string>
     <string name="create_date_placeholder">DD/MM/YYYY</string>
     <string name="create_time_placeholder">HH:MM</string>
-    <string name="create_location_placeholder">Ej: Pabellon de la Fuensanta</string>
+    <string name="create_location_placeholder">Ej: Pabellón de la Fuensanta</string>
     <string name="create_cost_placeholder">Ej: Bizum de 6.5 euros por persona</string>
-    <string name="create_max_slots_label">Numero de plazas *</string>
+    <string name="create_max_slots_label">Número de plazas *</string>
     <string name="create_max_slots_placeholder">Ej: 12</string>
     <string name="create_button">Crear Actividad</string>
     <string name="create_step1_title">1. Define posiciones</string>
-    <string name="create_step1_description">Las posiciones disponibles (ej: Central, Libero, Colocador...)</string>
-    <string name="create_position_placeholder">Nombre posicion</string>
+    <string name="create_step1_description">Las posiciones disponibles (ej: Central, Líbero, Colocador...)</string>
+    <string name="create_position_placeholder">Nombre de la posición</string>
     <string name="create_delete_position_cd">Eliminar</string>
-    <string name="create_add_position">Anadir posicion</string>
-    <string name="create_step2_title">2. Define grupos y huecos</string>
-    <string name="create_step2_description">Cada grupo tiene huecos. Cada hueco acepta una o mas posiciones.</string>
-    <string name="create_group_name_label">Nombre grupo</string>
-    <string name="create_delete_group_cd">Eliminar grupo</string>
-    <string name="create_slot_index">Hueco %1$d</string>
-    <string name="create_delete_slot_cd">Eliminar hueco</string>
-    <string name="create_add_slot">Anadir hueco</string>
-    <string name="create_add_group">Anadir grupo</string>
+    <string name="create_add_position">Añadir posición</string>
+    <string name="create_step2_title">2. Define equipos y puestos</string>
+    <string name="create_step2_description">Cada equipo tiene puestos. Cada puesto acepta una o más posiciones.</string>
+    <string name="create_group_name_label">Nombre del equipo</string>
+    <string name="create_delete_group_cd">Eliminar equipo</string>
+    <string name="create_slot_index">Puesto %1$d</string>
+    <string name="create_delete_slot_cd">Eliminar puesto</string>
+    <string name="create_add_slot">Añadir puesto</string>
+    <string name="create_add_group">Añadir equipo</string>
     <string name="create_preview_title">Vista previa</string>
-    <string name="create_preview_summary">%1$d huecos en %2$d grupo(s)</string>
-    <string name="create_group_fallback">Grupo</string>
+    <string name="create_preview_summary">%1$d puestos en %2$d equipo(s)</string>
+    <string name="create_group_fallback">Equipo</string>
 
     <!-- Templates -->
     <string name="create_templates_header">Plantillas</string>
-    <string name="create_templates_description">Selecciona una plantilla para rellenar posiciones y grupos</string>
+    <string name="create_templates_description">Selecciona una plantilla para rellenar posiciones y equipos</string>
     <string name="create_save_template">Guardar como plantilla</string>
     <string name="create_save_template_title">Guardar plantilla</string>
     <string name="create_save_template_confirm">Guardar</string>
@@ -126,7 +126,7 @@
     <string name="guest_exit">Cerrar</string>
     <string name="guest_get_app">Descargar la app</string>
 
-    <!-- Admin apunta a alguien en un hueco -->
+    <!-- Admin apunta a alguien en un puesto -->
     <string name="assign_button">Apuntar a alguien</string>
     <string name="assign_dialog_title">Apuntar a alguien en esta plaza</string>
     <string name="assign_search_member">Buscar miembro</string>
