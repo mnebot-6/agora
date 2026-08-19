@@ -66,6 +66,14 @@ class MainActivity : ComponentActivity() {
             data.scheme == "agora" && data.host == "activity" -> {
                 data.pathSegments?.firstOrNull()?.let { DeepLinkHandler.setActivityCode(it) }
             }
+            // agora://pay?p={id} | agora://pay?connect={id} — vuelta de Stripe por la
+            // pagina puente, que es la via que funciona sin verificacion de dominio.
+            data.scheme == "agora" && data.host == "pay" -> {
+                data.getQueryParameter("p")?.takeIf { it.isNotEmpty() }
+                    ?.let { DeepLinkHandler.setPaymentId(it) }
+                data.getQueryParameter("connect")?.takeIf { it.isNotEmpty() }
+                    ?.let { DeepLinkHandler.setConnectCommunityId(it) }
+            }
             data.scheme == "https" && data.host == "share-agora.app" && segments != null && segments.size >= 2 -> {
                 when (segments[0]) {
                     // https://share-agora.app/c/{code}

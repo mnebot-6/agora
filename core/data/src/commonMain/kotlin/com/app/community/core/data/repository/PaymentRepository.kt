@@ -43,6 +43,7 @@ data class CheckoutLink(
 data class PaymentSyncResult(
     @SerialName("payment_id") val paymentId: String,
     val status: String,
+    @SerialName("activity_id") val activityId: String? = null,
 ) {
     val isSucceeded: Boolean get() = status == "succeeded"
     /** Sigue abierto: el usuario volvio sin pagar y le queda su retencion. */

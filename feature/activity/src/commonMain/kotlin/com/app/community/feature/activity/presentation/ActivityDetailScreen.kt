@@ -53,7 +53,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.app.community.core.common.DeepLinkHandler
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
 import com.app.community.core.model.CommunityMember
@@ -140,13 +139,6 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
                 uriHandler.openUri(it)
                 screenModel.consumeCheckoutUrl()
             }
-        }
-
-        // Vuelta del pago por deep link. Se sincroniza contra Stripe sin esperar al
-        // webhook, para que el resultado se vea al instante.
-        val pendingPaymentId by DeepLinkHandler.pendingPaymentId.collectAsState()
-        LaunchedEffect(pendingPaymentId) {
-            DeepLinkHandler.consumePaymentId()?.let { screenModel.syncPayment(it) }
         }
 
         Scaffold(

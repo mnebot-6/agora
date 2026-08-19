@@ -41,6 +41,17 @@
                     android:scheme="agora"
                     android:host="activity" />
             </intent-filter>
+            <!-- Esquema propio: agora://pay?p={id} | agora://pay?connect={id}.
+                 Funciona SIN verificacion de dominio, que es lo que falla en las builds
+                 de debug y dejaba al usuario tirado en el navegador tras pagar. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="agora"
+                    android:host="pay" />
+            </intent-filter>
             <!-- FCM notification tap: click_action from push-notification Edge Function -->
             <intent-filter>
                 <action android:name="OPEN_ACTIVITY" />

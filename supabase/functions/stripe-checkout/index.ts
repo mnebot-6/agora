@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
       const { data: payment } = await admin
         .from("payments")
-        .select("id, status, user_id, checkout_session_id, connected_account_id")
+        .select("id, status, user_id, activity_id, checkout_session_id, connected_account_id")
         .eq("id", paymentId)
         .maybeSingle();
 
@@ -173,11 +173,11 @@ Deno.serve(async (req) => {
 
       // Ya resuelto por el webhook: se contesta con lo que hay, sin volver a Stripe.
       if (payment.status !== "pending") {
-        return jsonResponse({ payment_id: paymentId, status: payment.status });
+        return jsonResponse({ payment_id: paymentId, status: payment.status, activity_id: payment.activity_id });
       }
 
       if (!payment.checkout_session_id) {
-        return jsonResponse({ payment_id: paymentId, status: "pending" });
+        return jsonResponse({ payment_id: paymentId, status: "pending", activity_id: payment.activity_id });
       }
 
       const session = await stripeCall<CheckoutSession>(
@@ -189,17 +189,17 @@ Deno.serve(async (req) => {
         await applyPaymentSucceeded(admin, paymentId, {
           paymentIntentId: session.payment_intent ?? undefined,
         });
-        return jsonResponse({ payment_id: paymentId, status: "succeeded" });
+        return jsonResponse({ payment_id: paymentId, status: "succeeded", activity_id: payment.activity_id });
       }
 
       if (session.status === "expired") {
         await applyPaymentNotCompleted(admin, paymentId, "expired");
-        return jsonResponse({ payment_id: paymentId, status: "expired" });
+        return jsonResponse({ payment_id: paymentId, status: "expired", activity_id: payment.activity_id });
       }
 
       // Sesion todavia abierta: el usuario volvio sin pagar. No se toca nada, que le
       // quedan sus 30 minutos de retencion para reintentarlo.
-      return jsonResponse({ payment_id: paymentId, status: "pending" });
+      return jsonResponse({ payment_id: paymentId, status: "pending", activity_id: payment.activity_id });
     }
 
     return errorResponse("bad_request", `Accion desconocida: ${action}`);

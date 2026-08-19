@@ -33,17 +33,37 @@ export default {
     // Vuelta de Stripe Checkout. En Android el App Link intercepta antes de que el
     // navegador llegue aqui; en web esta redireccion mete el id en la PWA. Una sola
     // success_url sirve para los dos targets.
+    // Vuelta de Stripe. En release el App Link intercepta antes de llegar aqui, pero en
+    // debug la verificacion de dominio no existe y el navegador se queda con la URL, que
+    // es como el usuario acababa mirando Chrome despues de pagar. Esta pagina puente
+    // intenta primero el esquema propio (agora://, que NO necesita verificacion) y cae a
+    // la PWA si la app no esta instalada.
     if (url.pathname.startsWith("/pay/")) {
-      const target = new URL("/app/", url);
-      if (url.pathname === "/pay/connect" || url.pathname === "/pay/connect/") {
-        // Fin del alta de Connect: lleva la comunidad, no un pago.
-        const communityId = url.searchParams.get("community");
-        if (communityId) target.searchParams.set("connect", communityId);
-      } else {
-        const paymentId = url.searchParams.get("p");
-        if (paymentId) target.searchParams.set("pay", paymentId);
-      }
-      return Response.redirect(target.toString(), 302);
+      const isConnect = url.pathname.replace(/\/$/, "") === "/pay/connect";
+      // Ojo: la app lee "p" y la web lee "pay". No es el mismo nombre.
+      const appParam = isConnect ? "connect" : "p";
+      const webParam = isConnect ? "connect" : "pay";
+      const value = url.searchParams.get(isConnect ? "community" : "p") || "";
+      const appUrl = `agora://pay?${appParam}=${encodeURIComponent(value)}`;
+      const webUrl = `/app/${value ? `?${webParam}=${encodeURIComponent(value)}` : ""}`;
+      const title = isConnect ? "Volviendo a Agora" : "Confirmando tu pago";
+
+      return new Response(
+        `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
+<style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;
+margin:0;text-align:center;padding:1.5rem;color:#1c1917;background:#faf8f5}
+a{display:inline-block;margin-top:1rem;padding:.75rem 1.25rem;background:#1c1917;color:#fff;
+border-radius:.5rem;text-decoration:none}</style></head><body><div>
+<p>${title}…</p><a href="${webUrl}">Continuar</a></div>
+<script>
+  // Se intenta abrir la app. Si esta instalada, el sistema se lleva el foco y el
+  // temporizador no llega a saltar; si no, en un segundo cae a la version web.
+  location.href = ${JSON.stringify(appUrl)};
+  setTimeout(function () { location.replace(${JSON.stringify(webUrl)}); }, 1200);
+</script></body></html>`,
+        { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
+      );
     }
 
     return env.ASSETS.fetch(request);

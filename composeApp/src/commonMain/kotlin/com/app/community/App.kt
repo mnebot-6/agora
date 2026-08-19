@@ -161,6 +161,9 @@ private fun MainContent(selectedTab: Tab, onSelectTab: (Tab) -> Unit) {
     // la pestaña en la que estaba el usuario.
     TabNavigator(selectedTab) {
         DeepLinkTabSwitcher(onSelectTab)
+        // Vive aqui y no en la pantalla de la actividad: si estuviera alli, un pago
+        // solo se confirmaria cuando el usuario aterrizase justo en esa pantalla.
+        PaymentReturnHandler()
         Scaffold(
             contentWindowInsets = WindowInsets.navigationBars,
             bottomBar = {
