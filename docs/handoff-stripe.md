@@ -111,38 +111,54 @@ verificar y explicarle si condicionan la decisión:
 
 ---
 
-## Fase 1 — Las preguntas
+## Fase 1 — Decisiones de negocio: CERRADA
 
-### Ya respondidas — no las vuelvas a preguntar
+El usuario respondió a todo el 2026-08-19. **No vuelvas a preguntar esto.** Si
+crees que alguna decision es un error, dilo con tu razonamiento antes de
+implementarla, pero no la replantees de cero.
 
-El usuario respondió a estas el 2026-08-19. Son decisiones tomadas; si crees que
-alguna es un error, dilo con tu razonamiento, pero no las replantees de cero.
+Queda **una sola pregunta abierta**, al final de esta sección.
 
-**Modelo: Stripe Connect.** El administrador de la comunidad cobra a sus
-miembros **a través de Agora**, y Agora se queda **un pequeño porcentaje para
-cubrir gastos**. La opción de que Agora cobrase una suscripción a las comunidades
-queda descartada por ahora.
+### Modelo
 
-**Dos vías de cobro que conviven, según quién ocupe la plaza:**
+**Stripe Connect.** El administrador de la comunidad cobra a sus miembros a
+traves de Agora. Se descarta que Agora cobre suscripción a las comunidades.
 
-| Quién | Cómo paga |
-|---|---|
-| Usuario con cuenta | Stripe Connect |
-| Invitado sin cuenta (flujo web anónimo) | El admin marca "pagado" a mano, como hoy |
-| Alguien apuntado por un admin | El admin marca "pagado" a mano, como hoy |
+**Comisión de Agora: configurable, y arranca a 0%.** El razonamiento importa
+para que no lo deshagas: no existe entidad legal detrás de Agora, y una comisión
+convierte a la persona que tenga la cuenta de plataforma en perceptora de
+ingresos, con la obligación fiscal que eso arrastra en España. Quitar la comisión
+**no** elimina la necesidad de cuenta de plataforma, solo la de declarar
+ingresos. Como en Connect la comisión es un parámetro (`application_fee_amount`),
+el trabajo técnico es idéntico con 0% que con 2%. Se implementa configurable y se
+lanza a 0; cuando haya volumen que justifique el papeleo, se sube el valor.
+El 2% era la cifra que el usuario tenia en mente para cuando llegue ese momento.
 
-O sea: el check manual de pagado **no desaparece**, convive con Stripe. El modelo
-de datos tiene que registrar por qué vía se pagó cada plaza.
+**Se cobra por actividad**, con precio por actividad. No hay cuotas por periodo.
 
-**Liberar una plaza: no se devuelve el dinero hasta que hay sustituto.** Esta es
-la regla de negocio, y es firme.
+**Moneda: solo euros.** Sin facturas ni recibos fiscales.
 
-**El mecanismo elegido para cumplirla: reembolso al anterior ocupante disparado
-por el pago del sustituto.** No que el sustituto pague directamente al anterior.
+**La comisión de Stripe la asume el que cobra**, es decir el administrador.
 
-Ese matiz importa y ya se discutió, así que no lo reabras sin motivo nuevo. El
-usuario lo planteó primero como "el sustituto le paga al de la plaza anterior", y
-se cambió porque el resultado económico es idéntico para los tres implicados:
+### Cuándo y cómo se cobra
+
+**Reservar implica pagar.** Ya no hay reservas sin cobro. Ojo con la consecuencia
+de diseño: hoy "Reservar" es instantáneo y pasa a ser salir a Checkout, pagar,
+volver por deep link y confirmar con el webhook. Es la acción más usada de la
+app. **En actividades gratuitas tiene que seguir siendo instantánea.**
+
+**Cola de suplentes: al suplente se le cobra directamente y obtiene la plaza.**
+Si su pago falla, no reserva nada **y sale de la cola**.
+
+### Liberar una plaza
+
+**No se devuelve el dinero hasta que hay sustituto.** Regla firme.
+
+**Mecanismo: reembolso al ocupante anterior, disparado por el pago confirmado del
+sustituto.** No que el sustituto pague al anterior.
+
+Ya se discutió y se descartó la otra vía, no la reabras sin motivo nuevo. El
+resultado económico es idéntico para los tres implicados:
 
 | | Sustituto paga al anterior | Reembolso al anterior |
 |---|---|---|
@@ -150,75 +166,69 @@ se cambió porque el resultado económico es idéntico para los tres implicados:
 | B sustituye | paga 6,50 **a A** | paga 6,50 al admin, y se reembolsa a A |
 | Admin acaba con | 6,50 | 6,50 |
 | A acaba con | 0 neto | 0 neto |
-| B acaba con | −6,50 | −6,50 |
+| B acaba con | -6,50 | -6,50 |
 
-La diferencia está en lo que cuesta montarlo. Que B pague a A convierte a **cada
-usuario** en receptor de fondos: cuenta conectada y KYC para cualquiera que
-alguna vez libere una plaza pagada, y Agora moviendo dinero entre particulares,
-que regulatoriamente es mucho más pesado. Con el reembolso, solo los
-administradores necesitan cuenta conectada.
+La diferencia es el coste de montarlo: que B pague a A convierte a **cada
+usuario** en receptor de fondos, con cuenta conectada y KYC para cualquiera que
+pueda liberar una plaza pagada, y pone a Agora a mover dinero entre particulares.
+Con el reembolso, solo los administradores necesitan cuenta conectada. El precio
+es que Stripe no devuelve su comisión en los reembolsos, así que cada sustitucion
+paga una comisión de más. Asumido conscientemente.
 
-El coste de la alternativa: Stripe no devuelve su comisión en los reembolsos, así
-que cada sustitución paga una comisión de más. Asumido conscientemente.
+**El estado intermedio es donde se van a concentrar los bugs:** plaza liberada,
+todavía pagada, todavía de A, esperando a que alguien pague. Si B no paga nunca,
+A no cobra y la plaza sigue siendo suya. Piénsalo antes de escribir código.
 
-**Consecuencia de diseño:** el reembolso a A se dispara con el **pago
-confirmado** de B, no con la liberación de la plaza. Si B no llega a pagar, A
-sigue sin cobrar y la plaza sigue siendo suya. Piensa bien el estado intermedio.
+**Un usuario no puede pedir un reembolso por su cuenta.** La única vía es que
+otra persona ocupe su plaza.
 
-### Pendientes de responder
+### Cancelar una actividad
 
-### A. El modelo de negocio
+**Se devuelve el dinero a todos**, pero la app solo puede hacerlo con los pagos
+de Stripe: los invitados y los apuntados por el admin pagaron por Bizum o en
+efectivo, y ese dinero nunca pasó por Agora.
 
-1. **¿Se cobra por actividad, o por periodo** (cuota mensual del club), o ambas?
+Comportamiento decidido: **reembolsar automáticamente los de Stripe y mostrarle
+al admin la lista de a quién le debe dinero a mano**, para que lo resuelva por su
+cuenta.
 
-### B. El momento y las consecuencias del cobro
+### Convivencia con el cobro manual
 
-2. **¿Cuándo se cobra?** ¿Al reservar la plaza, o se reserva primero y se paga
-   después? Hoy la reserva es inmediata y el pago es un apretón de manos.
+El check manual de pagado **no desaparece**:
 
-3. **La cola de suplentes**: cuando un suplente entra a una plaza liberada, ¿se
-   le cobra automáticamente, o tiene que confirmar? ¿Qué pasa si su pago falla —
-   se le devuelve la plaza a la cola, y cuánto tiempo se le da?
+| Quién ocupa la plaza | Como paga |
+|---|---|
+| Usuario con cuenta | Stripe Connect |
+| Invitado sin cuenta (flujo web anónimo) | El admin marca "pagado" a mano |
+| Alguien apuntado por un admin | El admin marca "pagado" a mano |
 
-4. **Si se cancela la actividad entera**, ¿se reembolsa a todos automáticamente?
-   Ojo: eso incluye a los que pagaron por la vía manual, a los que Agora no les
-   puede devolver nada.
+El modelo de datos tiene que registrar **por que vía se pago cada plaza**, porque
+de eso depende si se puede reembolsar automáticamente.
 
-5. **¿Quién puede iniciar un reembolso** fuera del flujo de sustitución: solo el
-   admin, o también el usuario?
+### Datos existentes
 
-### C. Convivencia con lo que ya existe
+**`cost_description` (texto libre) se sustituye del todo** por importe
+estructurado y moneda.
 
-6. **¿Qué pasa con `cost_description`,** el texto libre actual? Con Stripe hace
-   falta un importe estructurado y una moneda. ¿El texto se conserva como nota
-   añadida, o se sustituye del todo?
+**Las actividades que ya existen en producción se quedan sin precio** y el admin
+lo introduce si quiere cobrar. Nada de parsear el texto viejo: sacar "6,50" de
+"Bizum de 6.5 euros por persona" con un parser es una lotería, y equivocarse en
+importes es de lo peor que puede hacer una migración. Se puede mostrar el texto
+antiguo una vez como ayuda para que el admin lo reescriba.
 
-7. **Las actividades que ya existen** en producción tienen `cost_description` en
-   texto y plazas marcadas a mano. ¿Se quedan como están, o hay que convertirlas?
+### La única pregunta que queda
 
-### D. Dinero, cifras y papeles
+**Qué puede hacer un administrador que todavía no ha completado su verificación
+de Stripe (KYC).**
 
-8. **¿Cuánto es "un pequeño porcentaje"?** Hace falta el número, y decidir si es
-   porcentaje puro o porcentaje más fijo. En Stripe Connect esto se implementa
-   como `application_fee_amount`.
+El alta no es instantánea: Stripe pide identidad, cuenta bancaria y NIF, y puede
+tardar de minutos a días. Hay gente que se atasca o abandona. Así que existe un
+estado real de "esta comunidad todavía no puede cobrar".
 
-9. **¿Quién asume la comisión de Stripe** — el que paga, o el que cobra?
-
-10. **¿Moneda?** ¿Solo euros?
-
-11. **¿Hacen falta recibos o facturas?** ¿Con qué datos fiscales?
-
-12. **¿Existe una entidad legal detrás de Agora?** Esta ya no es opcional: con el
-    modelo elegido, Agora cobra en nombre de terceros y se queda una comisión.
-    Eso exige una cuenta de plataforma de Stripe a nombre de alguien, con sus
-    obligaciones fiscales, y condiciona el tipo de cuenta conectada que se puede
-    usar para los administradores (Express, Standard o Custom).
-
-13. **¿Qué pasa si un administrador no completa su verificación (KYC)?** Puede
-    tardar días o no pasarla. ¿La comunidad simplemente no puede cobrar por
-    Stripe y se queda con el check manual?
-
----
+Hay que decidir si en ese estado el admin puede crear actividades de pago que
+queden bloqueadas hasta completar el alta, o si directamente no puede crearlas
+hasta terminar. Pregúntaselo al usuario **con el diseño delante**, porque depende
+de como quede la pantalla de crear actividad.
 
 ## Fase 2 — El plan
 
