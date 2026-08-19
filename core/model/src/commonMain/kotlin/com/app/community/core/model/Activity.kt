@@ -29,11 +29,16 @@ data class Activity(
     @SerialName("location_lat") val locationLat: Double? = null,
     @SerialName("location_lng") val locationLng: Double? = null,
     @SerialName("cost_description") val costDescription: String? = null,
+    /** Importe por plaza en centimos. null = actividad gratuita. */
+    @SerialName("price_cents") val priceCents: Int? = null,
     @SerialName("slot_mode") val slotMode: SlotMode,
     @SerialName("max_slots") val maxSlots: Int? = null,
     @SerialName("created_by") val createdBy: String,
     val status: ActivityStatus = ActivityStatus.ACTIVE,
 ) {
+    /** Reservar en esta actividad implica pagar. */
+    val isPaid: Boolean get() = priceCents != null
+
     val location: Location?
         get() = locationName?.let { Location(it, locationLat, locationLng) }
 }

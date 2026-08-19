@@ -19,7 +19,13 @@
     <string name="label_time_required">Time *</string>
     <string name="label_duration">Duration</string>
     <string name="label_location">Location</string>
-    <string name="label_cost">Cost</string>
+    <string name="price_label">Cost</string>
+    <string name="price_free">Free</string>
+    <string name="price_paid">Paid</string>
+    <string name="price_per_slot_label">Price per slot</string>
+    <string name="price_placeholder">6,50</string>
+    <string name="price_invalid">Enter an amount like 6,50</string>
+    <string name="price_help_legacy">It used to say: «%1$s»</string>
     <string name="label_delete">Delete</string>
     <string name="label_cancel">Cancel</string>
     <string name="slot_type_header">Slot type</string>
@@ -62,7 +68,6 @@
     <string name="create_date_placeholder">DD/MM/YYYY</string>
     <string name="create_time_placeholder">HH:MM</string>
     <string name="create_location_placeholder">E.g.: La Fuensanta Pavilion</string>
-    <string name="create_cost_placeholder">E.g.: Bizum of 6.5 euros per person</string>
     <string name="create_max_slots_label">Number of slots *</string>
     <string name="create_max_slots_placeholder">E.g.: 12</string>
     <string name="create_button">Create Activity</string>

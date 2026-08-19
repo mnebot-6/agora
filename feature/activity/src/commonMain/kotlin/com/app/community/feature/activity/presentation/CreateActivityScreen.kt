@@ -164,14 +164,12 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Cost
-                OutlinedTextField(
-                    value = state.costDescription,
-                    onValueChange = screenModel::onCostDescriptionChange,
-                    label = { Text(stringResource(Res.string.label_cost)) },
-                    placeholder = { Text(stringResource(Res.string.create_cost_placeholder)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                // Coste: gratuita o de pago con importe
+                ActivityPriceField(
+                    isPaid = state.isPaid,
+                    priceInput = state.priceInput,
+                    onIsPaidChange = screenModel::onIsPaidChange,
+                    onPriceInputChange = screenModel::onPriceInputChange,
                 )
 
                 // Slot mode selector
@@ -279,7 +277,7 @@ data class CreateActivityScreen(val communityId: String) : Screen {
 }
 
 @Composable
-private fun SlotModeCard(
+internal fun SlotModeCard(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,

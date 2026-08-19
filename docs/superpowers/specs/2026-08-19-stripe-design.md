@@ -235,10 +235,10 @@ plaza libre solo pasa por la segunda.
 ```sql
 CREATE TABLE payments (
     id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    activity_id           uuid NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    activity_id           uuid NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
     slot_id               uuid REFERENCES slots(id) ON DELETE SET NULL,
     user_id               uuid REFERENCES profiles(id) ON DELETE SET NULL,
-    community_id          uuid NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+    community_id          uuid NOT NULL REFERENCES communities(id) ON DELETE RESTRICT,
     amount_cents          integer NOT NULL CHECK (amount_cents > 0),
     application_fee_cents integer NOT NULL DEFAULT 0,
     method                text NOT NULL CHECK (method IN ('stripe','manual')),
@@ -274,6 +274,19 @@ registro de dinero no se recalcula nunca.
 puede automatizar. Los cobros manuales también generan fila (`method='manual'`,
 `status='succeeded'`), para que la lista de deudas al cancelar y el historial
 salgan de una sola consulta.
+
+`activity_id` y `community_id` van con **`ON DELETE RESTRICT`**, no `CASCADE`.
+Las actividades y las comunidades se borran en duro desde la app
+(`ActivityDetailScreen.kt:473`, `CommunityDetailScreen.kt:363`), y con `CASCADE`
+ese botón destruiría en silencio el registro de dinero: cobrado en Stripe, sin
+rastro en Agora, y cualquier `refund_pending` sin ejecutar perdido para siempre.
+Con `RESTRICT`, borrar falla con un error claro y la vía correcta pasa a ser
+**cancelar la actividad primero** — que reembolsa a todo el mundo — y borrarla
+después. Lo garantiza la base de datos, así que ningún camino del código puede
+saltárselo.
+
+Consecuencia en la UI: el botón de borrar necesita un mensaje que explique esto,
+en vez de enseñar un error de base de datos en crudo.
 
 `user_id` es **nullable y `ON DELETE SET NULL`**, y esto no es descuido. Con
 `NOT NULL` y sin cascada, borrar la cuenta fallaría y se rompería

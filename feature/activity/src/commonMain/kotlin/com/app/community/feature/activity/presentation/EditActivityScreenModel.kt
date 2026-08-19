@@ -4,6 +4,8 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
+import com.app.community.core.model.formatEuros
+import com.app.community.core.model.parseEurosToCents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +29,10 @@ data class EditActivityUiState(
     val durationHours: Int = 0,
     val durationMinutes: Int = 0,
     val locationName: String = "",
-    val costDescription: String = "",
+    val isPaid: Boolean = false,
+    val priceInput: String = "",
+    /** Texto libre antiguo. Solo se ENSENA como ayuda; ya no se escribe. */
+    val legacyCostDescription: String? = null,
     val status: EditActivityStatus = EditActivityStatus.Idle,
 )
 
@@ -68,7 +73,13 @@ class EditActivityScreenModel(
                         durationHours = activity.durationMinutes / 60,
                         durationMinutes = activity.durationMinutes % 60,
                         locationName = activity.locationName.orEmpty(),
-                        costDescription = activity.costDescription.orEmpty(),
+                        isPaid = activity.priceCents != null,
+                        priceInput = activity.priceCents
+                            ?.let { formatEuros(it).removeSuffix(" €") }
+                            .orEmpty(),
+                        // Solo si no hay importe todavia: es la ayuda para reescribirlo.
+                        legacyCostDescription = activity.costDescription
+                            ?.takeIf { activity.priceCents == null },
                     )
                 }
                 .onError { msg, _ ->
@@ -83,7 +94,8 @@ class EditActivityScreenModel(
     fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
     fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
-    fun onCostDescriptionChange(value: String) = _state.update { it.copy(costDescription = value) }
+    fun onIsPaidChange(value: Boolean) = _state.update { it.copy(isPaid = value) }
+    fun onPriceInputChange(value: String) = _state.update { it.copy(priceInput = value) }
 
     fun save() {
         val s = _state.value
@@ -93,6 +105,12 @@ class EditActivityScreenModel(
         }
         if (s.dateMillis == null) {
             _state.update { it.copy(status = EditActivityStatus.Error("Selecciona una fecha")) }
+            return
+        }
+
+        val priceCents = if (s.isPaid) parseEurosToCents(s.priceInput) else null
+        if (s.isPaid && priceCents == null) {
+            _state.update { it.copy(status = EditActivityStatus.Error("Introduce un importe válido, por ejemplo 6,50")) }
             return
         }
 
@@ -109,7 +127,10 @@ class EditActivityScreenModel(
                 datetime = datetime,
                 durationMinutes = durationMinutes,
                 locationName = s.locationName.ifBlank { null },
-                costDescription = s.costDescription.ifBlank { null },
+                // Se conserva el texto viejo hasta que el admin ponga importe; en cuanto
+                // lo pone, deja de tener sentido y se borra.
+                costDescription = if (priceCents != null) null else s.legacyCostDescription,
+                priceCents = priceCents,
             )
                 .onSuccess {
                     RefreshBus.emit(RefreshBus.ACTIVITY_DETAIL, RefreshBus.ACTIVITIES)

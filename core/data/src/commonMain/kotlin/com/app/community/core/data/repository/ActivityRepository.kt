@@ -53,6 +53,7 @@ class ActivityRepository {
         locationLat: Double?,
         locationLng: Double?,
         costDescription: String?,
+        priceCents: Int?,
         slotMode: SlotMode,
         maxSlots: Int?,
         createdBy: String,
@@ -69,6 +70,7 @@ class ActivityRepository {
                     locationLat?.let { put("location_lat", it) }
                     locationLng?.let { put("location_lng", it) }
                     costDescription?.let { put("cost_description", it) }
+                    priceCents?.let { put("price_cents", it) }
                     put("slot_mode", slotMode.name.lowercase())
                     maxSlots?.let { put("max_slots", it) }
                     put("created_by", createdBy)
@@ -84,6 +86,7 @@ class ActivityRepository {
         durationMinutes: Int,
         locationName: String?,
         costDescription: String?,
+        priceCents: Int?,
     ): AppResult<Activity> =
         safeCall {
             postgrest.from("activities")
@@ -94,6 +97,8 @@ class ActivityRepository {
                     put("duration_minutes", durationMinutes)
                     put("location_name", locationName)
                     put("cost_description", costDescription)
+                    // null explicito: asi se pasa una actividad de pago a gratuita.
+                    put("price_cents", priceCents)
                 }) {
                     filter { eq("id", activityId) }
                     select()

@@ -83,7 +83,15 @@ CREATE INDEX slots_hold_sweep ON slots (hold_expires_at)
 
 CREATE TABLE payments (
     id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    activity_id           uuid NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    -- RESTRICT, no CASCADE. Las actividades y las comunidades SI se borran en
+    -- duro desde la app (ActivityDetailScreen:473, CommunityDetailScreen:363), y
+    -- con CASCADE ese boton destruiria en silencio el registro de dinero:
+    -- cobrado en Stripe, sin rastro en Agora, y cualquier refund_pending sin
+    -- ejecutar perdido para siempre. Con RESTRICT el borrado falla con un error
+    -- claro y la via correcta es cancelar la actividad (que reembolsa) y luego
+    -- borrarla. La base de datos lo garantiza, asi que ningun camino del codigo
+    -- puede saltarselo.
+    activity_id           uuid NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
     slot_id               uuid REFERENCES slots(id) ON DELETE SET NULL,
 
     -- Nullable y SET NULL a proposito. delete_my_account() borra auth.users, que
@@ -95,9 +103,7 @@ CREATE TABLE payments (
     -- slots.reserved_by.
     user_id               uuid REFERENCES profiles(id) ON DELETE SET NULL,
 
-    -- CASCADE aqui es seguro porque las actividades se archivan, no se borran
-    -- (activities.status = 'archived'); no hay borrado duro en ActivityRepository.
-    community_id          uuid NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+    community_id          uuid NOT NULL REFERENCES communities(id) ON DELETE RESTRICT,
 
     -- Foto del importe en el momento del cobro. Si el admin cambia el precio
     -- despues, los pagos ya hechos NO se mueven. Un registro de dinero no se

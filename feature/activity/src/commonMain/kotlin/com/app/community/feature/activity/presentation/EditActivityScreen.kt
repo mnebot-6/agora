@@ -143,12 +143,12 @@ data class EditActivityScreen(val activityId: String) : Screen {
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    OutlinedTextField(
-                        value = state.costDescription,
-                        onValueChange = screenModel::onCostDescriptionChange,
-                        label = { Text(stringResource(Res.string.label_cost)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                    ActivityPriceField(
+                        isPaid = state.isPaid,
+                        priceInput = state.priceInput,
+                        onIsPaidChange = screenModel::onIsPaidChange,
+                        onPriceInputChange = screenModel::onPriceInputChange,
+                        legacyCostDescription = state.legacyCostDescription,
                     )
 
                     if (state.status is EditActivityStatus.Error) {

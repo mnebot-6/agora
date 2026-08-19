@@ -11,6 +11,7 @@ import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotTemplate
 import com.app.community.core.model.TemplateConfig
 import com.app.community.core.model.GroupTemplate
+import com.app.community.core.model.parseEurosToCents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +50,10 @@ data class CreateActivityUiState(
     val durationHours: Int = 2,
     val durationMinutes: Int = 0,
     val locationName: String = "",
-    val costDescription: String = "",
+    /** Actividad de pago. Si es false, reservar sigue siendo instantaneo. */
+    val isPaid: Boolean = false,
+    /** Texto crudo del campo de importe: "6,50". Se valida con parseEurosToCents. */
+    val priceInput: String = "",
     val slotMode: SlotMode = SlotMode.UNLIMITED,
     val maxSlots: String = "",
     // Position mode fields
@@ -109,7 +113,8 @@ class CreateActivityScreenModel(
     fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
     fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
-    fun onCostDescriptionChange(value: String) = _state.update { it.copy(costDescription = value) }
+    fun onIsPaidChange(value: Boolean) = _state.update { it.copy(isPaid = value) }
+    fun onPriceInputChange(value: String) = _state.update { it.copy(priceInput = value) }
     fun onSlotModeChange(value: SlotMode) = _state.update { it.copy(slotMode = value) }
     fun onMaxSlotsChange(value: String) = _state.update { it.copy(maxSlots = value) }
 
@@ -299,6 +304,12 @@ class CreateActivityScreenModel(
             }
         }
 
+        val priceCents = if (s.isPaid) parseEurosToCents(s.priceInput) else null
+        if (s.isPaid && priceCents == null) {
+            _state.update { it.copy(status = CreateActivityStatus.Error("Introduce un importe válido, por ejemplo 6,50")) }
+            return
+        }
+
         val userId = authRepository.currentUserId() ?: return
         val datetime = buildDatetime(s.dateMillis, s.timeHour, s.timeMinute)
         val durationMinutes = s.durationHours * 60 + s.durationMinutes
@@ -321,7 +332,8 @@ class CreateActivityScreenModel(
                 locationName = s.locationName.ifBlank { null },
                 locationLat = null,
                 locationLng = null,
-                costDescription = s.costDescription.ifBlank { null },
+                costDescription = null,
+                priceCents = priceCents,
                 slotMode = s.slotMode,
                 maxSlots = maxSlots,
                 createdBy = userId,

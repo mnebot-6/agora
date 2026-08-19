@@ -60,6 +60,7 @@ import com.app.community.core.model.Slot
 import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotStatus
 import com.app.community.core.model.SubstituteEntry
+import com.app.community.core.model.formatEuros
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
@@ -218,7 +219,9 @@ private fun ActivityDetailContent(
                         LocationLink(activity = activity)
                     }
 
-                    activity.costDescription?.let { cost ->
+                    // Importe estructurado si lo hay; si no, el texto libre antiguo, que
+                    // sigue siendo lo unico que tienen las actividades ya creadas.
+                    (activity.priceCents?.let { formatEuros(it) } ?: activity.costDescription)?.let { cost ->
                         Text(stringResource(Res.string.detail_cost, cost), style = MaterialTheme.typography.bodyMedium)
                     }
 
@@ -379,7 +382,7 @@ private fun ActivityDetailContent(
                     slotWithProfile = slotWithProfile,
                     currentUserId = state.currentUserId,
                     isAdmin = state.isAdmin,
-                    hasCost = activity.costDescription != null,
+                    hasCost = activity.priceCents != null || activity.costDescription != null,
                     hasReservation = state.isUserJoined,
                     withPositions = false,
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
@@ -427,7 +430,7 @@ private fun ActivityDetailContent(
                         slotWithProfile = slotWithProfile,
                         currentUserId = state.currentUserId,
                         isAdmin = state.isAdmin,
-                        hasCost = activity.costDescription != null,
+                        hasCost = activity.priceCents != null || activity.costDescription != null,
                         hasReservation = state.isUserJoined,
                         withPositions = true,
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
