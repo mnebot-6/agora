@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 
   // Solo recuentos en la respuesta: sin identificadores no hay nada que filtrar a
   // quien llame sin permiso, y por eso este endpoint no necesita secreto.
-  const tally = { confirmados: 0, liberados: 0, abiertos: 0, errores: 0 };
+  const tally = { confirmados: 0, liberados: 0, abiertos: 0, errores: 0, reembolsados: 0, reembolsos_fallidos: 0 };
 
   for (const payment of pending ?? []) {
     try {
@@ -68,6 +68,46 @@ Deno.serve(async (req) => {
       // Se registra en los logs de la funcion, no en la respuesta.
       console.error("stripe-sweep", payment.id, String(e));
       tally.errores++;
+    }
+  }
+
+  // ---- Reembolsos ---------------------------------------------------------
+  // Se ejecutan SIEMPRE aqui, nunca en linea. Asi cancelar una actividad con 20
+  // pagos es una transaccion rapida de base de datos y las devoluciones ocurren
+  // despues, con reintentos gratis.
+  const { data: refunds } = await admin
+    .from("payments")
+    .select("id, charge_id, payment_intent_id, connected_account_id, refund_attempts")
+    .eq("status", "refund_pending")
+    .lt("refund_attempts", 5)
+    .limit(50);
+
+  for (const refund of refunds ?? []) {
+    try {
+      await stripeCall("/v1/refunds", {
+        account: refund.connected_account_id ?? undefined,
+        // Con la misma clave, reintentar NO devuelve el dinero dos veces.
+        idempotencyKey: `agora-refund-${refund.id}`,
+        body: refund.charge_id
+          ? { charge: refund.charge_id }
+          : { payment_intent: refund.payment_intent_id },
+      });
+      await admin.from("payments").update({ status: "refunded" }).eq("id", refund.id);
+      tally.reembolsados++;
+    } catch (e) {
+      const attempts = (refund.refund_attempts ?? 0) + 1;
+      // A los 5 intentos se deja de insistir y pasa a la lista de deudas del
+      // admin: mejor que lo resuelva una persona que reintentar en vano y que
+      // nadie se entere de que ese dinero no ha vuelto.
+      await admin
+        .from("payments")
+        .update({
+          refund_attempts: attempts,
+          status: attempts >= 5 ? "refund_owed" : "refund_pending",
+        })
+        .eq("id", refund.id);
+      console.error("stripe-sweep refund", refund.id, String(e));
+      tally.reembolsos_fallidos++;
     }
   }
 
