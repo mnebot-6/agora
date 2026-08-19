@@ -23,5 +23,8 @@
     <string name="delete_confirm_yes">Borrar</string>
     <string name="delete_confirm_no">Cancelar</string>
     <string name="type_slot_assigned">Te han apuntado</string>
+    <string name="type_substitute_offer">Plaza ofrecida</string>
+    <string name="type_payment_refunded">Dinero devuelto</string>
+    <string name="type_refund_owed">Pendiente de devolver</string>
     <string name="type_notification_generic">Notificación</string>
 </resources>

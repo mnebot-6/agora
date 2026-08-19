@@ -103,6 +103,8 @@
     <string name="detail_guest_request_reject">Rechazar</string>
     <string name="detail_guest_chip">Invitado</string>
     <string name="detail_guest_pending_chip">Pendiente</string>
+    <string name="detail_pending_payment_chip">Reservándose…</string>
+    <string name="slot_pending_payment_hint">Pago en curso</string>
 
     <!-- Landing de invitado (en la app) -->
     <string name="guest_loading">Cargando…</string>

@@ -651,6 +651,10 @@ private fun SlotCard(
         SlotStatus.RESERVED -> if (isMySlot) slotColors.reservedByMe else slotColors.reservedByOther
         SlotStatus.PAID -> slotColors.paid
         SlotStatus.PENDING -> slotColors.reservedByOther
+        SlotStatus.PENDING_PAYMENT ->
+            if (isMySlot) slotColors.reservedByMe else slotColors.reservedByOther
+        // Estado que esta version no conoce: se pinta como ocupada, que es lo unico seguro.
+        SlotStatus.UNKNOWN -> slotColors.reservedByOther
     }
 
     OutlinedCard(
@@ -673,7 +677,12 @@ private fun SlotCard(
                         }
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
-                    SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
+                    SlotStatus.RESERVED,
+                    SlotStatus.PAID,
+                    SlotStatus.PENDING,
+                    SlotStatus.PENDING_PAYMENT,
+                    SlotStatus.UNKNOWN,
+                    -> {
                         val guestChip = stringResource(Res.string.detail_guest_chip)
                         val name = when {
                             slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
@@ -696,6 +705,14 @@ private fun SlotCard(
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Text(
                                     text = stringResource(Res.string.detail_guest_pending_chip),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (slot.status == SlotStatus.PENDING_PAYMENT) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = stringResource(Res.string.detail_pending_payment_chip),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -792,6 +809,15 @@ private fun SlotActions(
                     }
                 }
             }
+        }
+        // Plaza retenida mientras su dueno esta en Checkout: no hay nada que liberar todavia,
+        // y el servidor rechaza release_slot en este estado. Se ensena solo el aviso.
+        slot.status == SlotStatus.PENDING_PAYMENT -> {
+            Text(
+                text = stringResource(Res.string.slot_pending_payment_hint),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         isMySlot -> {
             TextButton(onClick = onRelease) {

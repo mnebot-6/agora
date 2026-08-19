@@ -1,17 +1,46 @@
 package com.app.community.core.model
 
 import kotlinx.datetime.Instant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-@Serializable
-enum class SlotStatus {
-    @SerialName("available") AVAILABLE,
-    @SerialName("reserved") RESERVED,
-    @SerialName("paid") PAID,
+/**
+ * El servidor puede empezar a emitir estados nuevos antes de que la app se actualice. Con un enum
+ * cerrado, decodeList tumba la lista ENTERA de plazas ante un valor desconocido, no solo la fila
+ * mala. UNKNOWN y su serializer son load-bearing: no los quites.
+ */
+@Serializable(with = SlotStatusSerializer::class)
+enum class SlotStatus(val wire: String) {
+    AVAILABLE("available"),
+    RESERVED("reserved"),
+    PAID("paid"),
 
     /** Slot retenido por un invitado a la espera de aprobación de un admin. */
-    @SerialName("pending") PENDING,
+    PENDING("pending"),
+
+    /** Alguien tiene el Checkout abierto sobre esta plaza. La retiene hasta `holdExpiresAt`. */
+    PENDING_PAYMENT("pending_payment"),
+
+    /** Estado que esta version de la app no conoce. Nunca reclamable, nunca liberable. */
+    UNKNOWN("unknown"),
+}
+
+object SlotStatusSerializer : KSerializer<SlotStatus> {
+    private val byWire = SlotStatus.entries.associateBy { it.wire }
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("SlotStatus", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: SlotStatus) = encoder.encodeString(value.wire)
+
+    override fun deserialize(decoder: Decoder): SlotStatus =
+        byWire[decoder.decodeString()] ?: SlotStatus.UNKNOWN
 }
 
 @Serializable
@@ -45,6 +74,7 @@ data class Slot(
     val isReserved: Boolean get() = status == SlotStatus.RESERVED
     val isPaid: Boolean get() = status == SlotStatus.PAID
     val isPendingGuest: Boolean get() = status == SlotStatus.PENDING
+    val isPendingPayment: Boolean get() = status == SlotStatus.PENDING_PAYMENT
 }
 
 @Serializable

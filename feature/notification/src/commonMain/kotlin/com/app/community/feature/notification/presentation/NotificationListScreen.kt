@@ -187,6 +187,9 @@ class NotificationListScreen : Screen {
                                         NotificationType.ACTIVITY_CANCELLED,
                                         NotificationType.ACTIVITY_UPDATED,
                                         NotificationType.SLOT_ASSIGNED,
+                                        NotificationType.SUBSTITUTE_OFFER,
+                                        NotificationType.PAYMENT_REFUNDED,
+                                        NotificationType.REFUND_OWED,
                                         NotificationType.UNKNOWN ->
                                             activityId?.let { navigator.push(ActivityDetailScreen(it)) }
                                     }
@@ -284,6 +287,9 @@ private fun NotificationRow(
         NotificationType.ACTIVITY_CANCELLED -> stringResource(Res.string.type_activity_cancelled)
         NotificationType.ACTIVITY_UPDATED -> stringResource(Res.string.type_activity_updated)
         NotificationType.SLOT_ASSIGNED -> stringResource(Res.string.type_slot_assigned)
+        NotificationType.SUBSTITUTE_OFFER -> stringResource(Res.string.type_substitute_offer)
+        NotificationType.PAYMENT_REFUNDED -> stringResource(Res.string.type_payment_refunded)
+        NotificationType.REFUND_OWED -> stringResource(Res.string.type_refund_owed)
         NotificationType.UNKNOWN -> stringResource(Res.string.type_notification_generic)
     }
 

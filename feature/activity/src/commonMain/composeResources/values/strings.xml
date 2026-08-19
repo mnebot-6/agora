@@ -103,6 +103,8 @@
     <string name="detail_guest_request_reject">Reject</string>
     <string name="detail_guest_chip">Guest</string>
     <string name="detail_guest_pending_chip">Pending</string>
+    <string name="detail_pending_payment_chip">Paying…</string>
+    <string name="slot_pending_payment_hint">Payment in progress</string>
 
     <!-- Guest landing (in-app) -->
     <string name="guest_loading">Loading…</string>

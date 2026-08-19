@@ -34,6 +34,15 @@ enum class NotificationType(val wire: String) {
     ACTIVITY_CANCELLED("activity_cancelled"),
     ACTIVITY_UPDATED("activity_updated"),
     SLOT_ASSIGNED("slot_assigned"),
+
+    /** Se te ofrece una plaza liberada como suplente. Caduca a las 6 h. */
+    SUBSTITUTE_OFFER("substitute_offer"),
+
+    /** Otra persona ha ocupado tu plaza liberada y te hemos devuelto el dinero. */
+    PAYMENT_REFUNDED("payment_refunded"),
+
+    /** Al admin: hay dinero que devolver a mano porque no paso por Stripe. */
+    REFUND_OWED("refund_owed"),
     UNKNOWN("unknown"),
 }
 
