@@ -23,10 +23,10 @@ Vienen del handoff. Se listan para poder leer el diseño sin saltar de documento
 | Modelo | **Stripe Connect**: el admin cobra a sus miembros a través de Agora |
 | Comisión de Agora | **Configurable, arranca a 0%** (no hay entidad legal detrás de Agora) |
 | Unidad de cobro | **Por actividad**, precio por actividad. Sin cuotas periódicas |
-| Moneda | **Solo euros**. Sin facturas ni recibos fiscales |
+| Moneda | **Solo euros**, y sin columna de moneda. Sin facturas ni recibos fiscales |
 | Comisión de Stripe | La asume **quien cobra** (el admin) |
 | Reservar | **Implica pagar**. Las gratuitas siguen siendo instantáneas |
-| Cola de suplentes | Al suplente **se le cobra directamente** y obtiene la plaza. Si falla, no reserva y **sale de la cola** |
+| Cola de suplentes | **No se le cobra solo.** Se le ofrece la plaza, que le queda **reservada 12 h o hasta que actúe**; entra, confirma y paga en Checkout como todo el mundo *(corregido el 2026-08-19)* |
 | Liberar plaza | **No hay dinero de vuelta hasta que hay sustituto**. Mecanismo: **reembolso al anterior**, disparado por el pago del sustituto |
 | Reembolso a petición | **No existe**. La única vía es que otro ocupe la plaza |
 | Cancelar actividad | Reembolso automático de lo cobrado por Stripe + **lista al admin de a quién debe dinero a mano** |
@@ -90,16 +90,15 @@ base de datos.
 Kotlin. El formateo y el parseo viven en `core/model` como funciones puras con
 tests, que es el único módulo del repo con `commonTest` configurado.
 
-### La moneda no lleva columna — desviación consciente
+### La moneda no lleva columna
 
-El handoff pide "importe estructurado **y moneda**", y también "solo euros". Una
-columna que vale `'eur'` en el 100% de las filas es configuración de un valor que
-no cambia. **Se omite.** El euro es una constante en un sitio (`Money.kt` y el
-`currency` de la sesión de Checkout). Si algún día hay una segunda moneda, es una
-migración de una línea; hasta entonces es una columna que hay que arrastrar en
-cada consulta, cada modelo y cada comparación de importes.
+Confirmado por el usuario el 2026-08-19: **solo euros, y el importe depende de la
+actividad**. Una columna que valdría `'eur'` en el 100% de las filas es
+configuración de un valor que no cambia, así que **no existe**. El euro es una
+constante en un sitio (`Money.kt` y el `currency` de la sesión de Checkout). Si
+algún día hay una segunda moneda, es una migración de una línea.
 
-Si prefieres la columna, dilo en la revisión: son 10 minutos, no rehace nada.
+Lo que sí es por actividad es el importe: `activities.price_cents`.
 
 ### Verificado: Google Play no obliga a Play Billing aquí
 
@@ -189,6 +188,35 @@ retención.
 Esto tiene una propiedad que ahorra media implementación: `reserve_slot`,
 `admin_assign_slot` y `approve_guest_request` ya rechazan cualquier plaza cuyo
 `status` no sea `available`. Con `pending_payment` **no hay que tocarlas**.
+
+### Oferta al suplente
+
+```sql
+ALTER TABLE slots ADD COLUMN offered_to uuid REFERENCES auth.users(id);
+ALTER TABLE slots ADD COLUMN offer_expires_at timestamptz;
+ALTER TABLE slots ADD CONSTRAINT slots_offer_pair
+  CHECK ((offered_to IS NULL) = (offer_expires_at IS NULL));
+CREATE INDEX slots_offer_sweep ON slots (offer_expires_at)
+  WHERE offered_to IS NOT NULL;
+```
+
+"Esta plaza está apalabrada para esta persona hasta esta hora." Es la **ventana
+de 12 h** del suplente. No es una retención de pago: no hay sesión de Checkout
+todavía, ni dinero por medio. Es exclusividad para que le dé tiempo a enterarse y
+decidir.
+
+Son dos retenciones distintas y conviene no confundirlas:
+
+| | Qué significa | Cuánto dura |
+|---|---|---|
+| `offered_to` / `offer_expires_at` | "la plaza es tuya si la quieres, ven a por ella" | **12 h** |
+| `pending_payment` / `hold_expires_at` | "estás pagando ahora mismo, nadie te la quita" | **30 min** |
+
+Un suplente pasa por las dos, en ese orden. Un miembro cualquiera que reserva una
+plaza libre solo pasa por la segunda.
+
+**Solo existen en actividades de pago.** Si `price_cents IS NULL`,
+`promote_substitute` sigue asignando la plaza en el acto, como hoy.
 
 ### Tabla de pagos
 
@@ -286,11 +314,20 @@ Es la parte a leer despacio. Todo lo demás es fontanería.
        paid + released_at = now()        ← sigue siendo de U, U puede asistir
        payment(U) = 'awaiting_substitute'
               │
-      ┌───────┴────────────────────────────┐
-   otro paga la plaza              nadie la paga nunca
-      ▼                                    ▼
-   paid, reserved_by = V            se queda asi hasta la actividad.
-   released_at = NULL               U conserva la plaza que ya habia pagado.
+              │  promote_substitute: hay cola
+              ▼
+       + offered_to = V, offer_expires_at = +12h      ← apalabrada para V
+              │
+      ┌───────┴──────────────┬─────────────────────────┐
+   V confirma          V rechaza, o pasan 12h      nadie en la cola
+      ▼                      ▼                          ▼
+  pasa por Checkout    se ofrece al siguiente      offered_to = NULL
+  (payment pending)    y V sale de la cola.        cualquiera puede
+      │                Sin cola -> sin oferta      reclamarla
+      ▼
+   pago de V confirmado
+      ▼
+   paid, reserved_by = V, released_at = NULL, offered_to = NULL
    payment(U) = 'refund_pending'
    payment(V) = 'succeeded'
       │
@@ -299,8 +336,13 @@ Es la parte a leer despacio. Todo lo demás es fontanería.
    payment(U) = 'refunded'   (o 'refund_owed' si method='manual')
 ```
 
+Si nadie llega a pagarla nunca, la plaza se queda como está hasta el día de la
+actividad: sigue siendo de U, que conserva la plaza que ya había pagado. Correcto
+y deliberado.
+
 **En actividades gratuitas (`price_cents IS NULL`) nada de esto se ejecuta.** La
-plaza va de `available` a `reserved` en una transacción, igual que hoy. Es
+plaza va de `available` a `reserved` en una transacción, igual que hoy, y
+`promote_substitute` asigna al suplente en el acto sin ofertas ni ventanas. Es
 requisito explícito y hay que protegerlo con tests.
 
 ## Backend
@@ -326,14 +368,22 @@ requisito explícito y hay que protegerlo con tests.
 3. El llamante es miembro de la comunidad.
 4. La plaza es reclamable: `status = 'available'`, **o** `status = 'paid'` con
    `released_at IS NOT NULL` y `reserved_by <> llamante`.
-5. Prioridad de cola: si hay alguien por delante en `substitute_queue` para esta
+5. Oferta viva: si `offered_to` no es nulo, `offer_expires_at` no ha pasado y
+   `offered_to <> llamante` → error `slot_offered_to_someone_else`. Si el
+   llamante **es** el ofertado, pasa: la oferta es precisamente su derecho a
+   reclamarla.
+6. Prioridad de cola: si hay alguien por delante en `substitute_queue` para esta
    plaza y no es el llamante → error. Misma comprobación que `reserve_slot`,
    reutilizando su lógica de posiciones.
-6. `INSERT INTO payments (... status='pending' ...)`. Si viola
+7. `INSERT INTO payments (... status='pending' ...)`. Si viola
    `payments_one_pending_per_slot` → error `slot_being_paid`.
-7. Si la plaza estaba `available`: `status='pending_payment'`,
+8. Si la plaza estaba `available`: `status='pending_payment'`,
    `reserved_by=llamante`, `hold_expires_at=now()+30min`. Si estaba liberada, **la
    plaza no se toca**: el cerrojo es la fila de `payments`.
+
+La oferta al suplente **no se borra aquí**. Si el pago se queda a medias, V sigue
+teniendo su ventana de 12 h para volver a intentarlo. Se borra al confirmarse el
+pago.
 
 Después del commit, crea la sesión de Checkout con
 `Stripe-Account: <connected>`, `Idempotency-Key: <payment.id>`,
@@ -382,6 +432,10 @@ la sustitución como en la cancelación de una actividad. Así una cancelación 
 20 pagos es una transacción de base de datos rápida y los reembolsos ocurren
 después, con reintentos gratis. Es un patrón outbox de quince líneas.
 
+**La caducidad de las ofertas a suplentes no pasa por aquí.** No hay nada que
+preguntarle a Stripe: es `expire_substitute_offers()`, SQL puro invocado
+directamente por `pg_cron`, sin salir de la base de datos.
+
 ### RPCs nuevas y modificadas
 
 **`release_slot` — se modifica.** Rama nueva antes de la actual:
@@ -404,8 +458,31 @@ sin tocar la firma.
 una fila en `payments` con `method='manual'`, `status='succeeded'` y
 `amount_cents = activities.price_cents` (si hay precio; si no, no inserta nada).
 
-**`promote_substitute` — se modifica.** Hoy asigna la plaza directamente. En
-actividades de pago ya no puede: hay que cobrar antes. Ver la sección siguiente.
+**`promote_substitute` — se modifica.** Hoy asigna la plaza directamente. Sigue
+haciéndolo **si la actividad es gratuita**. Si tiene precio, en vez de asignar:
+
+```
+buscar al primero de la cola (logica de posiciones actual, sin tocar)
+si no hay nadie:
+    offered_to = NULL, offer_expires_at = NULL
+    RETURN FALSE
+si hay:
+    offered_to = ese usuario
+    offer_expires_at = min(now() + interval '12 hours', activities.datetime)
+    notificar 'substitute_offer'
+    RETURN TRUE
+```
+
+No borra al ofertado de `substitute_queue`: sale de la cola al aceptar (cuando su
+pago se confirma), al rechazar, o al caducar la oferta.
+
+**`decline_substitute_offer(p_slot_id)` — nueva.** El ofertado renuncia. Lo saca
+de la cola y llama a `promote_substitute` para pasar al siguiente.
+
+**`expire_substitute_offers()` — nueva.** SQL puro, sin Stripe de por medio. Para
+cada plaza con `offer_expires_at` pasado: saca al ofertado de la cola, limpia la
+oferta y llama a `promote_substitute`. La invoca `pg_cron` cada minuto, igual que
+`send_activity_reminders`.
 
 **`cancel_activity(p_activity_id)` — nueva.** Admin. Archiva la actividad, pone
 todos los `payments` de Stripe en `succeeded`/`awaiting_substitute` a
@@ -417,33 +494,52 @@ ejecuta el worker.
 incluyendo las liberadas. La app la necesita para pintar la lista sin
 reimplementar la regla en el cliente.
 
-## Cola de suplentes: la parte que más cuidado pide
+## Cola de suplentes
 
-La decisión es "**al suplente se le cobra directamente y obtiene la plaza; si su
-pago falla, no reserva nada y sale de la cola**". Implementado tal cual significa
-un **cobro fuera de sesión**, y eso arrastra dos cosas que conviene ver antes de
-aprobarlo:
+**Corregido el 2026-08-19.** La decisión original era cobrar al suplente
+directamente. Se sustituye por: **al suplente se le ofrece la plaza, le queda
+reservada 12 h o hasta que actúe, y paga en Checkout como todo el mundo.**
 
-1. **Apuntarse a la cola de una actividad de pago pasa a exigir guardar una
-   tarjeta.** Hay que sacar al usuario a un Checkout en modo `setup`, crear un
-   `Customer` **en la cuenta conectada** (los cargos son directos, el cliente vive
-   allí) y guardar el `payment_method`. Hoy apuntarse a la cola es pulsar un
-   botón. Pasa a ser un formulario de tarjeta.
+El cambio elimina de un plumazo toda la parte cara del diseño anterior: no hacen
+falta tarjetas guardadas, ni `SetupIntent`, ni objetos `Customer` en la cuenta
+conectada, ni cobros fuera de sesión. Y de paso desaparece el problema de SCA en
+Europa, donde una parte de los cargos fuera de sesión se rechazan por
+autenticación y no por falta de fondos — con el mecanismo anterior, a esa gente
+la habría expulsado de la cola el banco. Ahora el suplente autentica en el
+momento, en sesión, como cualquier otro pagador.
 
-2. **En Europa, una parte de los cargos fuera de sesión se rechazan por SCA**
-   (`authentication_required`), no por falta de fondos. Con la regla tal cual, a
-   esa gente se la expulsa de la cola por un requisito bancario, no por no querer
-   o no poder pagar. Se mitiga creando el `SetupIntent` con `usage: off_session`
-   para que la autenticación inicial cubra los cargos posteriores, pero no
-   desaparece.
+También conserva algo que se perdía: apuntarse a la cola vuelve a ser **pulsar un
+botón**, no rellenar un formulario de tarjeta por si acaso.
 
-**No reabro la decisión.** La señalo con una propuesta acotada para la revisión:
-que el rechazo por `authentication_required` no expulse de la cola, sino que
-avise al suplente con una retención de 30 minutos para pagar en sesión, y solo
-entonces lo saque. Los rechazos por fondos o tarjeta caducada siguen expulsando
-inmediatamente. Es un caso más en el worker, no un diseño distinto.
+### Cómo funciona
 
-Si prefieres la regla literal, se implementa literal.
+1. Se libera una plaza en una actividad de pago (alguien la libera, o el admin
+   añade huecos). `promote_substitute` busca al primero de la cola con la lógica
+   de posiciones que ya existe.
+2. En vez de asignársela, la **apalabra**: `offered_to = V`,
+   `offer_expires_at = min(now() + 12h, comienzo de la actividad)`. Notificación a
+   V ("tienes plaza en X, confírmala antes de las 14:30").
+3. Mientras la oferta viva, **solo V puede reclamarla**. Al resto se le muestra
+   apalabrada, no libre.
+4. V entra, confirma, y sale a Checkout por el camino normal: retención de pago de
+   30 min, sesión, deep link de vuelta. Si paga, la plaza es suya.
+5. Si V rechaza explícitamente, o pasan las 12 h sin que actúe: **V sale de la
+   cola** y la oferta pasa al siguiente. Si no queda nadie, `offered_to = NULL` y
+   la plaza queda reclamable por cualquiera.
+
+El tope en el comienzo de la actividad no es un detalle: una ventana de 12 h sobre
+un partido que empieza dentro de tres horas dejaría la plaza congelada hasta
+después de jugarse.
+
+### Lo que asumo y puedes corregir en la revisión
+
+**Dejar caducar la oferta saca de la cola**, igual que rechazarla. Es la lectura
+natural de la regla original ("si su pago falla, sale de la cola") y sin ella la
+cola se atasca: al siguiente barrido se le volvería a ofrecer al mismo, para
+siempre. Si prefieres que vuelva al final de la cola en vez de salir, es una línea.
+
+**El fallo de pago sigue sacando de la cola.** Si V confirma, sale a Checkout y no
+paga, pierde la oferta y sale. Eso sí es literal a lo decidido.
 
 ## Reservar: el camino que más se usa
 
@@ -484,6 +580,10 @@ Ya hay `WebDeepLinkTest.kt`: se amplía.
 | El admin desconecta Stripe con pagos vivos | `charges_enabled=false`: no se crean sesiones nuevas. Los reembolsos pendientes fallan y acaban en la lista manual del admin. |
 | La actividad se cancela mientras alguien paga | El pago pendiente se reconcilia: si se cobró, `refund_pending`; si no, se libera. |
 | El admin cambia el precio con gente ya pagada | Los pagos existentes no se tocan (`amount_cents` es una foto). La UI avisa al editar. |
+| El suplente ignora la oferta 12 h | `expire_substitute_offers()` lo saca de la cola y ofrece al siguiente. Sin cola, la plaza queda libre para cualquiera. |
+| La actividad empieza antes de que caduque la oferta | `offer_expires_at` se topa en `activities.datetime`. Nunca se congela una plaza más allá del comienzo. |
+| El suplente empieza a pagar y abandona | Pierde la retención de 30 min, **no la oferta**: le quedan sus 12 h para reintentar. |
+| El admin apunta a alguien en una plaza apalabrada | `admin_assign_slot` sigue exigiendo `status='available'`. Una plaza liberada está en `paid`, así que ya la rechaza; sobre una `available` con oferta viva hay que añadir la comprobación de `offered_to`. **Es el único sitio del código antiguo que hay que tocar por esto.** |
 
 ## Cambios en la app
 
@@ -493,13 +593,18 @@ Ya hay `WebDeepLinkTest.kt`: se amplía.
    el KYC, aviso **no bloqueante** con botón "Configurar cobros". En editar, si la
    actividad tiene `cost_description` antiguo, se muestra una vez como ayuda.
 2. **Detalle de actividad.** Precio visible; "Reservar" pasa a "Reservar ·
-   6,50 €"; `SlotStatusBadge` gana "Reservándose…" (`pending_payment`) y "Libre —
-   pagada, busca sustituto" (`released_at` no nulo).
-3. **Ajustes de comunidad (admin).** Sección "Cobros": conectar con Stripe,
+   6,50 €"; `SlotStatusBadge` gana "Reservándose…" (`pending_payment`), "Libre —
+   pagada, busca sustituto" (`released_at` no nulo) y "Apalabrada hasta las 14:30"
+   (`offered_to` de otro).
+3. **Oferta al suplente.** Al ofertado se le enseña la plaza con cuenta atrás y
+   dos botones: *Confirmar y pagar · 6,50 €* y *Renunciar*. Es la pantalla que
+   sustituye al cobro automático, así que tiene que dejar clarísimo que la plaza
+   se pierde a la hora que marca.
+4. **Ajustes de comunidad (admin).** Sección "Cobros": conectar con Stripe,
    estado del alta, enlace al panel de Stripe.
-4. **Resultado del pago.** Pantalla de vuelta del deep link: spinner mientras
+5. **Resultado del pago.** Pantalla de vuelta del deep link: spinner mientras
    sincroniza, y resultado.
-5. **Cancelar actividad (admin).** Diálogo con el desglose: cuántos se devuelven
+6. **Cancelar actividad (admin).** Diálogo con el desglose: cuántos se devuelven
    solos y la lista nominal de a quién hay que devolverle a mano.
 
 ### Código puro con tests
@@ -527,16 +632,22 @@ harness de tests y es dinero: aquí no se improvisa.
 
 ## Riesgos
 
-1. **SCA en la cola de suplentes** (sección propia arriba). Es el único punto
-   donde propongo una variación sobre lo decidido.
-2. **Guardar tarjeta para entrar en la cola** es fricción nueva sobre una acción
-   que hoy es un botón. Puede hundir el uso de la cola en actividades de pago.
-3. **El estado liberada-pero-pagada** es nuevo y no se parece a nada de lo que ya
+1. **El estado liberada-pero-pagada** es nuevo y no se parece a nada de lo que ya
    hay. Los sitios que asumen "plaza `paid` = plaza ocupada y cerrada" hay que
    revisarlos uno a uno.
-4. **La comisión de Stripe no se devuelve en los reembolsos**, así que cada
+2. **La ventana de 12 h ralentiza la rotación de plazas.** Con una cola de tres
+   personas que pasan de la notificación, una plaza puede tardar 36 h en volver a
+   estar libre para cualquiera. En una actividad que se anuncia con una semana de
+   antelación da igual; en una de mañana, no. El tope en `activities.datetime` lo
+   acota, pero no lo arregla del todo. Si en la práctica molesta, la ventana es un
+   número en un sitio.
+3. **La comisión de Stripe no se devuelve en los reembolsos**, así que cada
    sustitución cuesta una comisión de más. Asumido en el handoff, se repite aquí
    porque se nota en cuanto haya volumen.
-5. **El build de wasm de producción tarda del orden de una hora.** Cualquier
+4. **El build de wasm de producción tarda del orden de una hora.** Cualquier
    arreglo de un fallo de pagos en web tiene ese suelo de latencia. Conviene
    probar el flujo entero en Android antes de tocar el despliegue web.
+
+Los dos riesgos que tenía este documento en su primera versión — SCA en los cobros
+fuera de sesión y la fricción de guardar tarjeta para entrar en la cola —
+**desaparecen** con el mecanismo de oferta. Era la parte más cara del diseño.

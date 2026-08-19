@@ -147,8 +147,11 @@ de diseño: hoy "Reservar" es instantáneo y pasa a ser salir a Checkout, pagar,
 volver por deep link y confirmar con el webhook. Es la acción más usada de la
 app. **En actividades gratuitas tiene que seguir siendo instantánea.**
 
-**Cola de suplentes: al suplente se le cobra directamente y obtiene la plaza.**
-Si su pago falla, no reserva nada **y sale de la cola**.
+**Cola de suplentes: ~~al suplente se le cobra directamente~~.** CORREGIDO el
+2026-08-19, durante la fase 2: **no se le cobra solo**. Se le ofrece la plaza, le
+queda reservada **12 h o hasta que actúe**, y entra, confirma y paga en Checkout
+como cualquier otro. Si su pago falla, no reserva nada **y sale de la cola**. El
+mecanismo completo esta en el diseño, sección "Cola de suplentes".
 
 ### Liberar una plaza
 
