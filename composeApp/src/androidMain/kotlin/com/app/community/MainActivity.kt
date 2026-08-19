@@ -1,5 +1,6 @@
 package com.app.community
 
+import com.app.community.core.common.DeepLinkHandler
 import android.Manifest
 import android.content.Intent
 import android.os.Build

@@ -21,7 +21,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.resources.stringResource
-import com.app.community.DeepLinkHandler
+import com.app.community.core.common.DeepLinkHandler
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen

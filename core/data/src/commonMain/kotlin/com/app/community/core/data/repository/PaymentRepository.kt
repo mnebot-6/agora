@@ -33,6 +33,45 @@ data class ConnectOnboardLink(
 )
 
 @Serializable
+data class CheckoutLink(
+    @SerialName("payment_id") val paymentId: String,
+    val url: String,
+    val resumed: Boolean = false,
+)
+
+@Serializable
+data class PaymentSyncResult(
+    @SerialName("payment_id") val paymentId: String,
+    val status: String,
+) {
+    val isSucceeded: Boolean get() = status == "succeeded"
+    /** Sigue abierto: el usuario volvio sin pagar y le queda su retencion. */
+    val isPending: Boolean get() = status == "pending"
+}
+
+/**
+ * Motivos por los que no se puede cobrar. PAYMENTS_NOT_ENABLED es el unico que NO es un
+ * error de cara al usuario: significa que esa comunidad todavia no ha completado su alta,
+ * y entonces se reserva como siempre y el admin cobra a mano.
+ */
+enum class PaymentError(val code: String) {
+    PAYMENTS_NOT_ENABLED("payments_not_enabled"),
+    SLOT_BEING_PAID("slot_being_paid"),
+    SLOT_NOT_CLAIMABLE("slot_not_claimable"),
+    SLOT_OFFERED_TO_SOMEONE_ELSE("slot_offered_to_someone_else"),
+    QUEUE_PRIORITY("queue_priority"),
+    ACTIVITY_IS_FREE("activity_is_free"),
+    NOT_A_MEMBER("not_a_member"),
+    UNKNOWN("unknown"),
+    ;
+
+    companion object {
+        fun from(message: String): PaymentError =
+            entries.firstOrNull { it != UNKNOWN && message.contains(it.code) } ?: UNKNOWN
+    }
+}
+
+@Serializable
 private data class FunctionError(
     val error: String? = null,
     val message: String? = null,
@@ -58,15 +97,32 @@ class PaymentRepository {
     suspend fun connectStatus(communityId: String): AppResult<ConnectStatus> =
         invoke("status", communityId)
 
+    /** Abre el cobro de una plaza y devuelve la URL de Checkout. */
+    suspend fun createCheckout(slotId: String): AppResult<CheckoutLink> =
+        call("stripe-checkout", "create", "slot_id" to slotId)
+
+    /**
+     * Sincroniza contra Stripe al volver por deep link. Ejecuta la MISMA transicion que el
+     * webhook, asi que el usuario ve el resultado al instante sin esperar a que Stripe avise.
+     */
+    suspend fun syncPayment(paymentId: String): AppResult<PaymentSyncResult> =
+        call("stripe-checkout", "sync", "payment_id" to paymentId)
+
     private suspend inline fun <reified T> invoke(
         action: String,
         communityId: String,
+    ): AppResult<T> = call("stripe-connect", action, "community_id" to communityId)
+
+    private suspend inline fun <reified T> call(
+        function: String,
+        action: String,
+        vararg params: Pair<String, String>,
     ): AppResult<T> = safeCall {
         val body = buildJsonObject {
             put("action", action)
-            put("community_id", communityId)
+            params.forEach { (k, v) -> put(k, v) }
         }
-        val response = functions.invoke("stripe-connect") {
+        val response = functions.invoke(function) {
             contentType(ContentType.Application.Json)
             // Se serializa a mano: el builder que expone functions-kt es el de ktor crudo,
             // sin negociacion de contenido configurada por nosotros.

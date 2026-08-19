@@ -1,9 +1,14 @@
-package com.app.community
+package com.app.community.core.common
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * Deep links pendientes de consumir. Vive en core:common y no en composeApp porque las
+ * pantallas de feature tambien tienen que leerlos: el retorno de un pago aterriza en el
+ * detalle de la actividad, no en el armazon de la app.
+ */
 object DeepLinkHandler {
     private val _pendingInviteCode = MutableStateFlow<String?>(null)
     val pendingInviteCode: StateFlow<String?> = _pendingInviteCode.asStateFlow()

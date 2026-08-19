@@ -116,6 +116,7 @@ val screenModelModule = module {
             communityRepository = get(),
             profileRepository = get(),
             guestRepository = get(),
+            paymentRepository = get(),
         )
     }
     factory { params ->

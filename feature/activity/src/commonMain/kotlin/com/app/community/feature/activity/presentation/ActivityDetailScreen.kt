@@ -47,11 +47,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.app.community.core.common.DeepLinkHandler
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
 import com.app.community.core.model.CommunityMember
@@ -80,7 +82,6 @@ import agora.feature.activity.generated.resources.Res
 import agora.feature.activity.generated.resources.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -128,6 +129,24 @@ data class ActivityDetailScreen(val activityId: String) : Screen {
                 snackbarHostState.showSnackbar(it)
                 screenModel.clearActionMessage()
             }
+        }
+
+        // Salida a Stripe Checkout. El formulario de tarjeta lo aloja Stripe: ningun dato
+        // de pago toca la app, que es lo que la mantiene fuera del alcance de PCI.
+        val checkoutUrl by screenModel.checkoutUrl.collectAsState()
+        val uriHandler = LocalUriHandler.current
+        LaunchedEffect(checkoutUrl) {
+            checkoutUrl?.let {
+                uriHandler.openUri(it)
+                screenModel.consumeCheckoutUrl()
+            }
+        }
+
+        // Vuelta del pago por deep link. Se sincroniza contra Stripe sin esperar al
+        // webhook, para que el resultado se vea al instante.
+        val pendingPaymentId by DeepLinkHandler.pendingPaymentId.collectAsState()
+        LaunchedEffect(pendingPaymentId) {
+            DeepLinkHandler.consumePaymentId()?.let { screenModel.syncPayment(it) }
         }
 
         Scaffold(

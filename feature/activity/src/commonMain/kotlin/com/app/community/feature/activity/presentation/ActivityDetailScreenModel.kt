@@ -7,6 +7,8 @@ import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.GuestRepository
+import com.app.community.core.data.repository.PaymentError
+import com.app.community.core.data.repository.PaymentRepository
 import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
@@ -69,7 +71,14 @@ class ActivityDetailScreenModel(
     private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
     private val guestRepository: GuestRepository,
+    private val paymentRepository: PaymentRepository,
 ) : ScreenModel {
+
+    /** URL de Checkout pendiente de abrir en el navegador. Se consume una sola vez. */
+    private val _checkoutUrl = MutableStateFlow<String?>(null)
+    val checkoutUrl: StateFlow<String?> = _checkoutUrl.asStateFlow()
+
+    fun consumeCheckoutUrl() { _checkoutUrl.value = null }
 
     private val _state = MutableStateFlow<ActivityDetailUiState>(ActivityDetailUiState.Loading)
     val state: StateFlow<ActivityDetailUiState> = _state.asStateFlow()
@@ -237,7 +246,47 @@ class ActivityDetailScreenModel(
         }
     }
 
+    /**
+     * Reservar. En actividades de pago sale a Stripe Checkout; en las gratuitas es
+     * instantaneo, exactamente igual que siempre. Ese camino no puede ralentizarse: es la
+     * accion mas usada de la app.
+     */
     fun reserveSlot(slotId: String) {
+        val activity = (_state.value as? ActivityDetailUiState.Content)?.activity
+        if (activity?.priceCents == null) {
+            reserveFree(slotId)
+            return
+        }
+        screenModelScope.launch {
+            paymentRepository.createCheckout(slotId)
+                .onSuccess { link -> _checkoutUrl.value = link.url }
+                .onError { msg, _ ->
+                    when (PaymentError.from(msg)) {
+                        // La comunidad todavia no ha completado su alta de Stripe. NO es un
+                        // error para quien reserva: se apunta como siempre y el admin cobra
+                        // a mano. Ensenarle un fallo aqui seria castigarle por un tramite
+                        // que no es suyo.
+                        PaymentError.PAYMENTS_NOT_ENABLED,
+                        PaymentError.ACTIVITY_IS_FREE -> reserveFree(slotId)
+
+                        PaymentError.SLOT_BEING_PAID ->
+                            _actionMessage.value = "Alguien está pagando esta plaza ahora mismo"
+                        PaymentError.SLOT_NOT_CLAIMABLE ->
+                            _actionMessage.value = "La plaza ya no está disponible"
+                        PaymentError.SLOT_OFFERED_TO_SOMEONE_ELSE ->
+                            _actionMessage.value = "La plaza está reservada para un suplente"
+                        PaymentError.QUEUE_PRIORITY ->
+                            _actionMessage.value = "Hay alguien por delante en la cola"
+                        PaymentError.NOT_A_MEMBER ->
+                            _actionMessage.value = "No eres miembro de esta comunidad"
+                        PaymentError.UNKNOWN ->
+                            _actionMessage.value = "Error: $msg"
+                    }
+                }
+        }
+    }
+
+    private fun reserveFree(slotId: String) {
         screenModelScope.launch {
             slotRepository.reserveSlot(slotId)
                 .onSuccess { success ->
@@ -251,6 +300,23 @@ class ActivityDetailScreenModel(
                 .onError { msg, _ ->
                     _actionMessage.value = "Error: $msg"
                 }
+        }
+    }
+
+    /** Vuelta del deep link: sincroniza contra Stripe y refresca. */
+    fun syncPayment(paymentId: String) {
+        screenModelScope.launch {
+            paymentRepository.syncPayment(paymentId)
+                .onSuccess { result ->
+                    _actionMessage.value = when {
+                        result.isSucceeded -> "Pago confirmado, plaza reservada"
+                        result.isPending -> "Aún no hemos podido confirmar el pago. " +
+                            "Si lo has completado, aparecerá en unos minutos."
+                        else -> "El pago no se completó"
+                    }
+                    load()
+                }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
         }
     }
 

@@ -2,7 +2,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import com.app.community.App
-import com.app.community.DeepLinkHandler
+import com.app.community.core.common.DeepLinkHandler
 import com.app.community.WebDeepLink
 import com.app.community.di.appModules
 import com.app.community.core.ui.theme.preloadAgoraFonts

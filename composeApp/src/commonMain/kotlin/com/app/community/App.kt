@@ -1,5 +1,6 @@
 package com.app.community
 
+import com.app.community.core.common.DeepLinkHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
