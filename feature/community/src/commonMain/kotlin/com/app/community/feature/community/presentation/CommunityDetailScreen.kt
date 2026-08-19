@@ -95,6 +95,13 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 
+/**
+ * El chat de comunidad esta oculto: aportaba menos de lo que confundia. El codigo
+ * sigue vivo (CommunityChatTab, CommunityChatScreenModel) para poder recuperarlo
+ * cambiando esta constante. Si sigue oculto dentro de unas versiones, borrarlo.
+ */
+private const val CHAT_ENABLED = false
+
 @Serializable
 data class CommunityDetailScreen(val communityId: String) : Screen {
 
@@ -423,37 +430,51 @@ private fun CommunityDetailContent(
             )
         }
 
-        // El Chat siempre esta disponible, asi que las tabs siempre se muestran.
         val showSubcommunitiesEntry = state.children.isNotEmpty() || state.isAdmin
-        item {
-            TabRow(
-                selectedTabIndex = state.selectedTab.ordinal,
-                containerColor = MaterialTheme.agoraColors.parchment,
-            ) {
-                Tab(
-                    selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES,
-                    onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.ACTIVITIES) },
-                    text = { Text(stringResource(Res.string.community_detail_tab_activities)) },
-                )
-                if (showSubcommunitiesEntry) {
-                    Tab(
-                        selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES,
-                        onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES) },
-                        text = { Text(stringResource(Res.string.community_detail_tab_subcommunities)) },
-                    )
+
+        // Tabs realmente visibles, en orden. El indice del TabRow se calcula de aqui
+        // y no de DetailTab.ordinal: con el chat oculto o sin subcomunidades los
+        // ordinales del enum dejan de coincidir con las posiciones pintadas.
+        val visibleTabs = buildList {
+            add(CommunityDetailScreenModel.DetailTab.ACTIVITIES)
+            if (showSubcommunitiesEntry) add(CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES)
+            if (CHAT_ENABLED) add(CommunityDetailScreenModel.DetailTab.CHAT)
+        }
+
+        // Con una sola pestana la barra no aporta nada: se ve directamente el contenido.
+        if (visibleTabs.size > 1) {
+            item {
+                TabRow(
+                    selectedTabIndex = visibleTabs.indexOf(state.selectedTab).coerceAtLeast(0),
+                    containerColor = MaterialTheme.agoraColors.parchment,
+                ) {
+                    visibleTabs.forEach { tab ->
+                        Tab(
+                            selected = state.selectedTab == tab,
+                            onClick = { screenModel.onTabSelected(tab) },
+                            text = {
+                                Text(
+                                    when (tab) {
+                                        CommunityDetailScreenModel.DetailTab.ACTIVITIES ->
+                                            stringResource(Res.string.community_detail_tab_activities)
+                                        CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES ->
+                                            stringResource(Res.string.community_detail_tab_subcommunities)
+                                        CommunityDetailScreenModel.DetailTab.CHAT ->
+                                            stringResource(Res.string.community_detail_tab_chat)
+                                    },
+                                )
+                            },
+                        )
+                    }
                 }
-                Tab(
-                    selected = state.selectedTab == CommunityDetailScreenModel.DetailTab.CHAT,
-                    onClick = { screenModel.onTabSelected(CommunityDetailScreenModel.DetailTab.CHAT) },
-                    text = { Text(stringResource(Res.string.community_detail_tab_chat)) },
-                )
             }
         }
 
         val showActivitiesTab = state.selectedTab == CommunityDetailScreenModel.DetailTab.ACTIVITIES
         val showSubcommunitiesTab = showSubcommunitiesEntry &&
             state.selectedTab == CommunityDetailScreenModel.DetailTab.SUBCOMMUNITIES
-        val showChatTab = state.selectedTab == CommunityDetailScreenModel.DetailTab.CHAT
+        val showChatTab = CHAT_ENABLED &&
+            state.selectedTab == CommunityDetailScreenModel.DetailTab.CHAT
 
         if (showActivitiesTab) {
             if (activities.isEmpty()) {
