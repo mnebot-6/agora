@@ -741,9 +741,10 @@ private fun SlotCard(
  * y a la columna de la etiqueta, que si lleva weight, no le sobraba nada: las posiciones
  * acababan partidas en tres lineas.
  *
- * La accion principal es reservar o liberar segun el estado; apuntar a alguien y marcar
- * pagado son de administrador y van al menu. Cuando en un estado solo queda una accion se
- * pinta suelta, sin menu de un unico elemento.
+ * Queda visible la accion de uso corriente en cada estado -reservar, liberar la plaza
+ * propia, marcar pagado- y el resto va al menu. Las destructivas viven en el menu, como en
+ * MemberManagementScreen: liberar la plaza de otro no debe estar a un toque de distancia.
+ * Cuando en un estado solo queda una accion se pinta suelta, sin menu de un unico elemento.
  */
 @Composable
 private fun SlotActions(
@@ -798,20 +799,30 @@ private fun SlotActions(
             }
         }
         isAdmin && slot.isAdminReleasable -> {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onRelease) {
-                    Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
-                }
-                if (hasCost && slot.status == SlotStatus.RESERVED) {
+            if (hasCost && slot.status == SlotStatus.RESERVED) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onMarkPaid) {
+                        Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                    }
                     SlotOverflowMenu(slotLabel) { dismiss ->
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.slot_paid)) },
-                            onClick = { dismiss(); onMarkPaid() },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.slot_release),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            onClick = { dismiss(); onRelease() },
                         )
                     }
+                }
+            } else {
+                // Unica accion del estado: se pinta suelta, sin menu de un solo elemento.
+                TextButton(onClick = onRelease) {
+                    Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
