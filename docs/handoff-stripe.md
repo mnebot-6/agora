@@ -112,64 +112,110 @@ verificar y explicarle si condicionan la decisión:
 
 ## Fase 1 — Las preguntas
 
-**La primera lo condiciona todo. No sigas hasta tenerla clara.**
+### Ya respondidas — no las vuelvas a preguntar
+
+El usuario respondió a estas el 2026-08-19. Son decisiones tomadas; si crees que
+alguna es un error, dilo con tu razonamiento, pero no las replantees de cero.
+
+**Modelo: Stripe Connect.** El administrador de la comunidad cobra a sus
+miembros **a través de Agora**, y Agora se queda **un pequeño porcentaje para
+cubrir gastos**. La opción de que Agora cobrase una suscripción a las comunidades
+queda descartada por ahora.
+
+**Dos vías de cobro que conviven, según quién ocupe la plaza:**
+
+| Quién | Cómo paga |
+|---|---|
+| Usuario con cuenta | Stripe Connect |
+| Invitado sin cuenta (flujo web anónimo) | El admin marca "pagado" a mano, como hoy |
+| Alguien apuntado por un admin | El admin marca "pagado" a mano, como hoy |
+
+O sea: el check manual de pagado **no desaparece**, convive con Stripe. El modelo
+de datos tiene que registrar por qué vía se pagó cada plaza.
+
+**Liberar una plaza: no se devuelve el dinero hasta que hay sustituto.** Esta es
+la regla de negocio, y es firme.
+
+**El mecanismo elegido para cumplirla: reembolso al anterior ocupante disparado
+por el pago del sustituto.** No que el sustituto pague directamente al anterior.
+
+Ese matiz importa y ya se discutió, así que no lo reabras sin motivo nuevo. El
+usuario lo planteó primero como "el sustituto le paga al de la plaza anterior", y
+se cambió porque el resultado económico es idéntico para los tres implicados:
+
+| | Sustituto paga al anterior | Reembolso al anterior |
+|---|---|---|
+| A reserva | paga 6,50 al admin | paga 6,50 al admin |
+| B sustituye | paga 6,50 **a A** | paga 6,50 al admin, y se reembolsa a A |
+| Admin acaba con | 6,50 | 6,50 |
+| A acaba con | 0 neto | 0 neto |
+| B acaba con | −6,50 | −6,50 |
+
+La diferencia está en lo que cuesta montarlo. Que B pague a A convierte a **cada
+usuario** en receptor de fondos: cuenta conectada y KYC para cualquiera que
+alguna vez libere una plaza pagada, y Agora moviendo dinero entre particulares,
+que regulatoriamente es mucho más pesado. Con el reembolso, solo los
+administradores necesitan cuenta conectada.
+
+El coste de la alternativa: Stripe no devuelve su comisión en los reembolsos, así
+que cada sustitución paga una comisión de más. Asumido conscientemente.
+
+**Consecuencia de diseño:** el reembolso a A se dispara con el **pago
+confirmado** de B, no con la liberación de la plaza. Si B no llega a pagar, A
+sigue sin cobrar y la plaza sigue siendo suya. Piensa bien el estado intermedio.
+
+### Pendientes de responder
 
 ### A. El modelo de negocio
 
-1. **¿Quién cobra a quién?** Hay dos mundos completamente distintos:
-   - **(a) El administrador de la comunidad cobra a sus miembros**, y Agora es el
-     intermediario. Esto obliga a **Stripe Connect**: cada admin necesita su
-     propia cuenta conectada, con verificación de identidad (KYC), sus payouts y
-     sus responsabilidades fiscales. Es bastante más trabajo y arrastra
-     implicaciones legales para quien opera Agora.
-   - **(b) Agora cobra a las comunidades** una suscripción, y los pagos entre
-     admin y miembros siguen fuera de la app. Mucho más simple.
-   - **(c) Alguna combinación.**
-
-2. Si es (a): **¿Agora se queda comisión** de cada cobro, o solo intermedia?
-
-3. **¿Se cobra por actividad, o por periodo** (cuota mensual del club), o ambas?
+1. **¿Se cobra por actividad, o por periodo** (cuota mensual del club), o ambas?
 
 ### B. El momento y las consecuencias del cobro
 
-4. **¿Cuándo se cobra?** ¿Al reservar la plaza, o se reserva primero y se paga
+2. **¿Cuándo se cobra?** ¿Al reservar la plaza, o se reserva primero y se paga
    después? Hoy la reserva es inmediata y el pago es un apretón de manos.
 
-5. **Si alguien libera su plaza, ¿qué pasa con su dinero?** ¿Reembolso
-   automático, parcial según antelación, o nada?
+3. **La cola de suplentes**: cuando un suplente entra a una plaza liberada, ¿se
+   le cobra automáticamente, o tiene que confirmar? ¿Qué pasa si su pago falla —
+   se le devuelve la plaza a la cola, y cuánto tiempo se le da?
 
-6. **La cola de suplentes**: cuando un suplente entra a una plaza liberada,
-   ¿se le cobra automáticamente? ¿Qué pasa si su pago falla?
+4. **Si se cancela la actividad entera**, ¿se reembolsa a todos automáticamente?
+   Ojo: eso incluye a los que pagaron por la vía manual, a los que Agora no les
+   puede devolver nada.
 
-7. **Si se cancela la actividad entera**, ¿se reembolsa a todos automáticamente?
-
-8. **¿Quién puede iniciar un reembolso** desde la app: solo el admin, o también
-   el usuario?
+5. **¿Quién puede iniciar un reembolso** fuera del flujo de sustitución: solo el
+   admin, o también el usuario?
 
 ### C. Convivencia con lo que ya existe
 
-9. **¿Stripe sustituye al Bizum o convive con él?** Concretamente: ¿el admin
-   debe poder seguir marcando una plaza como pagada a mano, para quien pague en
-   efectivo o por transferencia?
+6. **¿Qué pasa con `cost_description`,** el texto libre actual? Con Stripe hace
+   falta un importe estructurado y una moneda. ¿El texto se conserva como nota
+   añadida, o se sustituye del todo?
 
-10. **¿Qué pasa con `cost_description`,** el texto libre actual? ¿Se conserva
-    como nota, o se sustituye por un importe estructurado?
-
-11. **Los invitados sin cuenta** (flujo web anónimo): ¿pagan también? Si sí, su
-    plaza pendiente de aprobación y el cobro tienen que coordinarse de alguna
-    manera: ¿se cobra antes de aprobar, o después?
+7. **Las actividades que ya existen** en producción tienen `cost_description` en
+   texto y plazas marcadas a mano. ¿Se quedan como están, o hay que convertirlas?
 
 ### D. Dinero, cifras y papeles
 
-12. **¿Moneda?** ¿Solo euros?
+8. **¿Cuánto es "un pequeño porcentaje"?** Hace falta el número, y decidir si es
+   porcentaje puro o porcentaje más fijo. En Stripe Connect esto se implementa
+   como `application_fee_amount`.
 
-13. **¿Quién asume la comisión de Stripe** — el que paga, o el que cobra?
+9. **¿Quién asume la comisión de Stripe** — el que paga, o el que cobra?
 
-14. **¿Hacen falta recibos o facturas?** ¿Con qué datos fiscales?
+10. **¿Moneda?** ¿Solo euros?
 
-15. **¿Existe una entidad legal detrás de Agora?** Si la app va a intermediar
-    dinero entre terceros, esto deja de ser una pregunta técnica. Si no la hay,
-    la opción (b) de la pregunta 1 puede ser la única viable a corto plazo.
+11. **¿Hacen falta recibos o facturas?** ¿Con qué datos fiscales?
+
+12. **¿Existe una entidad legal detrás de Agora?** Esta ya no es opcional: con el
+    modelo elegido, Agora cobra en nombre de terceros y se queda una comisión.
+    Eso exige una cuenta de plataforma de Stripe a nombre de alguien, con sus
+    obligaciones fiscales, y condiciona el tipo de cuenta conectada que se puede
+    usar para los administradores (Express, Standard o Custom).
+
+13. **¿Qué pasa si un administrador no completa su verificación (KYC)?** Puede
+    tardar días o no pasarla. ¿La comunidad simplemente no puede cobrar por
+    Stripe y se queda con el check manual?
 
 ---
 
