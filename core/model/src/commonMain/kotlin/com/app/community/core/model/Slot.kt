@@ -69,12 +69,35 @@ data class Slot(
     @SerialName("reserved_at") val reservedAt: Instant? = null,
     @SerialName("is_guest") val isGuest: Boolean = false,
     @SerialName("guest_label") val guestLabel: String? = null,
+
+    /** Caducidad de la retencion mientras alguien tiene el Checkout abierto. */
+    @SerialName("hold_expires_at") val holdExpiresAt: Instant? = null,
+
+    /**
+     * Su dueno la ha liberado y busca sustituto. LA PLAZA SIGUE SIENDO SUYA: puede
+     * presentarse el dia de la actividad. Solo cambia de manos cuando otro la paga.
+     */
+    @SerialName("released_at") val releasedAt: Instant? = null,
+
+    /** Suplente para el que esta apalabrada. Solo el puede reclamarla hasta que caduque. */
+    @SerialName("offered_to") val offeredTo: String? = null,
+    @SerialName("offer_expires_at") val offerExpiresAt: Instant? = null,
 ) {
     val isAvailable: Boolean get() = status == SlotStatus.AVAILABLE
     val isReserved: Boolean get() = status == SlotStatus.RESERVED
     val isPaid: Boolean get() = status == SlotStatus.PAID
     val isPendingGuest: Boolean get() = status == SlotStatus.PENDING
     val isPendingPayment: Boolean get() = status == SlotStatus.PENDING_PAYMENT
+
+    /** Pagada, liberada y esperando a que alguien la ocupe. */
+    val isAwaitingSubstitute: Boolean get() = isPaid && releasedAt != null
+
+    /** Apalabrada para alguien y la oferta sigue en pie. */
+    fun hasLiveOffer(now: Instant): Boolean =
+        offeredTo != null && offerExpiresAt != null && offerExpiresAt > now
+
+    fun isOfferedTo(userId: String?, now: Instant): Boolean =
+        userId != null && offeredTo == userId && hasLiveOffer(now)
 }
 
 @Serializable

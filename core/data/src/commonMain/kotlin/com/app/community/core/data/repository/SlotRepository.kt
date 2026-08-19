@@ -81,6 +81,12 @@ class SlotRepository {
             result.trim().toBoolean()
         }
 
+    /** El suplente renuncia a la plaza apalabrada. Pasa el turno al siguiente de la cola. */
+    suspend fun declineSubstituteOffer(slotId: String): AppResult<Boolean> = safeCall {
+        postgrest.rpc("decline_substitute_offer", buildJsonObject { put("p_slot_id", slotId) })
+            .decodeAs<Boolean>()
+    }
+
     suspend fun releaseSlot(slotId: String): AppResult<Boolean> =
         safeCall {
             val result = postgrest.rpc(

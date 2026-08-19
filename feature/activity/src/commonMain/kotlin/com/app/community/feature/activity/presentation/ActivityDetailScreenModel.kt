@@ -286,6 +286,19 @@ class ActivityDetailScreenModel(
         }
     }
 
+    /** El suplente renuncia a la plaza apalabrada: pasa el turno al siguiente de la cola. */
+    fun declineOffer(slotId: String) {
+        screenModelScope.launch {
+            slotRepository.declineSubstituteOffer(slotId)
+                .onSuccess { ok ->
+                    _actionMessage.value =
+                        if (ok) "Has renunciado a la plaza" else "La oferta ya no está disponible"
+                    load()
+                }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
+        }
+    }
+
     private fun reserveFree(slotId: String) {
         screenModelScope.launch {
             slotRepository.reserveSlot(slotId)

@@ -142,4 +142,10 @@
     <string name="assign_queue_warning">There are %1$d people in the substitute queue.</string>
     <string name="assign_confirm">Add</string>
     <string name="assign_confirm_anyway">Add anyway</string>
+    <string name="slot_offer_accept">Confirm and pay</string>
+    <string name="slot_offer_decline">Decline</string>
+    <string name="slot_offer_deadline">Yours until %1$s</string>
+    <string name="slot_offer_held">Held until %1$s</string>
+    <string name="slot_take_over">Take this slot</string>
+    <string name="detail_released_chip">looking for a substitute</string>
 </resources>

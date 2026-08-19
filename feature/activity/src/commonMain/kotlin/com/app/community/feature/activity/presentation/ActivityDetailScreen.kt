@@ -82,6 +82,8 @@ import agora.feature.activity.generated.resources.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.LocationOn
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
@@ -93,6 +95,12 @@ import org.koin.core.parameter.parametersOf
  * sigue siendo cosa suya. Sin la segunda condicion, una plaza de etiqueta marcada como pagada
  * se quedaba sin ningun boton y era imposible de liberar.
  */
+/** "14:30" en hora local. Una oferta sin hora no deberia existir, pero no se revienta por ello. */
+private fun formatTime(instant: Instant?): String {
+    val local = (instant ?: return "?").toLocalDateTime(TimeZone.currentSystemDefault())
+    return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+}
+
 private val Slot.isAdminReleasable: Boolean
     get() = reservedBy == null || status == SlotStatus.RESERVED
 
@@ -400,6 +408,7 @@ private fun ActivityDetailContent(
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                     onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
                     onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
+                    onDeclineOffer = { screenModel.declineOffer(slotWithProfile.slot.id) },
                 )
             }
 
@@ -448,6 +457,7 @@ private fun ActivityDetailContent(
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                         onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
                         onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
+                        onDeclineOffer = { screenModel.declineOffer(slotWithProfile.slot.id) },
                     )
                 }
             }
@@ -644,6 +654,7 @@ private fun SlotCard(
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
     onAssign: () -> Unit,
+    onDeclineOffer: () -> Unit,
 ) {
     val slot = slotWithProfile.slot
     val isMySlot = slot.reservedBy == currentUserId
@@ -723,6 +734,17 @@ private fun SlotCard(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                            // Pagada por su dueno pero ofrecida: SIGUE SIENDO SUYA. Sin este
+                            // aviso, ver un nombre en una plaza que otro puede ocupar no se
+                            // entiende, que es justo lo que el diseno marcaba como confuso.
+                            if (slot.releasedAt != null) {
+                                Spacer(Modifier.width(AgoraSpacing.xs))
+                                Text(
+                                    text = stringResource(Res.string.detail_released_chip),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             if (slot.status == SlotStatus.PENDING_PAYMENT) {
                                 Spacer(Modifier.width(AgoraSpacing.xs))
                                 Text(
@@ -752,12 +774,14 @@ private fun SlotCard(
                 slot = slot,
                 slotLabel = slotLabel,
                 isMySlot = isMySlot,
+                currentUserId = currentUserId,
                 isAdmin = isAdmin,
                 hasCost = hasCost,
                 hasReservation = hasReservation,
                 onReserve = onReserve,
                 onRelease = onRelease,
                 onMarkPaid = onMarkPaid,
+                onDeclineOffer = onDeclineOffer,
                 onAssign = onAssign,
             )
         }
@@ -782,6 +806,7 @@ private fun SlotActions(
     slot: Slot,
     slotLabel: String,
     isMySlot: Boolean,
+    currentUserId: String?,
     isAdmin: Boolean,
     hasCost: Boolean,
     hasReservation: Boolean,
@@ -789,8 +814,56 @@ private fun SlotActions(
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
     onAssign: () -> Unit,
+    onDeclineOffer: () -> Unit,
 ) {
+    val now = Clock.System.now()
     when {
+        // Apalabrada para MI. Va lo primero: manda sobre cualquier otro estado de la plaza,
+        // porque para el ofertado esta es la unica accion que importa.
+        slot.isOfferedTo(currentUserId, now) -> {
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = stringResource(Res.string.slot_offer_deadline, formatTime(slot.offerExpiresAt)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onDeclineOffer) {
+                        Text(
+                            stringResource(Res.string.slot_offer_decline),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    AgoraButton(
+                        text = stringResource(Res.string.slot_offer_accept),
+                        onClick = onReserve,
+                        variant = AgoraButtonVariant.Primary,
+                    )
+                }
+            }
+        }
+
+        // Apalabrada para OTRO: no es reclamable hasta que caduque.
+        slot.hasLiveOffer(now) -> {
+            Text(
+                text = stringResource(Res.string.slot_offer_held, formatTime(slot.offerExpiresAt)),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        // Pagada por otro y liberada, sin oferta viva: cualquiera puede pagarla.
+        slot.isAwaitingSubstitute && slot.reservedBy != currentUserId -> {
+            AgoraButton(
+                text = stringResource(Res.string.slot_take_over),
+                onClick = onReserve,
+                variant = AgoraButtonVariant.Primary,
+            )
+        }
+
         slot.status == SlotStatus.AVAILABLE -> {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),

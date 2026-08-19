@@ -142,4 +142,10 @@
     <string name="assign_queue_warning">Hay %1$d personas en la cola de suplentes.</string>
     <string name="assign_confirm">Apuntar</string>
     <string name="assign_confirm_anyway">Apuntar igualmente</string>
+    <string name="slot_offer_accept">Confirmar y pagar</string>
+    <string name="slot_offer_decline">Renunciar</string>
+    <string name="slot_offer_deadline">Tuya hasta las %1$s</string>
+    <string name="slot_offer_held">Apalabrada hasta las %1$s</string>
+    <string name="slot_take_over">Ocupar esta plaza</string>
+    <string name="detail_released_chip">busca sustituto</string>
 </resources>
