@@ -29,10 +29,11 @@ fun main() {
         modules(appModules(StorageSettings()))
     }
 
-    // Deep links web: /app/?c={inviteCode} | /app/?a={activityCode}
+    // Deep links web: /app/?pay={paymentId} | /app/?c={inviteCode} | /app/?a={activityCode}
     when (val link = parseWebDeepLink(window.location.search)) {
         is WebDeepLink.Invite -> DeepLinkHandler.setInviteCode(link.code)
         is WebDeepLink.Activity -> DeepLinkHandler.setActivityCode(link.code)
+        is WebDeepLink.Payment -> DeepLinkHandler.setPaymentId(link.paymentId)
         null -> Unit
     }
 

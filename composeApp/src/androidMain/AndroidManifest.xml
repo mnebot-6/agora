@@ -63,6 +63,11 @@
                     android:scheme="https"
                     android:host="share-agora.app"
                     android:pathPattern="/a/.*" />
+                <!-- Vuelta de Stripe Checkout: /pay/ok?p={id} y /pay/ko?p={id} -->
+                <data
+                    android:scheme="https"
+                    android:host="share-agora.app"
+                    android:pathPattern="/pay/.*" />
             </intent-filter>
         </activity>
 

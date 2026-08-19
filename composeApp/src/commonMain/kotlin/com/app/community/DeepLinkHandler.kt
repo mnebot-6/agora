@@ -32,6 +32,20 @@ object DeepLinkHandler {
         return code
     }
 
+    /** Pago del que acabamos de volver. Al consumirlo se sincroniza contra Stripe. */
+    private val _pendingPaymentId = MutableStateFlow<String?>(null)
+    val pendingPaymentId: StateFlow<String?> = _pendingPaymentId.asStateFlow()
+
+    fun setPaymentId(paymentId: String) {
+        _pendingPaymentId.value = paymentId
+    }
+
+    fun consumePaymentId(): String? {
+        val id = _pendingPaymentId.value
+        _pendingPaymentId.value = null
+        return id
+    }
+
     private val _pendingNotificationActivityId = MutableStateFlow<String?>(null)
     val pendingNotificationActivityId: StateFlow<String?> = _pendingNotificationActivityId.asStateFlow()
 

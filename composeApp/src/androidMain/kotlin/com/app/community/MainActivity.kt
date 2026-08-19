@@ -71,6 +71,12 @@ class MainActivity : ComponentActivity() {
                     "c" -> DeepLinkHandler.setInviteCode(segments[1])
                     // https://share-agora.app/a/{code}
                     "a" -> DeepLinkHandler.setActivityCode(segments[1])
+                    // https://share-agora.app/pay/{ok|ko}?p={id} — vuelta de Stripe Checkout.
+                    // El id viaja en la query, no en el path: /pay/ok es la misma URL para
+                    // todo el mundo y lo que identifica el cobro es ?p=.
+                    "pay" -> data.getQueryParameter("p")
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let { DeepLinkHandler.setPaymentId(it) }
                 }
             }
         }

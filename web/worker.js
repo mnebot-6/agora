@@ -30,6 +30,16 @@ export default {
       return env.ASSETS.fetch(new URL("/reset/index.html", url));
     }
 
+    // Vuelta de Stripe Checkout. En Android el App Link intercepta antes de que el
+    // navegador llegue aqui; en web esta redireccion mete el id en la PWA. Una sola
+    // success_url sirve para los dos targets.
+    if (url.pathname.startsWith("/pay/")) {
+      const target = new URL("/app/", url);
+      const paymentId = url.searchParams.get("p");
+      if (paymentId) target.searchParams.set("pay", paymentId);
+      return Response.redirect(target.toString(), 302);
+    }
+
     return env.ASSETS.fetch(request);
   },
 };

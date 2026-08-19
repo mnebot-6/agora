@@ -1,14 +1,22 @@
 package com.app.community
 
-/** Deep link llegado por URL en el target web: /app/?c={invite} | /app/?a={activity}. */
+/**
+ * Deep link llegado por URL en el target web:
+ * /app/?pay={payment} | /app/?c={invite} | /app/?a={activity}.
+ */
 sealed interface WebDeepLink {
     data class Invite(val code: String) : WebDeepLink
     data class Activity(val code: String) : WebDeepLink
+
+    /** Vuelta de Stripe Checkout. worker.js redirige /pay/ok?p=... aqui. */
+    data class Payment(val paymentId: String) : WebDeepLink
 }
 
 /**
  * Parsea el query string de la URL (p. ej. "?c=ABC123") a un deep link.
- * Si vienen ambos parámetros, gana la invitación a comunidad.
+ * Precedencia si viene mas de uno: pago > invitación > actividad. El pago va primero
+ * porque volver de un cobro es lo mas urgente que puede traer una URL: si se pierde,
+ * el usuario se queda mirando una plaza sin confirmar despues de haber pagado.
  */
 fun parseWebDeepLink(search: String): WebDeepLink? {
     val params = search.removePrefix("?")
@@ -19,6 +27,7 @@ fun parseWebDeepLink(search: String): WebDeepLink? {
             else param.take(separator) to percentDecode(param.substring(separator + 1))
         }
         .toMap()
+    params["pay"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Payment(it) }
     params["c"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Invite(it) }
     params["a"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Activity(it) }
     return null

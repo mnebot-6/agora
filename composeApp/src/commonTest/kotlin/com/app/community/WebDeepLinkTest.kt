@@ -38,4 +38,28 @@ class WebDeepLinkTest {
         assertNull(parseWebDeepLink("?c="))
         assertNull(parseWebDeepLink("?foo=bar"))
     }
+
+    @Test
+    fun parsesPaymentIdFromQuery() {
+        assertEquals(
+            WebDeepLink.Payment("6b1f0d2e-0000-4000-8000-000000000001"),
+            parseWebDeepLink("?pay=6b1f0d2e-0000-4000-8000-000000000001"),
+        )
+    }
+
+    /**
+     * Volver de un cobro es lo mas urgente que puede traer una URL: si se pierde, el usuario
+     * se queda mirando una plaza sin confirmar despues de haber pagado.
+     */
+    @Test
+    fun paymentWinsOverInviteAndActivity() {
+        assertEquals(WebDeepLink.Payment("P"), parseWebDeepLink("?c=AAA&a=BBB&pay=P"))
+        assertEquals(WebDeepLink.Payment("P"), parseWebDeepLink("?pay=P&c=AAA"))
+    }
+
+    @Test
+    fun emptyPaymentIdFallsThroughToTheOtherParams() {
+        assertEquals(WebDeepLink.Invite("AAA"), parseWebDeepLink("?pay=&c=AAA"))
+        assertNull(parseWebDeepLink("?pay="))
+    }
 }
