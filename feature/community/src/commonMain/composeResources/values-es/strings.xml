@@ -182,4 +182,15 @@
     <string name="community_icon_name_none">Sin icono</string>
     <string name="community_icon_expand">Mostrar iconos</string>
     <string name="community_icon_collapse">Ocultar iconos</string>
+    <string name="payments_title">Cobros</string>
+    <string name="payments_none_title">Cobros sin configurar</string>
+    <string name="payments_none_body">Conecta una cuenta de Stripe para que la gente pague su plaza desde la app. Mientras tanto puedes seguir cobrando a mano.</string>
+    <string name="payments_incomplete_title">Verificación pendiente</string>
+    <string name="payments_incomplete_body">Stripe todavía necesita algunos datos antes de que puedas cobrar. Puedes retomarlo donde lo dejaste.</string>
+    <string name="payments_active_title">Cobros activos</string>
+    <string name="payments_active_body">La gente paga su plaza al reservarla.</string>
+    <string name="payments_setup_button">Configurar cobros</string>
+    <string name="payments_continue_button">Continuar verificación</string>
+    <string name="payments_who_charges">El dinero va directo a tu cuenta de Stripe. Agora no lo retiene en ningún momento y no se queda comisión.</string>
+    <string name="community_detail_payments">Cobros</string>
 </resources>

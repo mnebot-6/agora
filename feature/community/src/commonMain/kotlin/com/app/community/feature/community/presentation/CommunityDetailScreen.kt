@@ -294,6 +294,7 @@ data class CommunityDetailScreen(val communityId: String) : Screen {
                         chatScreenModel = chatScreenModel,
                         onActivityClick = { activityId -> navigator.push(ActivityDetailScreen(activityId)) },
                         onManageMembers = { navigator.push(MemberManagementScreen(communityId)) },
+                        onPayments = { navigator.push(CommunityPaymentsScreen(communityId)) },
                         onChildClick = { childId ->
                             val isMember = state.myCommunityIds.contains(childId)
                             if (isMember) {
@@ -318,6 +319,7 @@ private fun CommunityDetailContent(
     chatScreenModel: CommunityChatScreenModel,
     onActivityClick: (String) -> Unit,
     onManageMembers: () -> Unit,
+    onPayments: () -> Unit,
     onChildClick: (String) -> Unit,
     onShareInvite: () -> Unit,
     modifier: Modifier = Modifier,
@@ -408,6 +410,19 @@ private fun CommunityDetailContent(
                 AgoraButton(
                     text = stringResource(Res.string.community_detail_share_invite),
                     onClick = onShareInvite,
+                    variant = AgoraButtonVariant.Secondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        // Cobros: solo el admin, y solo el de la comunidad. El dinero va a SU cuenta
+        // de Stripe, asi que no tiene sentido ensenarselo a nadie mas.
+        if (state.isAdmin) {
+            item {
+                AgoraButton(
+                    text = stringResource(Res.string.community_detail_payments),
+                    onClick = onPayments,
                     variant = AgoraButtonVariant.Secondary,
                     modifier = Modifier.fillMaxWidth(),
                 )

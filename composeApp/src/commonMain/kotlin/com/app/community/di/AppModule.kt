@@ -7,6 +7,7 @@ import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.data.repository.BlockRepository
 import com.app.community.core.data.repository.CommunityMessageRepository
 import com.app.community.core.data.repository.CommunityRepository
+import com.app.community.core.data.repository.PaymentRepository
 import com.app.community.core.data.repository.GuestRepository
 import com.app.community.core.data.repository.NotificationRepository
 import com.app.community.core.data.repository.ProfileRepository
@@ -31,6 +32,7 @@ import com.app.community.feature.auth.presentation.ProfileScreenModel
 import com.app.community.feature.auth.presentation.RegisterScreenModel
 import com.app.community.feature.community.presentation.CommunityChatScreenModel
 import com.app.community.feature.community.presentation.CommunityDetailScreenModel
+import com.app.community.feature.community.presentation.CommunityPaymentsScreenModel
 import com.app.community.feature.community.presentation.CommunityListScreenModel
 import com.app.community.feature.community.presentation.CommunityPreviewScreenModel
 import com.app.community.feature.community.presentation.CreateCommunityScreenModel
@@ -58,6 +60,7 @@ fun repositoryModule(settings: Settings) = module {
     single { AuthRepository() }
     single { ProfileRepository() }
     single { CommunityRepository() }
+    single { PaymentRepository() }
     single { CommunityMessageRepository() }
     single { ActivityRepository() }
     single { SlotRepository() }
@@ -169,6 +172,12 @@ val screenModelModule = module {
             communityId = params.get(),
             communityRepository = get(),
             authRepository = get(),
+        )
+    }
+    factory { params ->
+        CommunityPaymentsScreenModel(
+            communityId = params.get(),
+            paymentRepository = get(),
         )
     }
     factory { params ->

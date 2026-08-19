@@ -182,4 +182,15 @@
     <string name="community_icon_name_none">No icon</string>
     <string name="community_icon_expand">Show icons</string>
     <string name="community_icon_collapse">Hide icons</string>
+    <string name="payments_title">Payments</string>
+    <string name="payments_none_title">Payments not set up</string>
+    <string name="payments_none_body">Connect a Stripe account so members can pay for their slot from the app. Until then you can still charge by hand.</string>
+    <string name="payments_incomplete_title">Verification pending</string>
+    <string name="payments_incomplete_body">Stripe still needs some details before you can take payments. You can pick up where you left off.</string>
+    <string name="payments_active_title">Payments active</string>
+    <string name="payments_active_body">Members pay for their slot when they book it.</string>
+    <string name="payments_setup_button">Set up payments</string>
+    <string name="payments_continue_button">Continue verification</string>
+    <string name="payments_who_charges">The money goes straight to your Stripe account. Agora never holds it and takes no commission.</string>
+    <string name="community_detail_payments">Payments</string>
 </resources>
