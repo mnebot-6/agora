@@ -9,6 +9,7 @@
     <string name="community_list_empty_title">Tu agora esta vacia</string>
     <string name="community_list_empty_subtitle">Crea una comunidad o unete con un codigo de invitacion.</string>
     <string name="community_list_join_button">Unirse con codigo de invitacion</string>
+    <string name="community_list_child_cd">%1$s, subcomunidad de %2$s</string>
 
     <!-- CommunityDetailScreen -->
     <string name="community_detail_default_title">Comunidad</string>
@@ -158,4 +159,26 @@
     <string name="member_remove_dialog_text">Seguro que quieres expulsar a %1$s de la comunidad?</string>
     <string name="member_remove_confirm">Expulsar</string>
     <string name="member_remove_cancel">Cancelar</string>
+
+    <!-- CommunityIconField -->
+    <string name="community_icon_label">Icono</string>
+    <string name="community_icon_name_volleyball">Voleibol</string>
+    <string name="community_icon_name_soccer">Fútbol</string>
+    <string name="community_icon_name_basketball">Baloncesto</string>
+    <string name="community_icon_name_running">Correr</string>
+    <string name="community_icon_name_group">Grupo</string>
+    <string name="community_icon_name_home">Casa</string>
+    <string name="community_icon_name_coffee">Café</string>
+    <string name="community_icon_name_party">Fiesta</string>
+    <string name="community_icon_name_music">Música</string>
+    <string name="community_icon_name_theater">Teatro</string>
+    <string name="community_icon_name_book">Libro</string>
+    <string name="community_icon_name_art">Arte</string>
+    <string name="community_icon_name_work">Trabajo</string>
+    <string name="community_icon_name_travel">Viajes</string>
+    <string name="community_icon_name_pet">Mascotas</string>
+    <string name="community_icon_name_generic">General</string>
+    <string name="community_icon_name_none">Sin icono</string>
+    <string name="community_icon_expand">Mostrar iconos</string>
+    <string name="community_icon_collapse">Ocultar iconos</string>
 </resources>

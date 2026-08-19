@@ -67,10 +67,12 @@ import com.app.community.core.model.Community
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
+import com.app.community.core.ui.components.ActivityRow
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraFabMenu
 import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.CommunityRow
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FabMenuItem
 import com.app.community.core.ui.components.FabMenuItemVariant
@@ -559,6 +561,12 @@ private fun EditCommunityDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
             ) {
+                CommunityIconField(
+                    communityId = state.community.id,
+                    name = state.community.name,
+                    selectedKey = state.editIconKey,
+                    onSelect = screenModel::onEditIconKeyChange,
+                )
                 OutlinedTextField(
                     value = state.editName,
                     onValueChange = screenModel::onEditNameChange,
@@ -694,24 +702,33 @@ private fun SubcommunityCard(
         elevation = AgoraElevation.none,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(AgoraSpacing.md)) {
-            Text(
-                text = community.name,
-                style = MaterialTheme.typography.titleSmall,
+        Column {
+            CommunityRow(
+                communityId = community.id,
+                name = community.name,
+                iconKey = community.iconKey,
+                subtitle = community.description,
+                avatarSize = 32.dp,
+                trailing = if (isMember) {
+                    null
+                } else {
+                    @Composable {
+                        val cta = when (community.visibility) {
+                            CommunityVisibility.PUBLIC_APPROVAL -> stringResource(Res.string.preview_request_join_button)
+                            else -> stringResource(Res.string.preview_join_button)
+                        }
+                        Text(
+                            text = cta,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
             )
-            if (!community.description.isNullOrBlank()) {
-                Spacer(Modifier.height(AgoraSpacing.xs))
-                Text(
-                    text = community.description.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.height(AgoraSpacing.xs))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = AgoraSpacing.md, end = AgoraSpacing.md, bottom = AgoraSpacing.md),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 val visibilityLabel = when (community.visibility) {
@@ -732,18 +749,6 @@ private fun SubcommunityCard(
                     )
                 }
             }
-            if (!isMember) {
-                Spacer(Modifier.height(AgoraSpacing.xs))
-                val cta = when (community.visibility) {
-                    CommunityVisibility.PUBLIC_APPROVAL -> stringResource(Res.string.preview_request_join_button)
-                    else -> stringResource(Res.string.preview_join_button)
-                }
-                Text(
-                    text = cta,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
         }
     }
 }
@@ -755,29 +760,23 @@ private fun ActivityCard(
     modifier: Modifier = Modifier,
 ) {
     val localDateTime = activity.datetime.toLocalDateTime(TimeZone.currentSystemDefault())
-    val dateText = "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
-    val timeText = "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}"
 
     MarbleCard(
         modifier = modifier,
         elevation = AgoraElevation.none,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(AgoraSpacing.md)) {
-            Text(
-                text = activity.name,
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Spacer(Modifier.height(AgoraSpacing.xs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "$dateText  $timeText",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        ActivityRow(
+            day = localDateTime.dayOfMonth.toString(),
+            month = localDateTime.monthNumber.toString().padStart(2, '0'),
+            title = activity.name,
+            // La hora baja al subtitulo: el bloque de fecha solo lleva dia y mes,
+            // y la hora es el dato mas util al ojear que hay esta semana.
+            subtitle = listOfNotNull(
+                "${localDateTime.hour.toString().padStart(2, '0')}:${localDateTime.minute.toString().padStart(2, '0')}",
+                activity.locationName?.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
+            trailing = {
                 val slotText = when {
                     activity.maxSlots != null -> stringResource(Res.string.community_detail_slots, activity.maxSlots!!)
                     else -> stringResource(Res.string.community_detail_no_limit)
@@ -787,7 +786,7 @@ private fun ActivityCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-        }
+            },
+        )
     }
 }

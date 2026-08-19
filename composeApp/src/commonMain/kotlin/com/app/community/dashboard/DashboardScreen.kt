@@ -1,6 +1,8 @@
 package com.app.community.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,20 +15,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import agora.composeapp.generated.resources.Res
 import agora.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.pluralStringResource
@@ -41,6 +53,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Activity
 import com.app.community.core.model.SlotMode
+import com.app.community.core.ui.components.ActivityRow
 import com.app.community.core.ui.components.AgoraTopBar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FriezeBandHeader
@@ -52,6 +65,7 @@ import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.slotStatusColors
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
+import com.app.community.feature.auth.presentation.ProfileScreen
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -66,6 +80,17 @@ class DashboardScreen : Screen {
 
         LaunchedEffect(Unit) { screenModel.refresh() }
 
+        // El avatar de la topbar conserva el ultimo nombre conocido: load() pasa por
+        // Loading en cada refresco y, sin esto, parpadearia al icono generico justo al
+        // volver de Perfil. Solo escribe cuando el nombre no es nulo, asi que un fallo
+        // puntual al cargar el perfil mantiene la inicial en vez de degradar el avatar.
+        var lastKnownDisplayName by remember { mutableStateOf<String?>(null) }
+        SideEffect {
+            (uiState as? DashboardScreenModel.UiState.Content)?.displayName?.let {
+                lastKnownDisplayName = it
+            }
+        }
+
         Scaffold(
             topBar = {
                 AgoraTopBar(
@@ -74,6 +99,12 @@ class DashboardScreen : Screen {
                             "Agora",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
+                        )
+                    },
+                    actions = {
+                        ProfileAvatarButton(
+                            displayName = lastKnownDisplayName,
+                            onClick = { navigator.push(ProfileScreen()) },
                         )
                     },
                 )
@@ -287,56 +318,36 @@ private fun CompactActivityCard(
         elevation = AgoraElevation.none,
         onClick = onClick,
     ) {
-        Row(
-            modifier = Modifier
-                .padding(AgoraSpacing.md)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${dayOfWeekAbbr(localDt.dayOfWeek)} ${localDt.dayOfMonth}, ${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+        ActivityRow(
+            day = localDt.dayOfMonth.toString(),
+            month = localDt.monthNumber.toString().padStart(2, '0'),
+            title = activity.name,
+            // Dia de la semana y hora bajan al subtitulo: el bloque de fecha
+            // significa lo mismo en todas las pantallas (dia sobre mes) y no se
+            // pierde nada de lo que la fila mostraba antes.
+            subtitle = listOfNotNull(
+                dayOfWeekAbbr(localDt.dayOfWeek),
+                "${localDt.hour.toString().padStart(2, '0')}:${localDt.minute.toString().padStart(2, '0')}",
+                activity.locationName?.takeIf { it.isNotBlank() },
+            ).joinToString(" · "),
+            trailing = {
+                val (chipColorPair, chipText) = when {
+                    info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
+                    info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
+                        slotColors.reservedByOther to stringResource(Res.string.dashboard_status_full)
+                    }
+                    activity.slotMode == SlotMode.UNLIMITED -> {
+                        slotColors.available to stringResource(Res.string.dashboard_status_open)
+                    }
+                    else -> slotColors.available to stringResource(Res.string.dashboard_status_slots, info.availableSlots)
+                }
+                SlotStatusBadge(
+                    text = chipText,
+                    colorPair = chipColorPair,
+                    isCompact = true,
                 )
-                Text(
-                    text = activity.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                activity.locationName?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            Spacer(Modifier.width(AgoraSpacing.sm))
-
-            // Status chip
-            val (chipColorPair, chipText) = when {
-                info.isUserReserved -> slotColors.reservedByMe to stringResource(Res.string.dashboard_status_reserved)
-                info.availableSlots == 0 && activity.slotMode != SlotMode.UNLIMITED -> {
-                    slotColors.reservedByOther to stringResource(Res.string.dashboard_status_full)
-                }
-                activity.slotMode == SlotMode.UNLIMITED -> {
-                    slotColors.available to stringResource(Res.string.dashboard_status_open)
-                }
-                else -> slotColors.available to stringResource(Res.string.dashboard_status_slots, info.availableSlots)
-            }
-
-            SlotStatusBadge(
-                text = chipText,
-                colorPair = chipColorPair,
-                isCompact = true,
-            )
-        }
+            },
+        )
     }
 }
 
@@ -389,4 +400,39 @@ private fun dayOfWeekAbbr(dow: kotlinx.datetime.DayOfWeek): String = when (dow) 
     kotlinx.datetime.DayOfWeek.SATURDAY -> stringResource(Res.string.day_sat_abbr)
     kotlinx.datetime.DayOfWeek.SUNDAY -> stringResource(Res.string.day_sun_abbr)
     else -> dow.name.take(3)
+}
+
+@Composable
+private fun ProfileAvatarButton(
+    displayName: String?,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(Res.string.tab_profile)
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.clearAndSetSemantics { contentDescription = label },
+    ) {
+        val initial = displayName?.trim()?.firstOrNull()?.uppercaseChar()
+        if (initial == null) {
+            Icon(
+                Icons.Default.AccountCircle,
+                contentDescription = null,
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = initial.toString(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
 }

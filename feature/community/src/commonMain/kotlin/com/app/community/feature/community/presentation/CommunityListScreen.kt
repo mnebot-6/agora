@@ -1,16 +1,21 @@
 package com.app.community.feature.community.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
@@ -19,9 +24,7 @@ import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,7 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -42,6 +48,7 @@ import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraFabMenu
 import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.CommunityAvatar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.FabMenuItem
 import com.app.community.core.ui.components.IonicFrame
@@ -147,12 +154,12 @@ private fun CommunityListContent(
                 .fillMaxSize()
                 .padding(AgoraSpacing.screenHorizontal),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             IonicFrame {
                 Column(
                     modifier = Modifier.padding(AgoraSpacing.xl),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = stringResource(Res.string.community_list_empty_title),
@@ -209,12 +216,26 @@ private fun CommunityCard(
         onClick = { onClick(community.id) },
     ) {
         Column(modifier = Modifier.padding(AgoraSpacing.cardInternal)) {
-            Text(
-                text = community.name,
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CommunityAvatar(
+                    communityId = community.id,
+                    name = community.name,
+                    iconKey = community.iconKey,
+                    size = 40.dp,
+                )
+                Spacer(Modifier.width(AgoraSpacing.md))
+                Text(
+                    text = community.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
             if (!community.description.isNullOrBlank()) {
-                Spacer(Modifier.height(AgoraSpacing.xs))
+                Spacer(Modifier.height(AgoraSpacing.sm))
                 Text(
                     text = community.description.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
@@ -226,11 +247,24 @@ private fun CommunityCard(
 
             if (node.children.isNotEmpty()) {
                 Spacer(Modifier.height(AgoraSpacing.md))
-                node.children.forEach { child ->
-                    NestedChildRow(
-                        community = child,
-                        onClick = { onClick(child.id) },
+                Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                    // Linea de conexion: la senal que dice "esto cuelga de lo de arriba".
+                    Spacer(Modifier.width(AgoraSpacing.lg))
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.outlineVariant),
                     )
+                    Column(modifier = Modifier.weight(1f)) {
+                        node.children.forEach { child ->
+                            NestedChildRow(
+                                community = child,
+                                parentName = community.name,
+                                onClick = { onClick(child.id) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -240,37 +274,32 @@ private fun CommunityCard(
 @Composable
 private fun NestedChildRow(
     community: Community,
+    parentName: String,
     onClick: () -> Unit,
 ) {
+    val childCd = stringResource(Res.string.community_list_child_cd, community.name, parentName)
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clickable(onClick = onClick)
-            .padding(vertical = AgoraSpacing.sm, horizontal = AgoraSpacing.xs),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.sm),
+            .padding(start = AgoraSpacing.md, top = AgoraSpacing.sm, bottom = AgoraSpacing.sm)
+            .semantics(mergeDescendants = true) { contentDescription = childCd },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            Icons.Default.SubdirectoryArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.size(16.dp),
+        CommunityAvatar(
+            communityId = community.id,
+            name = community.name,
+            iconKey = community.iconKey,
+            size = 24.dp,
         )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = community.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            community.memberCount?.let { count ->
-                Text(
-                    text = stringResource(Res.string.community_detail_members_header, count),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Spacer(Modifier.width(AgoraSpacing.sm))
+        Text(
+            text = community.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }

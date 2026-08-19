@@ -9,6 +9,7 @@
     <string name="community_list_empty_title">Your agora is empty</string>
     <string name="community_list_empty_subtitle">Create a community or join with an invite code.</string>
     <string name="community_list_join_button">Join with invite code</string>
+    <string name="community_list_child_cd">%1$s, subcommunity of %2$s</string>
 
     <!-- CommunityDetailScreen -->
     <string name="community_detail_default_title">Community</string>
@@ -158,4 +159,26 @@
     <string name="member_remove_dialog_text">Are you sure you want to remove %1$s from the community?</string>
     <string name="member_remove_confirm">Remove</string>
     <string name="member_remove_cancel">Cancel</string>
+
+    <!-- CommunityIconField -->
+    <string name="community_icon_label">Icon</string>
+    <string name="community_icon_name_volleyball">Volleyball</string>
+    <string name="community_icon_name_soccer">Soccer</string>
+    <string name="community_icon_name_basketball">Basketball</string>
+    <string name="community_icon_name_running">Running</string>
+    <string name="community_icon_name_group">Group</string>
+    <string name="community_icon_name_home">Home</string>
+    <string name="community_icon_name_coffee">Coffee</string>
+    <string name="community_icon_name_party">Party</string>
+    <string name="community_icon_name_music">Music</string>
+    <string name="community_icon_name_theater">Theatre</string>
+    <string name="community_icon_name_book">Book</string>
+    <string name="community_icon_name_art">Art</string>
+    <string name="community_icon_name_work">Work</string>
+    <string name="community_icon_name_travel">Travel</string>
+    <string name="community_icon_name_pet">Pets</string>
+    <string name="community_icon_name_generic">General</string>
+    <string name="community_icon_name_none">No icon</string>
+    <string name="community_icon_expand">Show icons</string>
+    <string name="community_icon_collapse">Hide icons</string>
 </resources>

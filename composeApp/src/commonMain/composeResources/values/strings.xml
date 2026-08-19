@@ -3,7 +3,6 @@
     <!-- Tabs -->
     <string name="tab_agora">Agora</string>
     <string name="tab_communities">Communities</string>
-    <string name="tab_activities">Activities</string>
     <string name="tab_notifications">Notifications</string>
     <string name="tab_profile">Profile</string>
 

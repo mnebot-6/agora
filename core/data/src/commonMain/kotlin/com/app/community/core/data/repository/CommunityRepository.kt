@@ -55,19 +55,6 @@ class CommunityRepository {
                 .decodeList<Community>()
         }
 
-    suspend fun getMyAdminCommunities(userId: String): AppResult<List<Community>> =
-        safeCall {
-            postgrest.from("community_members")
-                .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("community_id, communities(*)")) {
-                    filter {
-                        eq("user_id", userId)
-                        eq("role", "admin")
-                    }
-                }
-                .decodeList<CommunityMemberWithCommunity>()
-                .mapNotNull { it.communities }
-        }
-
     suspend fun getCommunity(communityId: String): AppResult<Community> =
         safeCall {
             val community = postgrest.from("communities")
@@ -92,6 +79,7 @@ class CommunityRepository {
         visibility: CommunityVisibility = CommunityVisibility.PRIVATE,
         tagIds: List<String> = emptyList(),
         parentId: String? = null,
+        iconKey: String? = null,
     ): AppResult<Community> =
         safeCall {
             val inviteCode = generateInviteCode()
@@ -103,6 +91,7 @@ class CommunityRepository {
                     put("created_by", createdBy)
                     put("visibility", visibility.serialized())
                     parentId?.let { put("parent_id", it) }
+                    iconKey?.let { put("icon_key", it) }
                 }) { select() }
                 .decodeSingle<Community>()
 
@@ -368,6 +357,14 @@ class CommunityRepository {
                 set("visibility", visibility.serialized())
             }) { filter { eq("id", communityId) } }
     }
+
+    // Aparte de updateCommunity, como visibility y tags: llamarla ya significa que
+    // el icono cambia, asi que aqui null si es "borrar" y nadie lo pisa sin querer.
+    suspend fun updateCommunityIcon(id: String, iconKey: String?): AppResult<Unit> =
+        safeCall {
+            postgrest.from("communities")
+                .update({ set("icon_key", iconKey) }) { filter { eq("id", id) } }
+        }
 
     suspend fun updateCommunityTags(
         communityId: String,

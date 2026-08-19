@@ -45,6 +45,7 @@ class CommunityDetailScreenModel(
             val editName: String = "",
             val editDescription: String = "",
             val editVisibility: CommunityVisibility = CommunityVisibility.PRIVATE,
+            val editIconKey: String? = null,
             val editSelectedTagIds: Set<String> = emptySet(),
             val availableTags: List<Tag> = emptyList(),
             val showDeleteDialog: Boolean = false,
@@ -151,6 +152,7 @@ class CommunityDetailScreenModel(
             editName = current.community.name,
             editDescription = current.community.description.orEmpty(),
             editVisibility = current.community.visibility,
+            editIconKey = current.community.iconKey,
             editSelectedTagIds = current.community.tags.map { it.id }.toSet(),
         )
         if (current.availableTags.isEmpty()) {
@@ -183,6 +185,11 @@ class CommunityDetailScreenModel(
         _uiState.value = current.copy(editVisibility = visibility)
     }
 
+    fun onEditIconKeyChange(key: String?) {
+        val current = _uiState.value as? UiState.Content ?: return
+        _uiState.value = current.copy(editIconKey = key)
+    }
+
     fun onEditTagToggle(tagId: String) {
         val current = _uiState.value as? UiState.Content ?: return
         val newSet = when {
@@ -204,6 +211,7 @@ class CommunityDetailScreenModel(
             val visibilityChanged = current.editVisibility != current.community.visibility
             val originalTagIds = current.community.tags.map { it.id }.toSet()
             val tagsChanged = current.editSelectedTagIds != originalTagIds
+            val iconChanged = current.editIconKey != current.community.iconKey
 
             var firstError: String? = null
 
@@ -223,6 +231,10 @@ class CommunityDetailScreenModel(
                     communityId,
                     current.editSelectedTagIds.toList(),
                 ).onError { msg, _ -> firstError = firstError ?: msg }
+            }
+            if (firstError == null && iconChanged) {
+                communityRepository.updateCommunityIcon(communityId, current.editIconKey)
+                    .onError { msg, _ -> firstError = firstError ?: msg }
             }
 
             if (firstError == null) {

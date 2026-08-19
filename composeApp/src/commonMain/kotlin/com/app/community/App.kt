@@ -38,11 +38,9 @@ import com.app.community.core.ui.theme.AgoraTypography
 import com.app.community.core.ui.theme.AppTheme
 import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.auth.presentation.LoginScreen
-import com.app.community.navigation.ActivitiesTab
 import com.app.community.navigation.AgoraTab
 import com.app.community.navigation.CommunitiesTab
 import com.app.community.navigation.NotificationsTab
-import com.app.community.navigation.ProfileTab
 import org.koin.compose.koinInject
 
 @Composable
@@ -126,7 +124,7 @@ fun App() {
                         }
                     }
                     // Usuario real: UI de miembro. El deep link de actividad se
-                    // resuelve en ActivitiesTab (miembro → detalle; no miembro →
+                    // resuelve en AgoraTab (miembro → detalle; no miembro →
                     // flujo de invitado con su identidad real).
                     isAuthenticated == true -> {
                         LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
@@ -168,9 +166,7 @@ private fun MainContent(selectedTab: Tab, onSelectTab: (Tab) -> Unit) {
                 AgoraNavigationBar {
                     TabNavigationItem(AgoraTab, onSelectTab)
                     TabNavigationItem(CommunitiesTab, onSelectTab)
-                    TabNavigationItem(ActivitiesTab, onSelectTab)
                     TabNavigationItem(NotificationsTab, onSelectTab)
-                    TabNavigationItem(ProfileTab, onSelectTab)
                 }
             },
         ) { paddingValues ->
@@ -202,15 +198,15 @@ private fun DeepLinkTabSwitcher(onSelectTab: (Tab) -> Unit) {
         }
     }
     LaunchedEffect(pendingActivityCode) {
-        if (pendingActivityCode != null && tabNavigator.current != ActivitiesTab) {
-            tabNavigator.current = ActivitiesTab
-            onSelectTab(ActivitiesTab)
+        if (pendingActivityCode != null && tabNavigator.current != AgoraTab) {
+            tabNavigator.current = AgoraTab
+            onSelectTab(AgoraTab)
         }
     }
     LaunchedEffect(pendingNotificationActivityId) {
-        if (pendingNotificationActivityId != null && tabNavigator.current != ActivitiesTab) {
-            tabNavigator.current = ActivitiesTab
-            onSelectTab(ActivitiesTab)
+        if (pendingNotificationActivityId != null && tabNavigator.current != AgoraTab) {
+            tabNavigator.current = AgoraTab
+            onSelectTab(AgoraTab)
         }
     }
 }

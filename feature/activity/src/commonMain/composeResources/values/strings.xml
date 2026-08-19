@@ -4,7 +4,6 @@
     <string name="back_cd">Back</string>
     <string name="slots_header">Slots</string>
     <string name="slot_mode_unlimited">Unlimited</string>
-    <string name="slot_mode_limited_count">%1$d slots</string>
     <string name="slot_available">Available</string>
     <string name="slot_reserve">Reserve</string>
     <string name="slot_release">Release</string>
@@ -25,12 +24,6 @@
     <string name="slot_type_header">Slot type</string>
     <string name="slot_mode_limited">Limited</string>
     <string name="slot_mode_positions">Positions</string>
-
-    <!-- Feed screen -->
-    <string name="feed_title">Activities</string>
-    <string name="feed_empty">No upcoming activities in your agora</string>
-    <string name="feed_create_activity">Create activity</string>
-    <string name="feed_select_community">Select community</string>
 
     <!-- Detail screen -->
     <string name="detail_title_fallback">Activity</string>

@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -42,6 +43,7 @@ import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.CommunityAvatar
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AgoraSpacing
@@ -141,6 +143,14 @@ data class CommunityPreviewScreen(val communityId: String) : Screen {
                             .verticalScroll(rememberScrollState())
                             .padding(AgoraSpacing.screenHorizontal),
                     ) {
+                        CommunityAvatar(
+                            communityId = community.id,
+                            name = community.name,
+                            iconKey = community.iconKey,
+                            size = 56.dp,
+                        )
+                        Spacer(Modifier.height(AgoraSpacing.md))
+
                         if (!community.breadcrumb.isNullOrBlank() && community.breadcrumb!!.contains(" › ")) {
                             Text(
                                 text = community.breadcrumb!!.substringBeforeLast(" › "),

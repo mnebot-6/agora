@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +36,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.model.Community
 import com.app.community.core.ui.components.AgoraTopBar
+import com.app.community.core.ui.components.CommunityRow
 import com.app.community.core.ui.components.ErrorScreen
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.MarbleCard
@@ -168,7 +168,7 @@ private fun ExploreCommunityCard(
         elevation = AgoraElevation.subtle,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(AgoraSpacing.cardInternal)) {
+        Column {
             if (!community.breadcrumb.isNullOrBlank() && community.breadcrumb!!.contains(" › ")) {
                 Text(
                     text = community.breadcrumb!!.substringBeforeLast(" › "),
@@ -176,26 +176,27 @@ private fun ExploreCommunityCard(
                     color = MaterialTheme.colorScheme.outline,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(
+                        start = AgoraSpacing.md,
+                        end = AgoraSpacing.md,
+                        top = AgoraSpacing.md,
+                    ),
                 )
-                Spacer(Modifier.height(AgoraSpacing.xs))
             }
-            Text(
-                text = community.name,
-                style = MaterialTheme.typography.titleMedium,
+            CommunityRow(
+                communityId = community.id,
+                name = community.name,
+                iconKey = community.iconKey,
+                subtitle = community.description,
             )
-            if (!community.description.isNullOrBlank()) {
-                Spacer(Modifier.height(AgoraSpacing.xs))
-                Text(
-                    text = community.description.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.height(AgoraSpacing.sm))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AgoraSpacing.md,
+                        end = AgoraSpacing.md,
+                        bottom = AgoraSpacing.md,
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

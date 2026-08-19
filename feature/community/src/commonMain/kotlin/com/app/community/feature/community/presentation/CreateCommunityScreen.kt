@@ -126,6 +126,16 @@ data class CreateCommunityScreen(
 
                     Spacer(Modifier.height(AgoraSpacing.xxl))
 
+                    CommunityIconField(
+                        communityId = "new",
+                        name = form.name.ifBlank { "?" },
+                        selectedKey = form.iconKey,
+                        onSelect = screenModel::onIconKeyChange,
+                        enabled = !isLoading,
+                    )
+
+                    Spacer(Modifier.height(AgoraSpacing.lg))
+
                     OutlinedTextField(
                         value = form.name,
                         onValueChange = { screenModel.onNameChange(it) },
