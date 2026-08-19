@@ -27,6 +27,28 @@ interface StripeAccount {
   payouts_enabled?: boolean;
   country?: string;
   capabilities?: Record<string, string>;
+  metadata?: Record<string, string>;
+}
+
+/**
+ * Busca una cuenta conectada ya creada para esta comunidad que Agora haya perdido de vista.
+ *
+ * Pasa si la cuenta se crea en Stripe pero el UPDATE de communities falla justo despues.
+ * La Idempotency-Key cubre ese hueco solo 24 h, que es lo que duran en Stripe; pasado ese
+ * plazo el reintento crearia una cuenta NUEVA y la primera quedaria huerfana para siempre,
+ * con su KYC hecho y sin nadie apuntando a ella. Esto lo recupera sin plazo.
+ *
+ * ponytail: escaneo lineal de las 100 cuentas mas recientes. A la escala de Agora (unas
+ * pocas comunidades) sobra. Si algun dia hay cientos de comunidades, hay que paginar con
+ * starting_after — la API de busqueda de Stripe no cubre accounts, asi que no hay atajo.
+ */
+async function findOrphanAccount(communityId: string): Promise<string | null> {
+  const page = await stripeCall<{ data: StripeAccount[] }>("/v1/accounts", {
+    method: "GET",
+    body: { limit: 100 },
+  });
+  const match = page.data.find((a) => a.metadata?.community_id === communityId);
+  return match?.id ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -39,12 +61,12 @@ Deno.serve(async (req) => {
     // El ping no toca la base de datos ni crea nada: sirve para comprobar la clave
     // y si Connect esta habilitado antes de intentar dar de alta a nadie.
     if (action === "ping") {
-      const account = await stripeCall<StripeAccount>("/account", { method: "GET" });
+      const account = await stripeCall<StripeAccount>("/v1/account", { method: "GET" });
       let connectEnabled = true;
       let connectDetail = "Connect activo";
       try {
         // Listar cuentas conectadas falla con un error explicito si Connect no esta activado.
-        await stripeCall("/accounts", { method: "GET", body: { limit: 1 } });
+        await stripeCall("/v1/accounts", { method: "GET", body: { limit: 1 } });
       } catch (e) {
         connectEnabled = false;
         connectDetail = e instanceof StripeError ? e.message : String(e);
@@ -102,38 +124,57 @@ Deno.serve(async (req) => {
       let accountId = community.stripe_account_id as string | null;
 
       if (!accountId) {
-        const created = await stripeCall<StripeAccount>("/accounts", {
-          body: {
-            type: "standard",
-            country: "ES",
-            email: userData.user.email ?? undefined,
-            business_profile: { name: community.name },
-            metadata: { community_id: communityId, agora_admin: userId },
-          },
-          // Si el admin pulsa dos veces, la segunda devuelve la MISMA cuenta en vez de
-          // crear una segunda cuenta conectada huerfana para la misma comunidad.
-          idempotencyKey: `agora-account-${communityId}`,
-        });
-        accountId = created.id;
+        // Antes de crear nada, mirar si ya hay una cuenta de esta comunidad que se
+        // quedo huerfana en un intento anterior. Crear la segunda seria irreversible:
+        // dos cuentas conectadas para una comunidad y una de ellas sin dueno conocido.
+        accountId = await findOrphanAccount(communityId);
+
+        if (!accountId) {
+          const created = await stripeCall<StripeAccount>("/v2/core/accounts", {
+            body: {
+              contact_email: userData.user.email ?? undefined,
+              display_name: community.name,
+              identity: { country: "es" },
+              // El equivalente de la vieja cuenta "standard": panel completo de Stripe
+              // para el admin, y Stripe le cobra a EL las comisiones y le imputa a EL
+              // las perdidas. Agora no responde de nada, que es la razon de elegir esto.
+              dashboard: "full",
+              defaults: {
+                currency: "eur",
+                responsibilities: { fees_collector: "stripe", losses_collector: "stripe" },
+              },
+              configuration: {
+                merchant: { capabilities: { card_payments: { requested: true } } },
+              },
+              metadata: { community_id: communityId, agora_admin: userId },
+            },
+            // Doble clic del admin: la segunda llamada devuelve la MISMA cuenta en vez
+            // de crear otra. Cubre solo 24 h, que es lo que Stripe guarda estas claves;
+            // pasado ese plazo el rescate es findOrphanAccount, que no caduca.
+            idempotencyKey: `agora-account-${communityId}`,
+          });
+          accountId = created.id;
+        }
 
         const { error: saveError } = await supabase
           .from("communities")
           .update({ stripe_account_id: accountId })
           .eq("id", communityId);
 
-        // Si no se puede guardar, la cuenta ya existe en Stripe pero Agora la perderia de
-        // vista. Se avisa en vez de seguir: reintentar creara otra cuenta distinta.
+        // Ya no es un callejon sin salida: el proximo intento encuentra esta misma cuenta
+        // por metadata. Se devuelve error igualmente para no seguir como si nada.
         if (saveError) {
           return errorResponse(
             "save_failed",
-            `Cuenta ${accountId} creada en Stripe pero no guardada: ${saveError.message}`,
+            `Cuenta ${accountId} creada en Stripe pero no guardada: ${saveError.message}. ` +
+              "Se recuperara sola al reintentar.",
             500,
           );
         }
       }
 
       const returnUrl = `${appBaseUrl()}/pay/connect?community=${communityId}`;
-      const link = await stripeCall<{ url: string; expires_at: number }>("/account_links", {
+      const link = await stripeCall<{ url: string; expires_at: number }>("/v1/account_links", {
         body: {
           account: accountId,
           refresh_url: returnUrl,
@@ -155,7 +196,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const account = await stripeCall<StripeAccount>(`/accounts/${accountId}`, { method: "GET" });
+      const account = await stripeCall<StripeAccount>(`/v1/accounts/${accountId}`, { method: "GET" });
       const chargesEnabled = account.charges_enabled === true;
       const detailsSubmitted = account.details_submitted === true;
 

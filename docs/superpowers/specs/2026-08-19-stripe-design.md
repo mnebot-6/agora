@@ -68,6 +68,31 @@ demás.
 
 El alta se hace con **Account Links** (`account_onboarding`), alojado por Stripe.
 
+### Corrección del 2026-08-19: la cuenta se crea con la API v2
+
+Al probarlo contra Stripe de verdad, `POST /v1/accounts` **devuelve error** para
+integraciones nuevas de Connect: *"Stripe no longer recommends Accounts v1 for new
+Connect integrations. Create connected accounts with POST /v2/core/accounts
+instead."* Hay un interruptor en el panel para reactivar la v1, pero es una vía de
+compatibilidad en retirada y esto es una integración nueva.
+
+La creación pasa a `POST /v2/core/accounts`, que habla **JSON** en vez de
+form-encoded y usa su propia versión de API. El equivalente de la vieja cuenta
+`standard` es:
+
+| v1 | v2 |
+|---|---|
+| `type: standard` | `dashboard: "full"` |
+| El conectado paga comisiones | `defaults.responsibilities.fees_collector: "stripe"` |
+| El conectado responde de pérdidas | `defaults.responsibilities.losses_collector: "stripe"` |
+| — | `configuration.merchant.capabilities.card_payments.requested: true` |
+
+**El resto del diseño no cambia.** Verificado ejecutándolo, no leyéndolo: una
+cuenta creada con la v2 aparece en `GET /v1/accounts` con su `metadata`, y
+`POST /v1/account_links` la acepta y devuelve una URL de alta real. La
+interoperabilidad que promete la documentación se comprobó punto por punto, así
+que los cargos directos, Checkout y `application_fee_amount` siguen valiendo.
+
 ### Stripe Checkout, no SDK nativo
 
 No hay SDK de Stripe para Compose Multiplatform: el nativo es de Android y wasmJs

@@ -3,10 +3,15 @@
 // No se usa el SDK de node: en Deno arrastra dependencias y lo unico que hace falta
 // son peticiones form-encoded con dos cabeceras. Menos superficie que mantener.
 
-const STRIPE_API = "https://api.stripe.com/v1";
+const STRIPE_API = "https://api.stripe.com";
+
+// La v1 habla form-encoded; la v2 habla JSON y pide su propia version de API. Se decide
+// por el prefijo de la ruta para no tener que acordarse en cada llamada.
+const V1_VERSION = "2025-08-27.basil";
+const V2_VERSION = "2026-07-29.dahlia";
 
 export interface StripeCallOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   body?: Record<string, unknown>;
   /** Cuenta conectada sobre la que actuar. Es lo que convierte el cargo en directo. */
   account?: string;
@@ -61,10 +66,11 @@ export async function stripeCall<T = Record<string, unknown>>(
   if (!secretKey) throw new StripeError(500, "config", "STRIPE_SECRET_KEY no esta configurada");
 
   const { method = "POST", body, account, idempotencyKey } = options;
+  const isV2 = path.startsWith("/v2/");
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${secretKey}`,
-    "Stripe-Version": "2025-08-27.basil",
+    "Stripe-Version": isV2 ? V2_VERSION : V1_VERSION,
   };
   if (account) headers["Stripe-Account"] = account;
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
@@ -74,6 +80,9 @@ export async function stripeCall<T = Record<string, unknown>>(
   if (body && method === "GET") {
     const qs = formEncode(body).join("&");
     if (qs) url += `?${qs}`;
+  } else if (body && isV2) {
+    payload = JSON.stringify(body);
+    headers["Content-Type"] = "application/json";
   } else if (body) {
     payload = formEncode(body).join("&");
     headers["Content-Type"] = "application/x-www-form-urlencoded";
