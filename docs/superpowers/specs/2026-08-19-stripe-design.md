@@ -192,13 +192,25 @@ Esto tiene una propiedad que ahorra media implementación: `reserve_slot`,
 ### Oferta al suplente
 
 ```sql
-ALTER TABLE slots ADD COLUMN offered_to uuid REFERENCES auth.users(id);
+ALTER TABLE slots ADD COLUMN offered_to uuid
+  REFERENCES profiles(id) ON DELETE SET NULL;
 ALTER TABLE slots ADD COLUMN offer_expires_at timestamptz;
-ALTER TABLE slots ADD CONSTRAINT slots_offer_pair
-  CHECK ((offered_to IS NULL) = (offer_expires_at IS NULL));
+ALTER TABLE slots ADD CONSTRAINT slots_offer_has_expiry
+  CHECK (offered_to IS NULL OR offer_expires_at IS NOT NULL);
 CREATE INDEX slots_offer_sweep ON slots (offer_expires_at)
   WHERE offered_to IS NOT NULL;
 ```
+
+Las referencias a personas van a `profiles`, no a `auth.users`: es la convención
+del resto del esquema (`slots.reserved_by`, `substitute_queue.user_id`,
+`notifications.user_id`). Y con `ON DELETE SET NULL`, porque `delete_my_account()`
+borra `auth.users` y eso cascadea a `profiles`.
+
+El `CHECK` va **en una sola dirección** por esa misma razón. La versión
+bidireccional (`(offered_to IS NULL) = (offer_expires_at IS NULL)`) reventaba al
+borrar la cuenta del ofertado: el `SET NULL` dejaba `offer_expires_at` puesto y
+violaba la restricción, así que borrar la cuenta fallaba. Lo peligroso de verdad
+es una oferta que no caduca nunca, y eso sí lo sigue impidiendo.
 
 "Esta plaza está apalabrada para esta persona hasta esta hora." Es la **ventana
 de 6 h** del suplente. No es una retención de pago: no hay sesión de Checkout
@@ -225,8 +237,8 @@ CREATE TABLE payments (
     id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     activity_id           uuid NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
     slot_id               uuid REFERENCES slots(id) ON DELETE SET NULL,
-    user_id               uuid NOT NULL REFERENCES auth.users(id),
-    community_id          uuid NOT NULL REFERENCES communities(id),
+    user_id               uuid REFERENCES profiles(id) ON DELETE SET NULL,
+    community_id          uuid NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     amount_cents          integer NOT NULL CHECK (amount_cents > 0),
     application_fee_cents integer NOT NULL DEFAULT 0,
     method                text NOT NULL CHECK (method IN ('stripe','manual')),
@@ -262,6 +274,14 @@ registro de dinero no se recalcula nunca.
 puede automatizar. Los cobros manuales también generan fila (`method='manual'`,
 `status='succeeded'`), para que la lista de deudas al cancelar y el historial
 salgan de una sola consulta.
+
+`user_id` es **nullable y `ON DELETE SET NULL`**, y esto no es descuido. Con
+`NOT NULL` y sin cascada, borrar la cuenta fallaría y se rompería
+`delete_my_account()`. Con `ON DELETE CASCADE`, borrar la cuenta se llevaría por
+delante el registro de dinero — incluido un `refund_pending` todavía sin
+ejecutar, y esa persona perdería su devolución. Con `SET NULL` sobreviven el
+importe y los identificadores de Stripe, que es lo que hace falta para reembolsar
+y para cuadrar cuentas. Mismo criterio que `slots.reserved_by`.
 
 `payments_one_pending_per_slot` es el cerrojo real. Dos personas que salen a
 pagar la misma plaza a la vez: la segunda `INSERT` viola el índice y recibe
