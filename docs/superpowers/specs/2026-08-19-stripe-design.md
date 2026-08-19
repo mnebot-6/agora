@@ -323,6 +323,16 @@ existe y no depende de que el resto del código sea perfecto.
   `SECURITY DEFINER`).
 - `stripe_events`: sin políticas. Solo `service_role`.
 
+**`ALTER TABLE ... ENABLE ROW LEVEL SECURITY` explícito en las dos.** El baseline
+define la *función* `rls_auto_enable()` pero **nunca llega a crear el event
+trigger que la dispara** — comprobado contra `pg_event_trigger` en una base de
+datos real: no está. Las demás tablas tienen RLS porque sus migraciones la
+activaron a mano (`ALTER TABLE reports ENABLE ROW LEVEL SECURITY` y compañía).
+
+Sin esas dos líneas las políticas existen pero **no se aplican**, y cualquiera
+con la clave anónima podría leer todos los pagos de todo el mundo. Se detectó
+ejecutando la migración, no leyéndola: `relrowsecurity` salía `f`.
+
 ## La máquina de estados
 
 Es la parte a leer despacio. Todo lo demás es fontanería.

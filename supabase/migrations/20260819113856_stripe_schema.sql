@@ -171,8 +171,14 @@ CREATE TABLE stripe_events (
 );
 
 -- ---------- RLS -------------------------------------------------------------
--- El event trigger rls_auto_enable ya activa RLS en cualquier tabla nueva de
--- public, asi que aqui solo van las politicas.
+--
+-- ENABLE explicito, y no sobra: el baseline define la FUNCION rls_auto_enable()
+-- pero NUNCA llega a crear el event trigger que la dispara (comprobado con
+-- pg_event_trigger: no esta). Las demas tablas tienen RLS porque sus migraciones
+-- la activaron a mano. Sin estas dos lineas, las politicas de abajo existen pero
+-- no se aplican, y cualquiera con la clave anonima leeria todos los pagos.
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stripe_events ENABLE ROW LEVEL SECURITY;
 
 -- Ni INSERT ni UPDATE para nadie: payments solo lo escribe el service_role
 -- desde las Edge Functions y las RPC SECURITY DEFINER.
