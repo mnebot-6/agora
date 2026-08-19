@@ -309,7 +309,7 @@ Es la parte a leer despacio. Todo lo demás es fontanería.
             paid  ◄──────────────────────────────────── available
        reserved_by = U                                 (payment 'expired')
               │
-         release_slot(U o admin)
+         release_slot(solo U; el admin NO puede liberar plaza pagada ajena)
               ▼
        paid + released_at = now()        ← sigue siendo de U, U puede asistir
        payment(U) = 'awaiting_substitute'
@@ -453,6 +453,19 @@ si no:
 Ojo con la advertencia del handoff: `CREATE OR REPLACE` copiando el cuerpo real
 de la última migración que la definió (`20260731065916_admin_assign_slots.sql`),
 sin tocar la firma.
+
+**Quién puede liberar una plaza pagada: solo su dueño.** Decidido el 2026-08-19.
+Es la regla que la app ya aplica hoy — `isAdminReleasable` en
+`ActivityDetailScreen.kt:96` deja fuera explícitamente las plazas pagadas con
+dueño, con su comentario diciendo que "sigue siendo cosa suya" — y se mantiene al
+llegar el dinero de verdad, con más razón: el admin no mueve el dinero de otro.
+
+El admin conserva lo que ya tenía: liberar reservas sin pagar y plazas de etiqueta
+(las de `guest_label`, sin `reserved_by`).
+
+Consecuencia asumida: si alguien paga y desaparece sin liberar, esa plaza queda
+bloqueada hasta el día de la actividad y el suplente se queda fuera. La salida es
+manual y fuera de la app — que el admin le escriba y la libere él.
 
 **`mark_slot_paid` — se modifica.** Además de poner la plaza en `paid`, inserta
 una fila en `payments` con `method='manual'`, `status='succeeded'` y
