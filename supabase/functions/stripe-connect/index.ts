@@ -4,7 +4,7 @@
 // del admin, y su relacion de KYC, disputas e impuestos es con Stripe, no con Agora.
 //
 // Acciones:
-//   { action: "ping" }                      diagnostico: la clave funciona y Connect esta activo
+//   { action: "ping" }                      diagnostico (requiere sesion): clave y Connect
 //   { action: "onboard", community_id }     crea la cuenta si no existe y devuelve el enlace de alta
 //   { action: "status",  community_id }     refresca charges_enabled / details_submitted
 //
@@ -58,8 +58,25 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action as string | undefined;
 
-    // El ping no toca la base de datos ni crea nada: sirve para comprobar la clave
-    // y si Connect esta habilitado antes de intentar dar de alta a nadie.
+    // El resto de acciones exigen sesion y ser admin de la comunidad.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return errorResponse("not_authenticated", "Falta la cabecera Authorization", 401);
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const jwt = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
+    if (userError || !userData.user) {
+      return errorResponse("not_authenticated", "Sesion no valida", 401);
+    }
+    const userId = userData.user.id;
+
+    // Diagnostico: no toca la base de datos ni crea nada. Va DESPUES de validar la
+    // sesion a proposito: la clave anonima es publica (viaja dentro del APK), asi que
+    // dejarlo antes lo convertia en dos llamadas gratis a Stripe para cualquiera.
     if (action === "ping") {
       const account = await stripeCall<StripeAccount>("/v1/account", { method: "GET" });
       let connectEnabled = true;
@@ -80,21 +97,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // El resto de acciones exigen sesion y ser admin de la comunidad.
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return errorResponse("not_authenticated", "Falta la cabecera Authorization", 401);
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    const jwt = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
-    if (userError || !userData.user) {
-      return errorResponse("not_authenticated", "Sesion no valida", 401);
-    }
-    const userId = userData.user.id;
 
     const communityId = body.community_id as string | undefined;
     if (!communityId) return errorResponse("bad_request", "Falta community_id");
