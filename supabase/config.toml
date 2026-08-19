@@ -417,3 +417,7 @@ enabled = true
 # la cabecera x-sweep-secret, cuyo valor vive en Vault.
 [functions.stripe-sweep]
 verify_jwt = false
+
+# Stripe no manda JWT de Supabase. La autenticacion aqui ES la firma del cuerpo.
+[functions.stripe-webhook]
+verify_jwt = false
