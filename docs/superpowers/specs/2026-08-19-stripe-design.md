@@ -1,6 +1,6 @@
 # Pagos con Stripe — diseño
 
-Fecha: **2026-08-19**. Estado: pendiente de revisión del usuario.
+Fecha: **2026-08-19**. Estado: **aprobado por el usuario** el 2026-08-19.
 Origen: `docs/handoff-stripe.md` (fase 1 cerrada el 2026-08-19).
 
 ## Motivación
@@ -26,7 +26,7 @@ Vienen del handoff. Se listan para poder leer el diseño sin saltar de documento
 | Moneda | **Solo euros**, y sin columna de moneda. Sin facturas ni recibos fiscales |
 | Comisión de Stripe | La asume **quien cobra** (el admin) |
 | Reservar | **Implica pagar**. Las gratuitas siguen siendo instantáneas |
-| Cola de suplentes | **No se le cobra solo.** Se le ofrece la plaza, que le queda **reservada 12 h o hasta que actúe**; entra, confirma y paga en Checkout como todo el mundo *(corregido el 2026-08-19)* |
+| Cola de suplentes | **No se le cobra solo.** Se le ofrece la plaza, que le queda **reservada 6 h o hasta que actúe**; entra, confirma y paga en Checkout como todo el mundo *(corregido el 2026-08-19)* |
 | Liberar plaza | **No hay dinero de vuelta hasta que hay sustituto**. Mecanismo: **reembolso al anterior**, disparado por el pago del sustituto |
 | Reembolso a petición | **No existe**. La única vía es que otro ocupe la plaza |
 | Cancelar actividad | Reembolso automático de lo cobrado por Stripe + **lista al admin de a quién debe dinero a mano** |
@@ -201,7 +201,7 @@ CREATE INDEX slots_offer_sweep ON slots (offer_expires_at)
 ```
 
 "Esta plaza está apalabrada para esta persona hasta esta hora." Es la **ventana
-de 12 h** del suplente. No es una retención de pago: no hay sesión de Checkout
+de 6 h** del suplente. No es una retención de pago: no hay sesión de Checkout
 todavía, ni dinero por medio. Es exclusividad para que le dé tiempo a enterarse y
 decidir.
 
@@ -209,7 +209,7 @@ Son dos retenciones distintas y conviene no confundirlas:
 
 | | Qué significa | Cuánto dura |
 |---|---|---|
-| `offered_to` / `offer_expires_at` | "la plaza es tuya si la quieres, ven a por ella" | **12 h** |
+| `offered_to` / `offer_expires_at` | "la plaza es tuya si la quieres, ven a por ella" | **6 h** |
 | `pending_payment` / `hold_expires_at` | "estás pagando ahora mismo, nadie te la quita" | **30 min** |
 
 Un suplente pasa por las dos, en ese orden. Un miembro cualquiera que reserva una
@@ -316,10 +316,10 @@ Es la parte a leer despacio. Todo lo demás es fontanería.
               │
               │  promote_substitute: hay cola
               ▼
-       + offered_to = V, offer_expires_at = +12h      ← apalabrada para V
+       + offered_to = V, offer_expires_at = +6h      ← apalabrada para V
               │
       ┌───────┴──────────────┬─────────────────────────┐
-   V confirma          V rechaza, o pasan 12h      nadie en la cola
+   V confirma          V rechaza, o pasan 6h      nadie en la cola
       ▼                      ▼                          ▼
   pasa por Checkout    se ofrece al siguiente      offered_to = NULL
   (payment pending)    y V sale de la cola.        cualquiera puede
@@ -382,7 +382,7 @@ requisito explícito y hay que protegerlo con tests.
    plaza no se toca**: el cerrojo es la fila de `payments`.
 
 La oferta al suplente **no se borra aquí**. Si el pago se queda a medias, V sigue
-teniendo su ventana de 12 h para volver a intentarlo. Se borra al confirmarse el
+teniendo su ventana de 6 h para volver a intentarlo. Se borra al confirmarse el
 pago.
 
 Después del commit, crea la sesión de Checkout con
@@ -468,7 +468,7 @@ si no hay nadie:
     RETURN FALSE
 si hay:
     offered_to = ese usuario
-    offer_expires_at = min(now() + interval '12 hours', activities.datetime)
+    offer_expires_at = min(now() + interval '6 hours', activities.datetime)
     notificar 'substitute_offer'
     RETURN TRUE
 ```
@@ -498,7 +498,7 @@ reimplementar la regla en el cliente.
 
 **Corregido el 2026-08-19.** La decisión original era cobrar al suplente
 directamente. Se sustituye por: **al suplente se le ofrece la plaza, le queda
-reservada 12 h o hasta que actúe, y paga en Checkout como todo el mundo.**
+reservada 6 h o hasta que actúe, y paga en Checkout como todo el mundo.**
 
 El cambio elimina de un plumazo toda la parte cara del diseño anterior: no hacen
 falta tarjetas guardadas, ni `SetupIntent`, ni objetos `Customer` en la cuenta
@@ -517,17 +517,17 @@ botón**, no rellenar un formulario de tarjeta por si acaso.
    añade huecos). `promote_substitute` busca al primero de la cola con la lógica
    de posiciones que ya existe.
 2. En vez de asignársela, la **apalabra**: `offered_to = V`,
-   `offer_expires_at = min(now() + 12h, comienzo de la actividad)`. Notificación a
+   `offer_expires_at = min(now() + 6h, comienzo de la actividad)`. Notificación a
    V ("tienes plaza en X, confírmala antes de las 14:30").
 3. Mientras la oferta viva, **solo V puede reclamarla**. Al resto se le muestra
    apalabrada, no libre.
 4. V entra, confirma, y sale a Checkout por el camino normal: retención de pago de
    30 min, sesión, deep link de vuelta. Si paga, la plaza es suya.
-5. Si V rechaza explícitamente, o pasan las 12 h sin que actúe: **V sale de la
+5. Si V rechaza explícitamente, o pasan las 6 h sin que actúe: **V sale de la
    cola** y la oferta pasa al siguiente. Si no queda nadie, `offered_to = NULL` y
    la plaza queda reclamable por cualquiera.
 
-El tope en el comienzo de la actividad no es un detalle: una ventana de 12 h sobre
+El tope en el comienzo de la actividad no es un detalle: una ventana de 6 h sobre
 un partido que empieza dentro de tres horas dejaría la plaza congelada hasta
 después de jugarse.
 
@@ -580,9 +580,9 @@ Ya hay `WebDeepLinkTest.kt`: se amplía.
 | El admin desconecta Stripe con pagos vivos | `charges_enabled=false`: no se crean sesiones nuevas. Los reembolsos pendientes fallan y acaban en la lista manual del admin. |
 | La actividad se cancela mientras alguien paga | El pago pendiente se reconcilia: si se cobró, `refund_pending`; si no, se libera. |
 | El admin cambia el precio con gente ya pagada | Los pagos existentes no se tocan (`amount_cents` es una foto). La UI avisa al editar. |
-| El suplente ignora la oferta 12 h | `expire_substitute_offers()` lo saca de la cola y ofrece al siguiente. Sin cola, la plaza queda libre para cualquiera. |
+| El suplente ignora la oferta 6 h | `expire_substitute_offers()` lo saca de la cola y ofrece al siguiente. Sin cola, la plaza queda libre para cualquiera. |
 | La actividad empieza antes de que caduque la oferta | `offer_expires_at` se topa en `activities.datetime`. Nunca se congela una plaza más allá del comienzo. |
-| El suplente empieza a pagar y abandona | Pierde la retención de 30 min, **no la oferta**: le quedan sus 12 h para reintentar. |
+| El suplente empieza a pagar y abandona | Pierde la retención de 30 min, **no la oferta**: le quedan sus 6 h para reintentar. |
 | El admin apunta a alguien en una plaza apalabrada | `admin_assign_slot` sigue exigiendo `status='available'`. Una plaza liberada está en `paid`, así que ya la rechaza; sobre una `available` con oferta viva hay que añadir la comprobación de `offered_to`. **Es el único sitio del código antiguo que hay que tocar por esto.** |
 
 ## Cambios en la app
@@ -635,8 +635,8 @@ harness de tests y es dinero: aquí no se improvisa.
 1. **El estado liberada-pero-pagada** es nuevo y no se parece a nada de lo que ya
    hay. Los sitios que asumen "plaza `paid` = plaza ocupada y cerrada" hay que
    revisarlos uno a uno.
-2. **La ventana de 12 h ralentiza la rotación de plazas.** Con una cola de tres
-   personas que pasan de la notificación, una plaza puede tardar 36 h en volver a
+2. **La ventana de 6 h ralentiza la rotación de plazas.** Con una cola de tres
+   personas que pasan de la notificación, una plaza puede tardar 18 h en volver a
    estar libre para cualquiera. En una actividad que se anuncia con una semana de
    antelación da igual; en una de mañana, no. El tope en `activities.datetime` lo
    acota, pero no lo arregla del todo. Si en la práctica molesta, la ventana es un
