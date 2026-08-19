@@ -2,7 +2,9 @@ package com.app.community.feature.activity.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +20,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -376,6 +381,7 @@ private fun ActivityDetailContent(
                     isAdmin = state.isAdmin,
                     hasCost = activity.costDescription != null,
                     hasReservation = state.isUserJoined,
+                    withPositions = false,
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                     onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
@@ -416,13 +422,14 @@ private fun ActivityDetailContent(
                     groupWithSlots.slots,
                     key = { _, s -> s.slot.id },
                 ) { index, slotWithProfile ->
-                    PositionSlotCard(
+                    SlotCard(
                         index = index + 1,
                         slotWithProfile = slotWithProfile,
                         currentUserId = state.currentUserId,
                         isAdmin = state.isAdmin,
                         hasCost = activity.costDescription != null,
                         hasReservation = state.isUserJoined,
+                        withPositions = true,
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                         onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
@@ -507,10 +514,13 @@ private fun ParticipantRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // El nombre lleva weight para que el boton de liberar se mida primero y conserve su
+        // ancho: sin el, un nombre largo se quedaba toda la fila y el boton desaparecia.
         Text(
             text = if (isMe) stringResource(Res.string.name_is_me, name) else name,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.weight(1f),
         )
         if (isAdmin && onRelease != null && slotWithProfile.slot.isAdminReleasable) {
             TextButton(onClick = onRelease) {
@@ -602,6 +612,11 @@ private fun LocationLink(activity: Activity) {
     }
 }
 
+/**
+ * Tarjeta de una plaza. Con [withPositions] pinta ademas la linea de posiciones y numera
+ * "Puesto n" en vez de "Plaza n": era la unica diferencia real entre las dos tarjetas que
+ * habia antes, 120 lineas identicas cada una.
+ */
 @Composable
 private fun SlotCard(
     index: Int,
@@ -610,6 +625,7 @@ private fun SlotCard(
     isAdmin: Boolean,
     hasCost: Boolean,
     hasReservation: Boolean,
+    withPositions: Boolean,
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
@@ -618,6 +634,17 @@ private fun SlotCard(
     val slot = slotWithProfile.slot
     val isMySlot = slot.reservedBy == currentUserId
     val slotColors = MaterialTheme.slotStatusColors
+    val noPositionLabel = stringResource(Res.string.no_position)
+    val slotLabel = if (withPositions) {
+        stringResource(Res.string.detail_position_slot_index, index)
+    } else {
+        stringResource(Res.string.detail_slot_index, index)
+    }
+    val positionLabel = if (withPositions) {
+        slotWithProfile.positionNames.joinToString(" / ").ifEmpty { noPositionLabel }
+    } else {
+        null
+    }
 
     val slotColorPair = when (slot.status) {
         SlotStatus.AVAILABLE -> slotColors.available
@@ -640,7 +667,10 @@ private fun SlotCard(
             Column(modifier = Modifier.weight(1f)) {
                 when (slot.status) {
                     SlotStatus.AVAILABLE -> {
-                        Text(stringResource(Res.string.detail_slot_index, index), style = MaterialTheme.typography.titleSmall)
+                        Text(slotLabel, style = MaterialTheme.typography.titleSmall)
+                        positionLabel?.let {
+                            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
                     }
                     SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
@@ -680,57 +710,47 @@ private fun SlotCard(
                                 )
                             }
                         }
+                        positionLabel?.let {
+                            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
 
-            when {
-                slot.status == SlotStatus.AVAILABLE -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (!hasReservation) {
-                            AgoraButton(
-                                text = stringResource(Res.string.slot_reserve),
-                                onClick = onReserve,
-                                variant = AgoraButtonVariant.Primary,
-                            )
-                        }
-                        if (isAdmin) {
-                            TextButton(onClick = onAssign) {
-                                Text(
-                                    stringResource(Res.string.assign_button),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
-                        }
-                    }
-                }
-                isMySlot -> {
-                    TextButton(onClick = onRelease) {
-                        Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                isAdmin && slot.isAdminReleasable -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (hasCost && slot.status == SlotStatus.RESERVED) {
-                            TextButton(onClick = onMarkPaid) {
-                                Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        TextButton(onClick = onRelease) {
-                            Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
-            }
+            SlotActions(
+                slot = slot,
+                slotLabel = slotLabel,
+                isMySlot = isMySlot,
+                isAdmin = isAdmin,
+                hasCost = hasCost,
+                hasReservation = hasReservation,
+                onReserve = onReserve,
+                onRelease = onRelease,
+                onMarkPaid = onMarkPaid,
+                onAssign = onAssign,
+            )
         }
     }
 }
 
+/**
+ * Acciones de una plaza: una sola visible y las demas en el menu de overflow.
+ *
+ * Antes eran una fila de botones sin restriccion de ancho. En un Row los hijos sin weight
+ * se miden primero con todo el ancho disponible, asi que los botones se quedaban el sitio
+ * y a la columna de la etiqueta, que si lleva weight, no le sobraba nada: las posiciones
+ * acababan partidas en tres lineas.
+ *
+ * Queda visible la accion de uso corriente en cada estado -reservar, liberar la plaza
+ * propia, marcar pagado- y el resto va al menu. Las destructivas viven en el menu, como en
+ * MemberManagementScreen: liberar la plaza de otro no debe estar a un toque de distancia.
+ * Cuando en un estado solo queda una accion se pinta suelta, sin menu de un unico elemento.
+ */
 @Composable
-private fun PositionSlotCard(
-    index: Int,
-    slotWithProfile: SlotWithProfile,
-    currentUserId: String,
+private fun SlotActions(
+    slot: Slot,
+    slotLabel: String,
+    isMySlot: Boolean,
     isAdmin: Boolean,
     hasCost: Boolean,
     hasReservation: Boolean,
@@ -739,117 +759,95 @@ private fun PositionSlotCard(
     onMarkPaid: () -> Unit,
     onAssign: () -> Unit,
 ) {
-    val slot = slotWithProfile.slot
-    val isMySlot = slot.reservedBy == currentUserId
-    val noPositionLabel = stringResource(Res.string.no_position)
-    val positionLabel = slotWithProfile.positionNames.joinToString(" / ").ifEmpty { noPositionLabel }
-    val slotColors = MaterialTheme.slotStatusColors
-
-    val slotColorPair = when (slot.status) {
-        SlotStatus.AVAILABLE -> slotColors.available
-        SlotStatus.RESERVED -> if (isMySlot) slotColors.reservedByMe else slotColors.reservedByOther
-        SlotStatus.PAID -> slotColors.paid
-        SlotStatus.PENDING -> slotColors.reservedByOther
-    }
-
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MarblePanelShape,
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(2.dp, slotColorPair.content),
-    ) {
-        Row(
-            modifier = Modifier.padding(AgoraSpacing.md).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                when (slot.status) {
-                    SlotStatus.AVAILABLE -> {
-                        Text(stringResource(Res.string.detail_position_slot_index, index), style = MaterialTheme.typography.titleSmall)
-                        Text(positionLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(Res.string.slot_available), style = MaterialTheme.typography.bodySmall, color = slotColorPair.content)
-                    }
-                    SlotStatus.RESERVED, SlotStatus.PAID, SlotStatus.PENDING -> {
-                        val guestChip = stringResource(Res.string.detail_guest_chip)
-                        val name = when {
-                            slot.isGuest && slot.status == SlotStatus.PENDING -> guestChip
-                            else -> slotWithProfile.profile?.displayName ?: slot.guestLabel ?: guestChip
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+    when {
+        slot.status == SlotStatus.AVAILABLE -> {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (!hasReservation) {
+                    AgoraButton(
+                        text = stringResource(Res.string.slot_reserve),
+                        onClick = onReserve,
+                        variant = AgoraButtonVariant.Primary,
+                    )
+                }
+                if (isAdmin) {
+                    if (hasReservation) {
+                        // Sin boton de reservar no hay accion principal a la que ceder el
+                        // sitio: apuntar se queda a la vista en vez de esconderse.
+                        TextButton(onClick = onAssign) {
                             Text(
-                                text = if (isMySlot) stringResource(Res.string.name_is_me, name) else name,
-                                style = MaterialTheme.typography.titleSmall,
+                                stringResource(Res.string.assign_button),
+                                style = MaterialTheme.typography.labelMedium,
                             )
-                            if (slot.guestLabel != null) {
-                                Spacer(Modifier.width(AgoraSpacing.xs))
-                                Text(
-                                    text = guestChip,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            if (slot.status == SlotStatus.PENDING) {
-                                Spacer(Modifier.width(AgoraSpacing.xs))
-                                Text(
-                                    text = stringResource(Res.string.detail_guest_pending_chip),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            if (isAdmin && slot.status == SlotStatus.PAID) {
-                                Spacer(Modifier.width(AgoraSpacing.xs))
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = stringResource(Res.string.slot_paid),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = slotColors.paid.content,
-                                )
-                            }
                         }
-                        Text(positionLabel, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        SlotOverflowMenu(slotLabel) { dismiss ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.assign_button)) },
+                                onClick = { dismiss(); onAssign() },
+                            )
+                        }
                     }
                 }
             }
+        }
+        isMySlot -> {
+            TextButton(onClick = onRelease) {
+                Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
+            }
+        }
+        isAdmin && slot.isAdminReleasable -> {
+            if (hasCost && slot.status == SlotStatus.RESERVED) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onMarkPaid) {
+                        Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                    }
+                    SlotOverflowMenu(slotLabel) { dismiss ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(Res.string.slot_release),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            onClick = { dismiss(); onRelease() },
+                        )
+                    }
+                }
+            } else {
+                // Unica accion del estado: se pinta suelta, sin menu de un solo elemento.
+                TextButton(onClick = onRelease) {
+                    Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
 
-            when {
-                slot.status == SlotStatus.AVAILABLE -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (!hasReservation) {
-                            AgoraButton(
-                                text = stringResource(Res.string.slot_reserve),
-                                onClick = onReserve,
-                                variant = AgoraButtonVariant.Primary,
-                            )
-                        }
-                        if (isAdmin) {
-                            TextButton(onClick = onAssign) {
-                                Text(
-                                    stringResource(Res.string.assign_button),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
-                        }
-                    }
-                }
-                isMySlot -> {
-                    TextButton(onClick = onRelease) {
-                        Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                isAdmin && slot.isAdminReleasable -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                        if (hasCost && slot.status == SlotStatus.RESERVED) {
-                            TextButton(onClick = onMarkPaid) {
-                                Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        TextButton(onClick = onRelease) {
-                            Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
-            }
+/**
+ * Boton de tres puntos con las acciones secundarias de una plaza. El area de toque son los
+ * 48dp que trae IconButton por defecto, y cada DropdownMenuItem los suyos.
+ */
+@Composable
+private fun SlotOverflowMenu(
+    slotLabel: String,
+    items: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = stringResource(Res.string.slot_actions_cd, slotLabel),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            items { expanded = false }
         }
     }
 }

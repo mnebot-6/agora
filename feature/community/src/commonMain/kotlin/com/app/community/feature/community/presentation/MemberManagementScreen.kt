@@ -1,6 +1,7 @@
 package com.app.community.feature.community.presentation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +13,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -203,34 +207,55 @@ private fun MemberRow(
             )
         }
 
+        // Las acciones van en un menu, no en fila. Cuatro botones de texto sin
+        // restriccion de ancho se comian el hueco del nombre: en un Row los hijos
+        // sin weight se miden primero con todo el ancho, y a la columna del nombre
+        // no le quedaba ninguno, asi que el nombre no llegaba a pintarse.
         if (!isMe) {
-            Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                if (isCurrentUserAdmin) {
-                    TextButton(onClick = { onToggleRole(member) }) {
-                        Text(
-                            if (member.role == MemberRole.ADMIN) stringResource(Res.string.member_demote_admin) else stringResource(Res.string.member_promote_admin),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                    TextButton(onClick = { showRemoveDialog = true }) {
-                        Text(
-                            stringResource(Res.string.member_remove_button),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                }
-                TextButton(onClick = { showReportDialog = true }) {
-                    Text(
-                        stringResource(Res.string.moderation_report),
-                        style = MaterialTheme.typography.labelMedium,
+            var showMenu by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(Res.string.member_actions_cd, displayName),
                     )
                 }
-                TextButton(onClick = { showBlockDialog = true }) {
-                    Text(
-                        stringResource(Res.string.moderation_block),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelMedium,
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    if (isCurrentUserAdmin) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (member.role == MemberRole.ADMIN) {
+                                        stringResource(Res.string.member_demote_admin)
+                                    } else {
+                                        stringResource(Res.string.member_promote_admin)
+                                    },
+                                )
+                            },
+                            onClick = { showMenu = false; onToggleRole(member) },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(Res.string.member_remove_button),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            onClick = { showMenu = false; showRemoveDialog = true },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.moderation_report)) },
+                        onClick = { showMenu = false; showReportDialog = true },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(Res.string.moderation_block),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = { showMenu = false; showBlockDialog = true },
                     )
                 }
             }

@@ -8,6 +8,7 @@
     <string name="slot_reserve">Reserve</string>
     <string name="slot_release">Release</string>
     <string name="slot_paid">Paid</string>
+    <string name="slot_actions_cd">Actions for %1$s</string>
     <string name="unknown_user">User</string>
     <string name="name_is_me">%1$s (you)</string>
     <string name="no_position">No position</string>
@@ -42,7 +43,7 @@
     <string name="detail_leave">Leave</string>
     <string name="detail_join">Join</string>
     <string name="detail_slot_index">Slot %1$d</string>
-    <string name="detail_position_slot_index">Slot %1$d</string>
+    <string name="detail_position_slot_index">Spot %1$d</string>
     <string name="detail_delete_dialog_title">Delete activity</string>
     <string name="detail_delete_dialog_message">This action cannot be undone. All slots and reservations will be deleted.</string>
     <string name="detail_substitute_queue_header">Substitute queue</string>
@@ -70,21 +71,21 @@
     <string name="create_position_placeholder">Position name</string>
     <string name="create_delete_position_cd">Delete</string>
     <string name="create_add_position">Add position</string>
-    <string name="create_step2_title">2. Define groups and slots</string>
-    <string name="create_step2_description">Each group has slots. Each slot accepts one or more positions.</string>
-    <string name="create_group_name_label">Group name</string>
-    <string name="create_delete_group_cd">Delete group</string>
-    <string name="create_slot_index">Slot %1$d</string>
-    <string name="create_delete_slot_cd">Delete slot</string>
-    <string name="create_add_slot">Add slot</string>
-    <string name="create_add_group">Add group</string>
+    <string name="create_step2_title">2. Define teams and spots</string>
+    <string name="create_step2_description">Each team has spots. Each spot accepts one or more positions.</string>
+    <string name="create_group_name_label">Team name</string>
+    <string name="create_delete_group_cd">Delete team</string>
+    <string name="create_slot_index">Spot %1$d</string>
+    <string name="create_delete_slot_cd">Delete spot</string>
+    <string name="create_add_slot">Add spot</string>
+    <string name="create_add_group">Add team</string>
     <string name="create_preview_title">Preview</string>
-    <string name="create_preview_summary">%1$d slots in %2$d group(s)</string>
-    <string name="create_group_fallback">Group</string>
+    <string name="create_preview_summary">%1$d spots in %2$d team(s)</string>
+    <string name="create_group_fallback">Team</string>
 
     <!-- Templates -->
     <string name="create_templates_header">Templates</string>
-    <string name="create_templates_description">Select a template to auto-fill positions and groups</string>
+    <string name="create_templates_description">Select a template to auto-fill positions and teams</string>
     <string name="create_save_template">Save as template</string>
     <string name="create_save_template_title">Save template</string>
     <string name="create_save_template_confirm">Save</string>
@@ -126,7 +127,7 @@
     <string name="guest_exit">Close</string>
     <string name="guest_get_app">Get the app</string>
 
-    <!-- Admin assigns someone to a slot -->
+    <!-- Admin assigns someone to a spot -->
     <string name="assign_button">Add someone</string>
     <string name="assign_dialog_title">Add someone to this slot</string>
     <string name="assign_search_member">Search member</string>

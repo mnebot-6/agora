@@ -221,6 +221,15 @@ private fun HeroActivityCard(
         ) {
             // Left: activity info
             Column(modifier = Modifier.weight(1f)) {
+                info.communityName?.let { community ->
+                    Text(
+                        text = community,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
                     text = activity.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -322,6 +331,7 @@ private fun CompactActivityCard(
             day = localDt.dayOfMonth.toString(),
             month = localDt.monthNumber.toString().padStart(2, '0'),
             title = activity.name,
+            overline = info.communityName,
             // Dia de la semana y hora bajan al subtitulo: el bloque de fecha
             // significa lo mismo en todas las pantallas (dia sobre mes) y no se
             // pierde nada de lo que la fila mostraba antes.
