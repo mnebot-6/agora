@@ -1,0 +1,12 @@
+# Ficheros que NO deben servirse como contenido publico.
+#
+# wrangler.toml pone `directory = "."`, asi que por defecto publica el directorio
+# ENTERO: el codigo del worker, su configuracion y este README acababan accesibles
+# en https://share-agora.app/worker.js y compania. No filtraban credenciales, pero
+# es superficie que no pinta nada ahi fuera.
+worker.js
+worker.js.map
+wrangler.toml
+README.md
+.assetsignore
+.wrangler
