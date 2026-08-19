@@ -15,7 +15,8 @@ Incorporar pagos con Stripe a Agora. El usuario lo considera prioritario.
 **Fase 1 — Preguntar.** Hacerle al usuario todas las preguntas necesarias para
 definir la lógica de negocio. Están agrupadas más abajo; no son exhaustivas, y
 la primera condiciona a casi todas las demás. Pregunta de forma agrupada y
-digerible, no las 14 de golpe.
+digerible, no todas de golpe. Parte de las decisiones ya estan tomadas: mira la
+seccion "Ya respondidas" antes de preguntar nada.
 
 **Fase 2 — Diseñar y planificar.** Con las respuestas, escribir el diseño y el
 plan de implementación.
