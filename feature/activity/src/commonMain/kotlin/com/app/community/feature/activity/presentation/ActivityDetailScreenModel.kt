@@ -13,6 +13,8 @@ import com.app.community.core.data.repository.ProfileRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
+import com.app.community.core.model.CancellationBreakdown
+import com.app.community.core.model.ManualDebt
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
@@ -458,15 +460,44 @@ class ActivityDetailScreenModel(
         }
     }
 
+    /** Desglose del dinero antes de confirmar. null = dialogo cerrado. */
+    private val _cancellationPreview = MutableStateFlow<CancellationBreakdown?>(null)
+    val cancellationPreview: StateFlow<CancellationBreakdown?> = _cancellationPreview.asStateFlow()
+
+    /** Deudas a mano que quedan tras cancelar. El admin tiene que poder volver a verlas. */
+    private val _manualDebts = MutableStateFlow<List<ManualDebt>>(emptyList())
+    val manualDebts: StateFlow<List<ManualDebt>> = _manualDebts.asStateFlow()
+
+    fun dismissCancellation() { _cancellationPreview.value = null }
+    fun clearManualDebts() { _manualDebts.value = emptyList() }
+
+    /** Primero se ensena el dinero que se va a mover, y solo despues se cancela. */
+    fun askToArchive() {
+        screenModelScope.launch {
+            activityRepository.cancellationPreview(activityId)
+                .onSuccess { _cancellationPreview.value = it }
+                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
+        }
+    }
+
     fun archiveActivity() {
         screenModelScope.launch {
-            activityRepository.updateActivityStatus(activityId, ActivityStatus.ARCHIVED)
-                .onSuccess {
+            activityRepository.cancelActivity(activityId)
+                .onSuccess { breakdown ->
+                    _cancellationPreview.value = null
+                    // Se conservan para que el admin pueda consultarlas: si solo se
+                    // ensenaran una vez, perderia la lista de a quien debe dinero.
+                    _manualDebts.value = breakdown.manual
                     RefreshBus.emit(RefreshBus.ACTIVITIES, RefreshBus.COMMUNITY_DETAIL)
-                    _actionMessage.value = "Actividad archivada"
+                    _actionMessage.value = if (breakdown.autoCount > 0) {
+                        "Actividad cancelada. Se devolverán ${breakdown.autoCount} pagos."
+                    } else {
+                        "Actividad cancelada"
+                    }
                     load()
                 }
                 .onError { msg, _ ->
+                    _cancellationPreview.value = null
                     _actionMessage.value = "Error: $msg"
                 }
         }

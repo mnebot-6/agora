@@ -148,4 +148,13 @@
     <string name="slot_offer_held">Held until %1$s</string>
     <string name="slot_take_over">Take this slot</string>
     <string name="detail_released_chip">looking for a substitute</string>
+    <string name="cancel_activity_title">Cancel activity?</string>
+    <string name="cancel_activity_message">Everyone will be notified and the activity will be archived.</string>
+    <string name="cancel_activity_auto">%1$d payments will be refunded automatically (%2$s).</string>
+    <string name="cancel_activity_manual_header">You must refund these by hand:</string>
+    <string name="cancel_activity_confirm">Cancel activity</string>
+    <string name="cancel_activity_dismiss">Keep it</string>
+    <string name="cancel_activity_debts_title">Pending refunds</string>
+    <string name="cancel_activity_debts_body">These people paid outside the app, so you need to refund them yourself:</string>
+    <string name="cancel_activity_debts_ok">Got it</string>
 </resources>

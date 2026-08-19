@@ -148,4 +148,13 @@
     <string name="slot_offer_held">Apalabrada hasta las %1$s</string>
     <string name="slot_take_over">Ocupar esta plaza</string>
     <string name="detail_released_chip">busca sustituto</string>
+    <string name="cancel_activity_title">¿Cancelar la actividad?</string>
+    <string name="cancel_activity_message">Se avisará a todo el mundo y la actividad quedará archivada.</string>
+    <string name="cancel_activity_auto">Se devolverán %1$d pagos automáticamente (%2$s).</string>
+    <string name="cancel_activity_manual_header">Tienes que devolver a mano a:</string>
+    <string name="cancel_activity_confirm">Cancelar actividad</string>
+    <string name="cancel_activity_dismiss">Mantenerla</string>
+    <string name="cancel_activity_debts_title">Devoluciones pendientes</string>
+    <string name="cancel_activity_debts_body">Estas personas pagaron fuera de la app, así que tienes que devolverles tú el dinero:</string>
+    <string name="cancel_activity_debts_ok">Entendido</string>
 </resources>

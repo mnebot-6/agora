@@ -287,7 +287,7 @@ private fun ActivityDetailContent(
                     )
                     AgoraButton(
                         text = stringResource(Res.string.detail_archive),
-                        onClick = screenModel::archiveActivity,
+                        onClick = screenModel::askToArchive,
                         variant = AgoraButtonVariant.Tertiary,
                         modifier = Modifier.weight(1f),
                     )
@@ -484,6 +484,83 @@ private fun ActivityDetailContent(
         }
 
         item { Spacer(Modifier.height(AgoraSpacing.sm)) }
+    }
+
+    // Cancelacion: el dinero PRIMERO. Cancelar sin ver cuanto se mueve, y sobre todo sin
+    // ver a quien hay que pagar a mano, es como se pierde el rastro de una devolucion.
+    val cancellationPreview by screenModel.cancellationPreview.collectAsState()
+    cancellationPreview?.let { breakdown ->
+        AlertDialog(
+            onDismissRequest = screenModel::dismissCancellation,
+            title = { Text(stringResource(Res.string.cancel_activity_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.sm)) {
+                    Text(stringResource(Res.string.cancel_activity_message))
+                    if (breakdown.autoCount > 0) {
+                        Text(
+                            text = stringResource(
+                                Res.string.cancel_activity_auto,
+                                breakdown.autoCount,
+                                breakdown.autoLabel,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    if (breakdown.manual.isNotEmpty()) {
+                        Text(
+                            text = stringResource(Res.string.cancel_activity_manual_header),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        breakdown.manual.forEach { debt ->
+                            Text(
+                                text = "· ${debt.name} — ${debt.amountLabel}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = screenModel::archiveActivity) {
+                    Text(
+                        stringResource(Res.string.cancel_activity_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = screenModel::dismissCancellation) {
+                    Text(stringResource(Res.string.cancel_activity_dismiss))
+                }
+            },
+        )
+    }
+
+    // Deudas que quedan tras cancelar, en su propio dialogo con cierre explicito: si solo
+    // se ensenaran en el snackbar, el admin perderia la lista de a quien debe dinero.
+    val manualDebts by screenModel.manualDebts.collectAsState()
+    if (manualDebts.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = screenModel::clearManualDebts,
+            title = { Text(stringResource(Res.string.cancel_activity_debts_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
+                    Text(stringResource(Res.string.cancel_activity_debts_body))
+                    manualDebts.forEach { debt ->
+                        Text(
+                            text = "· ${debt.name} — ${debt.amountLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = screenModel::clearManualDebts) {
+                    Text(stringResource(Res.string.cancel_activity_debts_ok))
+                }
+            },
+        )
     }
 
     if (showDeleteDialog) {

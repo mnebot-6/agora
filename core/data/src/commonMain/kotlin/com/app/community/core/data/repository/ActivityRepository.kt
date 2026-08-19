@@ -5,6 +5,7 @@ import com.app.community.core.common.safeCall
 import com.app.community.core.data.SupabaseProvider
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
+import com.app.community.core.model.CancellationBreakdown
 import com.app.community.core.model.SlotMode
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.datetime.Instant
@@ -104,6 +105,25 @@ class ActivityRepository {
                     select()
                 }
                 .decodeSingle<Activity>()
+        }
+
+    /** Que dinero se movera al cancelar. Solo lectura, para el dialogo de confirmacion. */
+    suspend fun cancellationPreview(activityId: String): AppResult<CancellationBreakdown> =
+        safeCall {
+            postgrest.rpc("activity_cancellation_preview", buildJsonObject {
+                put("p_activity_id", activityId)
+            }).decodeAs<CancellationBreakdown>()
+        }
+
+    /**
+     * Cancela y archiva. Lo cobrado por Stripe se devuelve solo (lo ejecuta el barrido);
+     * lo cobrado a mano queda como deuda del admin, porque Agora nunca vio ese dinero.
+     */
+    suspend fun cancelActivity(activityId: String): AppResult<CancellationBreakdown> =
+        safeCall {
+            postgrest.rpc("cancel_activity", buildJsonObject {
+                put("p_activity_id", activityId)
+            }).decodeAs<CancellationBreakdown>()
         }
 
     suspend fun deleteActivity(activityId: String): AppResult<Unit> =

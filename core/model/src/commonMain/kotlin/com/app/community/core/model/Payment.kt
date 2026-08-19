@@ -95,3 +95,23 @@ data class Payment(
     /** El admin tiene que devolver esto por su cuenta: nunca paso por Stripe. */
     val needsManualRefund: Boolean get() = status == PaymentStatus.REFUND_OWED
 }
+
+/** A quien hay que devolver dinero a mano porque nunca paso por Stripe. */
+@Serializable
+data class ManualDebt(
+    val name: String,
+    @SerialName("amount_cents") val amountCents: Int,
+) {
+    val amountLabel: String get() = formatEuros(amountCents)
+}
+
+/** Que va a pasar (o ha pasado) con el dinero al cancelar una actividad. */
+@Serializable
+data class CancellationBreakdown(
+    @SerialName("auto_count") val autoCount: Int = 0,
+    @SerialName("auto_cents") val autoCents: Int = 0,
+    val manual: List<ManualDebt> = emptyList(),
+) {
+    val autoLabel: String get() = formatEuros(autoCents)
+    val hasMoney: Boolean get() = autoCount > 0 || manual.isNotEmpty()
+}
