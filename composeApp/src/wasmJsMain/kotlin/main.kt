@@ -34,6 +34,7 @@ fun main() {
         is WebDeepLink.Invite -> DeepLinkHandler.setInviteCode(link.code)
         is WebDeepLink.Activity -> DeepLinkHandler.setActivityCode(link.code)
         is WebDeepLink.Payment -> DeepLinkHandler.setPaymentId(link.paymentId)
+        is WebDeepLink.ConnectReturn -> DeepLinkHandler.setConnectCommunityId(link.communityId)
         null -> Unit
     }
 

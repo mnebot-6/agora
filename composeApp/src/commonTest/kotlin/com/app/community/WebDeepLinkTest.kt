@@ -58,6 +58,25 @@ class WebDeepLinkTest {
     }
 
     @Test
+    fun parsesConnectReturn() {
+        assertEquals(
+            WebDeepLink.ConnectReturn("c-123"),
+            parseWebDeepLink("?connect=c-123"),
+        )
+    }
+
+    /** Un pago en curso es mas urgente que volver de configurar cobros. */
+    @Test
+    fun paymentWinsOverConnectReturn() {
+        assertEquals(WebDeepLink.Payment("P"), parseWebDeepLink("?connect=C&pay=P"))
+    }
+
+    @Test
+    fun emptyConnectIdIsIgnored() {
+        assertNull(parseWebDeepLink("?connect="))
+    }
+
+    @Test
     fun emptyPaymentIdFallsThroughToTheOtherParams() {
         assertEquals(WebDeepLink.Invite("AAA"), parseWebDeepLink("?pay=&c=AAA"))
         assertNull(parseWebDeepLink("?pay="))

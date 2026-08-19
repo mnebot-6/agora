@@ -35,8 +35,14 @@ export default {
     // success_url sirve para los dos targets.
     if (url.pathname.startsWith("/pay/")) {
       const target = new URL("/app/", url);
-      const paymentId = url.searchParams.get("p");
-      if (paymentId) target.searchParams.set("pay", paymentId);
+      if (url.pathname === "/pay/connect" || url.pathname === "/pay/connect/") {
+        // Fin del alta de Connect: lleva la comunidad, no un pago.
+        const communityId = url.searchParams.get("community");
+        if (communityId) target.searchParams.set("connect", communityId);
+      } else {
+        const paymentId = url.searchParams.get("p");
+        if (paymentId) target.searchParams.set("pay", paymentId);
+      }
       return Response.redirect(target.toString(), 302);
     }
 

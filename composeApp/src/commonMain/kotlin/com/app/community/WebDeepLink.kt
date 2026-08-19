@@ -10,6 +10,9 @@ sealed interface WebDeepLink {
 
     /** Vuelta de Stripe Checkout. worker.js redirige /pay/ok?p=... aqui. */
     data class Payment(val paymentId: String) : WebDeepLink
+
+    /** Vuelta del alta de Connect. worker.js redirige /pay/connect?community=... aqui. */
+    data class ConnectReturn(val communityId: String) : WebDeepLink
 }
 
 /**
@@ -28,6 +31,7 @@ fun parseWebDeepLink(search: String): WebDeepLink? {
         }
         .toMap()
     params["pay"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Payment(it) }
+    params["connect"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.ConnectReturn(it) }
     params["c"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Invite(it) }
     params["a"]?.takeIf { it.isNotEmpty() }?.let { return WebDeepLink.Activity(it) }
     return null

@@ -28,6 +28,7 @@ import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
 import com.app.community.feature.notification.presentation.NotificationListScreen
 import com.app.community.dashboard.DashboardScreen
+import com.app.community.feature.community.presentation.CommunityPaymentsScreen
 
 object AgoraTab : Tab {
     override val options: TabOptions
@@ -75,6 +76,18 @@ object CommunitiesTab : Tab {
     @Composable
     override fun Content() {
         Navigator(CommunityListScreen()) { navigator ->
+            val pendingConnect by DeepLinkHandler.pendingConnectCommunityId.collectAsState()
+            // Vuelta del alta de Stripe. Se hace replace si ya estabamos en esa pantalla
+            // para que se recargue y no se apilen dos iguales.
+            LaunchedEffect(pendingConnect) {
+                val id = DeepLinkHandler.consumeConnectCommunityId() ?: return@LaunchedEffect
+                val current = navigator.lastItem
+                if (current is CommunityPaymentsScreen && current.communityId == id) {
+                    navigator.replace(CommunityPaymentsScreen(id))
+                } else {
+                    navigator.push(CommunityPaymentsScreen(id))
+                }
+            }
             val pendingCode by DeepLinkHandler.pendingInviteCode.collectAsState()
             LaunchedEffect(pendingCode) {
                 val code = DeepLinkHandler.consumeInviteCode()

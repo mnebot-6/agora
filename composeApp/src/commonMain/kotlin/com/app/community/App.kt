@@ -191,6 +191,13 @@ private fun DeepLinkTabSwitcher(onSelectTab: (Tab) -> Unit) {
     val pendingInviteCode by DeepLinkHandler.pendingInviteCode.collectAsState()
     val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
     val pendingNotificationActivityId by DeepLinkHandler.pendingNotificationActivityId.collectAsState()
+    val pendingConnectCommunityId by DeepLinkHandler.pendingConnectCommunityId.collectAsState()
+    LaunchedEffect(pendingConnectCommunityId) {
+        if (pendingConnectCommunityId != null && tabNavigator.current != CommunitiesTab) {
+            tabNavigator.current = CommunitiesTab
+            onSelectTab(CommunitiesTab)
+        }
+    }
     LaunchedEffect(pendingInviteCode) {
         if (pendingInviteCode != null && tabNavigator.current != CommunitiesTab) {
             tabNavigator.current = CommunitiesTab

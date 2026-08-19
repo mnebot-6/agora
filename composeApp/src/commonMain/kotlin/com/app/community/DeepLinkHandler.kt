@@ -32,6 +32,20 @@ object DeepLinkHandler {
         return code
     }
 
+    /** Comunidad cuya alta de Stripe acaba de terminar. Al volver hay que refrescar su estado. */
+    private val _pendingConnectCommunityId = MutableStateFlow<String?>(null)
+    val pendingConnectCommunityId: StateFlow<String?> = _pendingConnectCommunityId.asStateFlow()
+
+    fun setConnectCommunityId(communityId: String) {
+        _pendingConnectCommunityId.value = communityId
+    }
+
+    fun consumeConnectCommunityId(): String? {
+        val id = _pendingConnectCommunityId.value
+        _pendingConnectCommunityId.value = null
+        return id
+    }
+
     /** Pago del que acabamos de volver. Al consumirlo se sincroniza contra Stripe. */
     private val _pendingPaymentId = MutableStateFlow<String?>(null)
     val pendingPaymentId: StateFlow<String?> = _pendingPaymentId.asStateFlow()
