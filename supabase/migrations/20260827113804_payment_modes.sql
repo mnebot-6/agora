@@ -38,7 +38,7 @@ ALTER TABLE activities ADD CONSTRAINT activities_mode_matches_price
 -- cost_description DEJA DE ESTAR DEPRECADA: pasa a ser el "como se paga" del
 -- modo external ("Bizum al 601386047 con tu nombre y la fecha como concepto").
 COMMENT ON COLUMN activities.cost_description IS
-  'Modo external: instrucciones de pago para el usuario. NULL en free y agora.';
+  'Modo external: instrucciones de pago para el usuario. La app escribe NULL en free y agora, pero quedan filas antiguas anteriores a Stripe con texto y sin precio: no es un invariante.';
 
 -- ---------- Modo efectivo ---------------------------------------------------
 
@@ -59,8 +59,14 @@ CREATE OR REPLACE FUNCTION public.activity_payment_mode(p_activity_id uuid)
     WHERE a.id = p_activity_id;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO anon;
+-- Nadie la llama desde fuera. Sus consumidores son reserve_slot,
+-- promote_substitute y begin_slot_payment, que son SECURITY DEFINER y corren
+-- como postgres: no necesitan GRANT. Darsela a anon o a authenticated seria un
+-- salto de RLS gratis, porque esta funcion lee activities y communities sin
+-- comprobar pertenencia. Mismo criterio que expire_substitute_offers.
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO service_role;
 
 COMMIT;
