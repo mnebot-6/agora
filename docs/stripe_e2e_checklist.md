@@ -43,6 +43,26 @@ automatizar desde aqui, porque necesita la app instalada y dos cuentas.
 - [ ] Tras cancelar, la lista de deudas en efectivo sale en su propio dialogo.
 - [ ] Los pagos de Stripe aparecen reembolsados en menos de un minuto.
 
+## Bizum
+
+Bizum solo aparece en Checkout si la capability `bizum_payments` esta activa en
+la CUENTA CONECTADA del admin, no en la de plataforma. Si no sale el boton, ese
+es el sitio donde mirar (Dashboard > Connect > Cuentas conectadas > Metodos de
+pago), no el codigo.
+
+- [ ] En Checkout aparece Bizum junto a la tarjeta, en una actividad de pago.
+- [ ] Telefono de prueba `+34600000002`: el pago se rechaza y la plaza se libera.
+- [ ] Cualquier otro telefono: el pago se confirma y la plaza queda pagada.
+- [ ] Pagar con Bizum y NO volver a la app: la plaza se confirma sola. Bizum
+      resuelve unos segundos DESPUES de volver, asi que el estado correcto al
+      aterrizar puede ser "pendiente" un momento.
+- [ ] **Reembolso de un pago Bizum** (libera la plaza y que la pague otro): el
+      pago se queda en `refund_pending` hasta 5 minutos y despues pasa a
+      `refunded`. Que NO salte a `refunded` al instante es lo esperado; que se
+      quede horas en `refund_pending` no.
+- [ ] Actividad de mas de 5.000 EUR o de menos de 0,50 EUR: Bizum no aparece
+      (limites del metodo). Con tarjeta sigue funcionando.
+
 ## Comunidad sin KYC
 
 - [ ] Con `stripe_charges_enabled = false`, reservar una actividad de pago es
@@ -50,6 +70,20 @@ automatizar desde aqui, porque necesita la app instalada y dos cuentas.
 
 ## Ojo
 
-En **web** el cobro NO funciona todavia: la PWA publicada es anterior a los
-pagos. Hace falta `./gradlew :composeApp:syncWebApp` (cerca de una hora) y
-`npx wrangler deploy` desde `web/`. En Android si funciona.
+En **web** los pagos SI estan publicados. Comprobado el 2026-08-24: los recursos
+`payments_*` estan servidos en share-agora.app/app y el bundle desplegado es
+identico byte a byte al que produce `syncWebApp`. La nota anterior decia lo
+contrario y era falsa.
+
+Para saber si la web esta al dia sin recompilar nada, compara el fichero
+desplegado con el local. Si coinciden, no hay nada que desplegar:
+
+```bash
+curl -s https://share-agora.app/app/composeApp.js | md5sum && md5sum web/app/composeApp.js
+```
+
+NO busques codigos de error como `payments_not_enabled` dentro de los `.wasm`
+para averiguar si una feature esta desplegada: esos codigos solo existen en las
+Edge Functions, nunca en el cliente Kotlin, y los textos de la UI viven en
+`composeResources/*.cvr`, no en el wasm. Buscarlos ahi da un falso negativo que
+parece una feature sin desplegar.
