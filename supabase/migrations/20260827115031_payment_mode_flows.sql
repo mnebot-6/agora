@@ -113,3 +113,87 @@ REVOKE ALL ON FUNCTION public.settle_previous_occupant(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.settle_previous_occupant(uuid, uuid) FROM anon;
 REVOKE ALL ON FUNCTION public.settle_previous_occupant(uuid, uuid) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.settle_previous_occupant(uuid, uuid) TO service_role;
+
+-- ---------- promote_substitute ----------------------------------------------
+-- Base: la version viva de 20260820100000_release_and_offers.sql.
+--
+-- CAMBIO: la bifurcacion era `price_cents IS NULL` (solo las gratuitas
+-- promocionaban al instante). Ahora es `modo efectivo <> 'agora'`, asi que el
+-- modo externo entra tambien por la rama instantanea: no hay Checkout que abrir,
+-- de modo que apalabrar la plaza 6 h no protegeria nada y solo la congelaria.
+--
+-- Y sobre una plaza LIBERADA esa rama tiene que hacer el traspaso completo, no
+-- solo asignar dueno: el anterior deja de tenerla y hay que devolverle su dinero.
+
+CREATE OR REPLACE FUNCTION public.promote_substitute(p_slot_id uuid, p_activity_id uuid)
+    RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_sub record;
+    v_slot_positions uuid[];
+    v_activity RECORD;
+    v_deadline timestamptz;
+BEGIN
+    SELECT * INTO v_activity FROM activities WHERE id = p_activity_id;
+
+    SELECT array_agg(sp.position_id) INTO v_slot_positions
+    FROM slot_positions sp WHERE sp.slot_id = p_slot_id;
+
+    IF v_slot_positions IS NOT NULL AND array_length(v_slot_positions, 1) > 0 THEN
+        SELECT * INTO v_sub FROM substitute_queue
+        WHERE activity_id = p_activity_id
+          AND (position_id = ANY(v_slot_positions) OR position_id IS NULL)
+        ORDER BY queued_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED;
+    ELSE
+        SELECT * INTO v_sub FROM substitute_queue
+        WHERE activity_id = p_activity_id
+        ORDER BY queued_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED;
+    END IF;
+
+    IF v_sub IS NULL THEN
+        UPDATE slots SET offered_to = NULL, offer_expires_at = NULL WHERE id = p_slot_id;
+        RETURN FALSE;
+    END IF;
+
+    -- Gratuita o de pago externo: se asigna en el acto, sin ofertas ni ventanas.
+    IF activity_payment_mode(p_activity_id) <> 'agora' THEN
+        -- No-op si la plaza no venia liberada y pagada.
+        PERFORM settle_previous_occupant(p_slot_id);
+
+        -- El suplente entra SIN pagar: en externo el cobro lo marca el admin
+        -- despues. Por eso 'reserved' y no 'paid'.
+        UPDATE slots
+        SET status = 'reserved', reserved_by = v_sub.user_id, reserved_at = now(),
+            released_at = NULL, offered_to = NULL, offer_expires_at = NULL
+        WHERE id = p_slot_id;
+
+        DELETE FROM substitute_queue
+        WHERE activity_id = p_activity_id AND user_id = v_sub.user_id;
+
+        PERFORM notify_substitute_promoted(v_sub.user_id, p_activity_id, p_slot_id);
+        RETURN TRUE;
+    END IF;
+
+    -- Gestionada por Agora: se apalabra. El tope en el comienzo de la actividad no
+    -- es un detalle: una ventana de 6 h sobre un partido que empieza dentro de dos
+    -- dejaria la plaza congelada hasta despues de jugarse.
+    v_deadline := least(now() + interval '6 hours', v_activity.datetime);
+
+    UPDATE slots
+    SET offered_to = v_sub.user_id, offer_expires_at = v_deadline
+    WHERE id = p_slot_id;
+
+    -- NO se borra de la cola: sale al aceptar (cuando su pago se confirma), al
+    -- rechazar, o al caducar la oferta.
+    INSERT INTO notifications (user_id, type, title, body, data)
+    VALUES (
+        v_sub.user_id, 'substitute_offer', 'Tienes plaza',
+        'Se ha liberado una plaza en ' || v_activity.name || '. Confirmala antes de que caduque.',
+        jsonb_build_object('activity_id', p_activity_id, 'slot_id', p_slot_id)
+    );
+
+    RETURN TRUE;
+END;
+$$;
