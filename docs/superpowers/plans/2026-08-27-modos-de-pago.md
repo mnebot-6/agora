@@ -22,6 +22,74 @@ haya dos versiones de la regla del dinero.
 
 ---
 
+## Estado de ejecución — actualizado 2026-08-27, sesión pausada
+
+Rama: `feat/modos-de-pago`. **Nada aplicado todavía contra la base de datos.**
+
+| Tareas | Estado |
+|---|---|
+| 1 | ✅ Hecha, revisada y corregida (`efb6a54`) |
+| 2-5 | 🟡 Escritas y revisadas; **quedan 5 correcciones de la revisión de calidad sin aplicar** |
+| 6-15 | ⬜ Sin empezar |
+
+### Lo primero al retomar: terminar las correcciones de las tareas 2-5
+
+Sobre `supabase/migrations/20260827115031_payment_mode_flows.sql`. Ya aplicado en el
+commit WIP: la cabecera en futuro, el `SELECT` de la actividad sacado del bucle, el
+`coalesce` duplicado y el fan-out a admins como `INSERT ... SELECT`. **Falta:**
+
+1. **CRÍTICO — `promote_substitute` sigue con `GRANT ALL` a `anon`** desde el baseline
+   (líneas 3233-3234). `CREATE OR REPLACE` no reinicia privilegios, y ahora esa función
+   marca pagos para devolver y reasigna plazas pagadas. Añadir tras su definición:
+
+   ```sql
+   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM PUBLIC;
+   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM anon;
+   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM authenticated;
+   GRANT EXECUTE ON FUNCTION public.promote_substitute(uuid, uuid) TO service_role;
+   ```
+
+2. **CRÍTICO — el relevo instantáneo atropella un Checkout abierto.** El índice
+   `payments_one_pending_per_slot` solo protege a quien INSERTA, y las rutas nuevas no
+   insertan. Si la comunidad pierde el cobrador mientras alguien paga, el relevo le pasa
+   por encima: esa persona acaba pagando por Bizum, sin plaza, y con su pago en
+   `succeeded`, o sea fuera de toda lista de deudas. Añadir la guarda en tres sitios:
+
+   - `reserve_slot`, tras calcular `v_is_takeover`:
+     `IF v_is_takeover AND EXISTS (SELECT 1 FROM payments WHERE slot_id = p_slot_id AND status = 'pending') THEN RETURN FALSE; END IF;`
+   - `promote_substitute`, como primera sentencia de la rama `<> 'agora'`: el mismo
+     `EXISTS`, con `RETURN FALSE`.
+   - `unmark_slot_paid`: añadir `'pending'` a la lista de estados de su guarda de Stripe.
+
+3. **`unmark_slot_paid` no avisa a quien liberó la plaza**, que vuelve a ser su titular sin
+   pedirlo. Notificación `slot_removed` a `v_slot.reserved_by` cuando
+   `v_slot.released_at IS NOT NULL` y no sea el propio admin.
+
+4. **`reserve_slot` deja reservar gratis en modo `agora`** (preexistente, pero la función
+   se reescribe entera aquí). Guarda simétrica a la de `begin_slot_payment`:
+   `IF v_mode = 'agora' THEN RETURN FALSE; END IF;`, después de la guarda del punto 2.
+
+5. Comentario en `promote_substitute` dejando escrito que el orden de cerrojos del
+   subsistema es **slots primero, payments después**, y que sus llamadores traen la plaza
+   ya bloqueada.
+
+### Dos hallazgos de la revisión que se DESCARTARON, no los reabras
+
+- *"Sacar `awaiting_substitute` del `DELETE` de `unmark_slot_paid`."* No: deshacer el cobro
+  significa que esa persona no pagó, y entonces no se le debe nada. Cancelar la liberación
+  es el comportamiento especificado. El riesgo del misclic se cubre con el aviso del punto 3.
+- *"Un `refund_pending` sobre una cuenta caída se atasca para siempre."* Falso:
+  `stripe-sweep/index.ts:146` lo escala a `refund_owed` a los cinco intentos.
+
+### Política de despliegue de esta rama
+
+Ningún subagente ejecuta `supabase db push` ni `supabase functions deploy`. El proyecto
+está enlazado con producción y hay dinero real dentro. Esos dos comandos los lanza una
+persona, con el diff delante. Los puntos donde toca son la tarea 6 (migraciones) y la
+tarea 14 (Edge Functions).
+
+---
+
 ## Estructura de ficheros
 
 **Se crean:**
@@ -112,7 +180,7 @@ ALTER TABLE activities ADD CONSTRAINT activities_mode_matches_price
 -- cost_description DEJA DE ESTAR DEPRECADA: pasa a ser el "como se paga" del
 -- modo external ("Bizum al 601386047 con tu nombre y la fecha como concepto").
 COMMENT ON COLUMN activities.cost_description IS
-  'Modo external: instrucciones de pago para el usuario. NULL en free y agora.';
+  'Modo external: instrucciones de pago para el usuario. La app escribe NULL en free y agora, pero quedan filas antiguas anteriores a Stripe con texto y sin precio: no es un invariante.';
 
 -- ---------- Modo efectivo ---------------------------------------------------
 
@@ -133,8 +201,14 @@ CREATE OR REPLACE FUNCTION public.activity_payment_mode(p_activity_id uuid)
     WHERE a.id = p_activity_id;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO anon;
+-- Nadie la llama desde fuera. Sus consumidores son reserve_slot,
+-- promote_substitute y begin_slot_payment, que son SECURITY DEFINER y corren
+-- como postgres: no necesitan GRANT. Darsela a anon o a authenticated seria un
+-- salto de RLS gratis, porque esta funcion lee activities y communities sin
+-- comprobar pertenencia. Mismo criterio que expire_substitute_offers.
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.activity_payment_mode(uuid) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.activity_payment_mode(uuid) TO service_role;
 
 COMMIT;
@@ -647,7 +721,8 @@ bloque que decide si se puede cobrar. Para no repetir 140 líneas idénticas, aq
 bloque exacto que se sustituye y su reemplazo; el resto del cuerpo se copia literal del
 fichero original.
 
-Bloque a sustituir (líneas 60-71 del fichero original):
+Bloque a sustituir (líneas 60-72 del fichero original: el rango llega hasta el `END IF;`
+inclusive, o la función se queda sin cerrar):
 
 ```sql
     SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
