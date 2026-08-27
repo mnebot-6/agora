@@ -153,7 +153,14 @@ Deno.serve(async (req) => {
             // Doble clic del admin: la segunda llamada devuelve la MISMA cuenta en vez
             // de crear otra. Cubre solo 24 h, que es lo que Stripe guarda estas claves;
             // pasado ese plazo el rescate es findOrphanAccount, que no caduca.
-            idempotencyKey: `agora-account-${communityId}`,
+            //
+            // LA VENTANA DE 10 MINUTOS IMPORTA. Stripe guarda tambien las respuestas de
+            // ERROR de una clave, asi que con la clave fija un fallo pasajero dejaba el
+            // alta de esa comunidad devolviendo el mismo error durante 24 h: el admin
+            // reintentaba, veia identico mensaje, y no habia forma de saber si seguia
+            // roto o estaba mirando una respuesta enlatada. Con el intervalo, el doble
+            // clic sigue protegido y el reintento de dentro de un rato es limpio.
+            idempotencyKey: `agora-account-${communityId}-${Math.floor(Date.now() / 600_000)}`,
           });
           accountId = created.id;
         }
