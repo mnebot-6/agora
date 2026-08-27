@@ -14,13 +14,18 @@
 //   URL: https://<proyecto>.supabase.co/functions/v1/stripe-webhook
 //   Eventos: checkout.session.completed, checkout.session.async_payment_succeeded,
 //            checkout.session.async_payment_failed, checkout.session.expired,
-//            charge.refunded, account.updated
+//            refund.updated, refund.failed, account.updated
+//   (charge.refunded ya no se usa: con Bizum llega antes de que el dinero salga)
 //   Marcar tambien los eventos de CUENTAS CONECTADAS, o no llegara ninguno de los pagos.
 // Despues: supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { jsonResponse } from "../_shared/stripe.ts";
-import { applyPaymentNotCompleted, applyPaymentSucceeded } from "../_shared/payments.ts";
+import {
+  applyPaymentNotCompleted,
+  applyPaymentSucceeded,
+  refundStatusToPayment,
+} from "../_shared/payments.ts";
 
 /** Margen de reloj admitido entre Stripe y nosotros. */
 const TOLERANCE_SECONDS = 300;
@@ -126,13 +131,20 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case "charge.refunded": {
-        // Stripe confirma que el dinero salio. El worker ya lo habia marcado.
-        if (object.id) {
+      case "refund.updated":
+      case "refund.failed": {
+        // Se mira el objeto Refund y NO el Charge a proposito: `charge.refunded` llega
+        // en cuanto se crea el reembolso, asi que con Bizum diria "devuelto" con el
+        // dinero todavia sin salir. El veredicto solo lo trae el Refund.
+        //
+        // Si el barrido aun no habia guardado el refund_id esto no encuentra la fila y
+        // no pasa nada: la pasada siguiente consulta el reembolso y lo resuelve igual.
+        const next = refundStatusToPayment(object.status);
+        if (object.id && next) {
           await admin
             .from("payments")
-            .update({ status: "refunded" })
-            .eq("charge_id", object.id)
+            .update({ status: next })
+            .eq("refund_id", object.id)
             .eq("status", "refund_pending");
         }
         break;

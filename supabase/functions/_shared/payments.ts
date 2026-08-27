@@ -164,3 +164,22 @@ async function notify(
     data,
   });
 }
+
+/**
+ * Estado de pago que corresponde al estatus de un Refund de Stripe, o null si Stripe
+ * todavia no tiene veredicto.
+ *
+ * Existe porque BIZUM REEMBOLSA DE FORMA ASINCRONA. Con tarjeta el reembolso nace
+ * `succeeded` y no hay nada que esperar; con Bizum nace `pending`, tarda hasta 5
+ * minutos y puede acabar en `failed`. Dar por devuelto lo que aun no ha salido es
+ * mentirle al usuario sobre su dinero.
+ *
+ * Un reembolso `failed` NO se reintenta: Stripe devuelve el importe al saldo del admin
+ * y hay que buscar otra via, asi que pasa a la lista de deudas para que lo pague una
+ * persona.
+ */
+export function refundStatusToPayment(status: string): "refunded" | "refund_owed" | null {
+  if (status === "succeeded") return "refunded";
+  if (status === "failed" || status === "canceled") return "refund_owed";
+  return null; // pending / requires_action: el proximo barrido lo vuelve a mirar
+}
