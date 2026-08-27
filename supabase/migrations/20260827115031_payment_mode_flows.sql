@@ -197,3 +197,104 @@ BEGIN
     RETURN TRUE;
 END;
 $$;
+
+-- ---------- reserve_slot ----------------------------------------------------
+-- Base: la version viva del baseline (20260625120019_baseline.sql:1880).
+--
+-- CAMBIO: antes exigia status='available' a secas. Ahora acepta tambien una
+-- plaza PAGADA Y LIBERADA de otra persona cuando el modo efectivo no es 'agora':
+-- ese es el boton "Ocupar esta plaza" del modo externo, que hasta ahora no tenia
+-- ninguna funcion que lo atendiera y devolvia siempre "ya no esta disponible".
+--
+-- En 'agora' ese caso NO pasa por aqui: va a begin_slot_payment y a Checkout.
+
+CREATE OR REPLACE FUNCTION public.reserve_slot(p_slot_id uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_slot RECORD;
+    v_activity RECORD;
+    v_user_id UUID := auth.uid();
+    v_slot_positions uuid[];
+    v_first_in_queue RECORD;
+    v_mode text;
+    v_is_takeover boolean;
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    SELECT * INTO v_slot FROM slots WHERE id = p_slot_id FOR UPDATE;
+    IF v_slot IS NULL THEN
+        RAISE EXCEPTION 'Slot not found';
+    END IF;
+
+    v_mode := activity_payment_mode(v_slot.activity_id);
+
+    -- Relevo de una plaza liberada: sigue siendo de su dueno, pero en modo
+    -- externo no hay nada que pagar, asi que cambia de manos en el acto.
+    v_is_takeover := v_slot.status = 'paid'
+        AND v_slot.released_at IS NOT NULL
+        AND v_slot.reserved_by IS DISTINCT FROM v_user_id
+        AND v_mode <> 'agora';
+
+    IF v_slot.status <> 'available' AND NOT v_is_takeover THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Verify user is a member of the activity's community
+    SELECT * INTO v_activity FROM activities WHERE id = v_slot.activity_id;
+    IF NOT EXISTS (
+        SELECT 1 FROM community_members
+        WHERE community_id = v_activity.community_id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'User is not a member of this community';
+    END IF;
+
+    -- Check queue priority using the same position-matching logic as promote_substitute
+    SELECT array_agg(sp.position_id) INTO v_slot_positions
+    FROM slot_positions sp
+    WHERE sp.slot_id = p_slot_id;
+
+    IF v_slot_positions IS NOT NULL AND array_length(v_slot_positions, 1) > 0 THEN
+        SELECT * INTO v_first_in_queue
+        FROM substitute_queue
+        WHERE activity_id = v_slot.activity_id
+          AND (position_id = ANY(v_slot_positions) OR position_id IS NULL)
+        ORDER BY queued_at ASC
+        LIMIT 1;
+    ELSE
+        SELECT * INTO v_first_in_queue
+        FROM substitute_queue
+        WHERE activity_id = v_slot.activity_id
+        ORDER BY queued_at ASC
+        LIMIT 1;
+    END IF;
+
+    IF v_first_in_queue IS NOT NULL AND v_first_in_queue.user_id != v_user_id THEN
+        -- Someone else has priority in the queue.
+        PERFORM promote_substitute(p_slot_id, v_activity.id);
+        RETURN FALSE;
+    END IF;
+
+    -- En el relevo, el anterior deja de tener la plaza y se le debe el dinero.
+    IF v_is_takeover THEN
+        PERFORM settle_previous_occupant(p_slot_id);
+    END IF;
+
+    -- 'reserved' tambien en el relevo: el nuevo ocupante NO ha pagado nada
+    -- todavia, lo marcara el admin. Y se limpian los rastros de la liberacion.
+    UPDATE slots
+    SET status = 'reserved', reserved_by = v_user_id, reserved_at = now(),
+        released_at = NULL, offered_to = NULL, offer_expires_at = NULL
+    WHERE id = p_slot_id;
+
+    -- Clean up ALL of this user's queue entries for this activity
+    DELETE FROM substitute_queue
+    WHERE activity_id = v_slot.activity_id
+      AND user_id = v_user_id;
+
+    RETURN TRUE;
+END;
+$$;
