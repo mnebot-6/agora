@@ -122,9 +122,17 @@ export function appBaseUrl(): string {
 // La app web (wasmJs) llama a estas funciones desde el navegador, asi que hacen falta
 // cabeceras CORS y responder al preflight. Las funciones que ya existian en el repo se
 // disparan por webhook de base de datos (servidor a servidor) y no las necesitaban.
+// La lista de cabeceras NO se enumera a mano. supabase-kt manda x-supabase-api-version
+// ademas de las cuatro obvias, y cualquier cabecera que falte aqui hace que el navegador
+// rechace el preflight: el fetch ni sale, y en la app se ve un spinner infinito. Enumerar
+// se rompe sola cada vez que la libreria anade una cabecera nueva.
+//
+// El comodin no cubre Authorization (asi lo define la spec de Fetch), por eso va listada
+// aparte. Es seguro porque Allow-Origin es "*" y por tanto no hay credenciales de por
+// medio: la autenticacion viaja en el JWT del cuerpo de la peticion, no en cookies.
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, *",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
