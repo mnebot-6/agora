@@ -1463,8 +1463,7 @@ asignaciones de pago por:
 ```kotlin
                         paymentMode = activity.paymentMode,
                         priceInput = activity.priceCents
-                            ?.let { cents -> "${cents / 100},${(cents % 100).toString().padStart(2, '0')}" }
-                            ?: "",
+                            ?.let { formatEuros(it).removeSuffix(" €") } ?: "",
                         howToPayInput = activity.costDescription.orEmpty(),
 ```
 
@@ -1501,10 +1500,15 @@ Y en la llamada a `activityRepository.updateActivity(...)`, sustituir la línea 
 `costDescription` por:
 
 ```kotlin
-                costDescription = if (s.paymentMode == PaymentMode.EXTERNAL) {
-                    s.howToPayInput.ifBlank { null }
-                } else null,
+                // Nunca se borra al editar. En 'external' este es el campo "como se
+                // paga"; en 'free' puede ser el texto de coste antiguo de una actividad
+                // anterior a Stripe, que el detalle sigue enseñando. Editar el nombre no
+                // puede hacerlo desaparecer en silencio.
+                costDescription = s.howToPayInput.ifBlank { null },
 ```
+
+Ojo a la asimetría con la tarea 10: al **crear** sí se escribe solo en `EXTERNAL`, porque
+una actividad nueva no tiene texto heredado que conservar.
 
 - [ ] **Paso 5: Cambiar la llamada en la pantalla**
 
