@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.model.formatEuros
 import com.app.community.core.model.parseEurosToCents
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,10 +30,10 @@ data class EditActivityUiState(
     val durationHours: Int = 0,
     val durationMinutes: Int = 0,
     val locationName: String = "",
-    val isPaid: Boolean = false,
+    /** Solo lectura: el modo se fija al crear la actividad. */
+    val paymentMode: PaymentMode = PaymentMode.FREE,
     val priceInput: String = "",
-    /** Texto libre antiguo. Solo se ENSENA como ayuda; ya no se escribe. */
-    val legacyCostDescription: String? = null,
+    val howToPayInput: String = "",
     val status: EditActivityStatus = EditActivityStatus.Idle,
 )
 
@@ -73,13 +74,11 @@ class EditActivityScreenModel(
                         durationHours = activity.durationMinutes / 60,
                         durationMinutes = activity.durationMinutes % 60,
                         locationName = activity.locationName.orEmpty(),
-                        isPaid = activity.priceCents != null,
+                        paymentMode = activity.paymentMode,
                         priceInput = activity.priceCents
                             ?.let { formatEuros(it).removeSuffix(" €") }
                             .orEmpty(),
-                        // Solo si no hay importe todavia: es la ayuda para reescribirlo.
-                        legacyCostDescription = activity.costDescription
-                            ?.takeIf { activity.priceCents == null },
+                        howToPayInput = activity.costDescription.orEmpty(),
                     )
                 }
                 .onError { msg, _ ->
@@ -94,7 +93,7 @@ class EditActivityScreenModel(
     fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
     fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
-    fun onIsPaidChange(value: Boolean) = _state.update { it.copy(isPaid = value) }
+    fun onHowToPayInputChange(value: String) = _state.update { it.copy(howToPayInput = value) }
     fun onPriceInputChange(value: String) = _state.update { it.copy(priceInput = value) }
 
     fun save() {
@@ -108,8 +107,11 @@ class EditActivityScreenModel(
             return
         }
 
-        val priceCents = if (s.isPaid) parseEurosToCents(s.priceInput) else null
-        if (s.isPaid && priceCents == null) {
+        val priceCents =
+            if (s.paymentMode != PaymentMode.FREE) parseEurosToCents(s.priceInput) else null
+        // Una actividad de pago no puede quedarse sin importe: la restriccion
+        // activities_mode_matches_price lo rechazaria con un error ilegible.
+        if (s.paymentMode != PaymentMode.FREE && priceCents == null) {
             _state.update { it.copy(status = EditActivityStatus.Error("Introduce un importe válido, por ejemplo 6,50")) }
             return
         }
@@ -127,9 +129,9 @@ class EditActivityScreenModel(
                 datetime = datetime,
                 durationMinutes = durationMinutes,
                 locationName = s.locationName.ifBlank { null },
-                // Se conserva el texto viejo hasta que el admin ponga importe; en cuanto
-                // lo pone, deja de tener sentido y se borra.
-                costDescription = if (priceCents != null) null else s.legacyCostDescription,
+                costDescription = if (s.paymentMode == PaymentMode.EXTERNAL) {
+                    s.howToPayInput.ifBlank { null }
+                } else null,
                 priceCents = priceCents,
             )
                 .onSuccess {

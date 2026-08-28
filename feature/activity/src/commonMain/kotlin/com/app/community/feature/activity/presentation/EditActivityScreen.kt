@@ -144,11 +144,14 @@ data class EditActivityScreen(val activityId: String) : Screen {
                     )
 
                     ActivityPriceField(
-                        isPaid = state.isPaid,
+                        mode = state.paymentMode,
                         priceInput = state.priceInput,
-                        onIsPaidChange = screenModel::onIsPaidChange,
+                        howToPayInput = state.howToPayInput,
+                        canUseAgoraPayments = false,
+                        onModeChange = {},
                         onPriceInputChange = screenModel::onPriceInputChange,
-                        legacyCostDescription = state.legacyCostDescription,
+                        onHowToPayInputChange = screenModel::onHowToPayInputChange,
+                        readOnly = true,
                     )
 
                     if (state.status is EditActivityStatus.Error) {
