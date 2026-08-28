@@ -114,6 +114,12 @@
       } catch (e) { return iso; }
     }
 
+    // 650 -> "6,50 €". Mismo formato que formatEuros (Money.kt) a mano: toLocaleString
+    // depende del locale del navegador y aquí el importe se enseña siempre en euros.
+    function fmtEuros(cents) {
+      return `${Math.trunc(cents / 100)},${String(cents % 100).padStart(2, "0")} €`;
+    }
+
     const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.shareagora.community";
 
     function renderMessage(title, message) {
@@ -145,6 +151,13 @@
       const capacity = (a.slot_mode === "unlimited" || a.capacity == null)
         ? "Plazas abiertas"
         : `Plazas: ${a.taken} / ${a.capacity}`;
+      // El importe y el "cómo se paga" son dos cosas distintas: 6,50 € no dice a qué
+      // número hacer el Bizum. Mismo criterio que el detalle de la actividad: los dos
+      // juntos cuando existen, y la fila no se pinta si no hay ninguno.
+      const cost = [
+        a.price_cents == null ? null : fmtEuros(a.price_cents),
+        a.cost_description || null,
+      ].filter(Boolean).join(" · ");
 
       let positionsHtml = "";
       if (hasPositions) {
@@ -170,7 +183,7 @@
         ${a.description ? `<div class="row">${esc(a.description)}</div>` : ""}
         <div class="row">Cuándo: ${esc(fmtDate(a.datetime))}</div>
         ${a.location_name ? `<div class="row">Dónde: ${esc(a.location_name)}</div>` : ""}
-        ${a.cost_description ? `<div class="row">Coste: ${esc(a.cost_description)}</div>` : ""}
+        ${cost ? `<div class="row">Coste: ${esc(cost)}</div>` : ""}
         <div class="row muted">${esc(capacity)}</div>
         <label for="name">Tu nombre</label>
         <input id="name" type="text" autocomplete="name" />
