@@ -394,7 +394,10 @@ private fun ActivityDetailContent(
                     slotWithProfile = slotWithProfile,
                     currentUserId = state.currentUserId,
                     isAdmin = state.isAdmin,
+                    hasCost = activity.priceCents != null || activity.costDescription != null,
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
+                    onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
+                    onUnmarkPaid = { screenModel.unmarkSlotPaid(slotWithProfile.slot.id) },
                 )
             }
         }
@@ -612,12 +615,22 @@ private fun ParticipantRow(
     slotWithProfile: SlotWithProfile,
     currentUserId: String,
     isAdmin: Boolean = false,
+    hasCost: Boolean = false,
     onRelease: (() -> Unit)? = null,
+    onMarkPaid: (() -> Unit)? = null,
+    onUnmarkPaid: (() -> Unit)? = null,
 ) {
     val name = slotWithProfile.profile?.displayName
         ?: slotWithProfile.slot.guestLabel
         ?: stringResource(Res.string.unknown_user)
     val isMe = slotWithProfile.slot.reservedBy == currentUserId
+    // Mismo criterio de estado que SlotActions. El aforo ilimitado es el modo por defecto al
+    // crear una actividad, asi que sin esto un admin con pago externo no tenia en toda la
+    // pantalla donde apuntar quien le ha pagado.
+    val slot = slotWithProfile.slot
+    val markPaid = onMarkPaid.takeIf { isAdmin && hasCost && slot.status == SlotStatus.RESERVED }
+    val unmarkPaid = onUnmarkPaid.takeIf { isAdmin && hasCost && slot.status == SlotStatus.PAID }
+    val release = onRelease.takeIf { isAdmin && slot.isAdminReleasable }
     Row(
         Modifier.fillMaxWidth().padding(vertical = AgoraSpacing.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -631,8 +644,50 @@ private fun ParticipantRow(
             fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.weight(1f),
         )
-        if (isAdmin && onRelease != null && slotWithProfile.slot.isAdminReleasable) {
-            TextButton(onClick = onRelease) {
+        // Igual que en SlotActions: la accion de uso corriente a la vista y las destructivas
+        // en el menu de overflow.
+        when {
+            markPaid != null -> Row(
+                horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = markPaid) {
+                    Text(stringResource(Res.string.slot_paid), style = MaterialTheme.typography.labelMedium)
+                }
+                if (release != null) {
+                    SlotOverflowMenu(name) { dismiss ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(Res.string.slot_release),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            onClick = { dismiss(); release() },
+                        )
+                    }
+                }
+            }
+
+            unmarkPaid != null -> SlotOverflowMenu(name) { dismiss ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.slot_unmark_paid)) },
+                    onClick = { dismiss(); unmarkPaid() },
+                )
+                if (release != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(Res.string.slot_release),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = { dismiss(); release() },
+                    )
+                }
+            }
+
+            release != null -> TextButton(onClick = release) {
                 Text(
                     stringResource(Res.string.slot_release),
                     color = MaterialTheme.colorScheme.error,

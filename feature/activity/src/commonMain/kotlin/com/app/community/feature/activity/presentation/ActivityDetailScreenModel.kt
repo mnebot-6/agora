@@ -403,7 +403,12 @@ class ActivityDetailScreenModel(
             slotRepository.createSlots(activityId, 1)
                 .onSuccess {
                     // Reload to get the new slot, then reserve it
-                    val slots = slotRepository.getSlots(activityId).getOrNull() ?: return@onSuccess
+                    val slots = slotRepository.getSlots(activityId).getOrNull()
+                    if (slots == null) {
+                        _actionMessage.value = "No hemos podido comprobar si te has apuntado"
+                        load()
+                        return@onSuccess
+                    }
                     val availableSlot = slots.lastOrNull { it.isAvailable }
                     if (availableSlot != null) {
                         // Por reserveSlot del modelo, NO por el repositorio: en modo agora
@@ -412,6 +417,7 @@ class ActivityDetailScreenModel(
                         // ahora lo rechaza sin que el usuario vea nada.
                         reserveSlot(availableSlot.id)
                     } else {
+                        _actionMessage.value = "No hemos podido apuntarte, inténtalo de nuevo"
                         load()
                     }
                 }
