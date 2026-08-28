@@ -46,6 +46,7 @@ fun ActivityPriceField(
     priceInput: String,
     howToPayInput: String,
     canUseAgoraPayments: Boolean,
+    showHowToPay: Boolean,
     onModeChange: (PaymentMode) -> Unit,
     onPriceInputChange: (String) -> Unit,
     onHowToPayInputChange: (String) -> Unit,
@@ -134,12 +135,14 @@ fun ActivityPriceField(
             )
         }
 
-        // En externo, porque es donde hay algo que explicar: en 'agora' el usuario paga en
-        // Checkout y en 'free' no hay nada que cobrar. Y tambien en los otros modos cuando
-        // la actividad arrastra texto antiguo, para poder corregirlo o borrarlo: una
-        // actividad anterior a Stripe puede haber quedado en 'free' con su cost_description
-        // puesta, y seguirla ensenando en el detalle sin poder tocarla no vale.
-        if (mode == PaymentMode.EXTERNAL || howToPayInput.isNotBlank()) {
+        // Lo decide quien llama (`showHowToPay`), no el valor de ahora mismo: sale en
+        // externo, porque es donde hay algo que explicar -en 'agora' el usuario paga en
+        // Checkout y en 'free' no hay nada que cobrar-, y tambien en los otros modos
+        // cuando la actividad arrastra texto antiguo, para poder corregirlo o borrarlo:
+        // una actividad anterior a Stripe puede haber quedado en 'free' con su
+        // cost_description puesta, y seguirla ensenando en el detalle sin poder tocarla
+        // no vale.
+        if (showHowToPay) {
             OutlinedTextField(
                 value = howToPayInput,
                 onValueChange = onHowToPayInputChange,

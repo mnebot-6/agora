@@ -34,6 +34,10 @@ data class EditActivityUiState(
     val paymentMode: PaymentMode = PaymentMode.FREE,
     val priceInput: String = "",
     val howToPayInput: String = "",
+    /** La actividad traia texto de coste al cargarla. Si lo traia, el campo se queda a la
+     *  vista aunque se borre del todo: si no, borrarlo lo haria desaparecer y ya no habria
+     *  forma de volver a escribir. */
+    val hadHowToPayOnLoad: Boolean = false,
     val status: EditActivityStatus = EditActivityStatus.Idle,
 )
 
@@ -79,6 +83,7 @@ class EditActivityScreenModel(
                             ?.let { formatEuros(it).removeSuffix(" €") }
                             .orEmpty(),
                         howToPayInput = activity.costDescription.orEmpty(),
+                        hadHowToPayOnLoad = !activity.costDescription.isNullOrBlank(),
                     )
                 }
                 .onError { msg, _ ->

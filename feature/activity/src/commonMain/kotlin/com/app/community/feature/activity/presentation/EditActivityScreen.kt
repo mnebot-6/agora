@@ -28,6 +28,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.AgoraDatePickerField
@@ -148,6 +149,7 @@ data class EditActivityScreen(val activityId: String) : Screen {
                         priceInput = state.priceInput,
                         howToPayInput = state.howToPayInput,
                         canUseAgoraPayments = false,
+                        showHowToPay = state.paymentMode == PaymentMode.EXTERNAL || state.hadHowToPayOnLoad,
                         onModeChange = {},
                         onPriceInputChange = screenModel::onPriceInputChange,
                         onHowToPayInputChange = screenModel::onHowToPayInputChange,

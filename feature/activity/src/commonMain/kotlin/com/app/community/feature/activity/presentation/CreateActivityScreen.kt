@@ -41,6 +41,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.model.SlotMode
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
@@ -170,6 +171,8 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     priceInput = state.priceInput,
                     howToPayInput = state.howToPayInput,
                     canUseAgoraPayments = state.canUseAgoraPayments,
+                    // Una actividad nueva no hereda texto de coste antiguo.
+                    showHowToPay = state.paymentMode == PaymentMode.EXTERNAL,
                     onModeChange = screenModel::onPaymentModeChange,
                     onPriceInputChange = screenModel::onPriceInputChange,
                     onHowToPayInputChange = screenModel::onHowToPayInputChange,
