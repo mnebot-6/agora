@@ -317,6 +317,11 @@ class ActivityDetailScreenModel(
                         load()
                     } else {
                         _actionMessage.value = "La plaza ya no está disponible"
+                        // Recargar reconcilia el modo efectivo, que solo se calcula en load().
+                        // Si el servidor dice 'agora' y esta pantalla creia 'external', sin
+                        // esto la siguiente pulsacion daria el mismo mensaje falso para
+                        // siempre; con esto ya sale a Checkout.
+                        load()
                     }
                 }
                 .onError { msg, _ ->

@@ -1063,6 +1063,20 @@ private fun SlotActions(
                     text = { Text(stringResource(Res.string.slot_unmark_paid)) },
                     onClick = { dismiss(); onUnmarkPaid() },
                 )
+                // Una plaza de etiqueta de invitado marcada como pagada no tiene dueno, asi
+                // que sigue siendo liberable. Esta rama se evalua antes que la de liberar,
+                // de modo que sin esto el admin necesitaba dos pasos para vaciarla.
+                if (slot.isAdminReleasable) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(Res.string.slot_release),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = { dismiss(); onRelease() },
+                    )
+                }
             }
         }
 
