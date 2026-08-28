@@ -5,10 +5,8 @@
 -- INSTANTANEO: no hay Checkout que abrir. Pero el traspaso contable es el mismo
 -- que en 'agora', y esa regla ya existia escrita en TypeScript
 -- (supabase/functions/_shared/payments.ts). Duplicarla en SQL era pedir que un
--- dia divergieran y alguien se quedara sin su devolucion, asi que la regla pasa
--- a vivir aqui y la Edge Function la llamara por RPC en una tarea posterior.
--- Hasta entonces conviven las dos implementaciones: la de TypeScript atiende el
--- traspaso de Stripe y esta atiende el del modo externo.
+-- dia divergieran y alguien se quedara sin su devolucion, asi que la regla vive
+-- aqui y la Edge Function la llama por RPC.
 --
 -- Diseno: docs/superpowers/specs/2026-08-27-modos-de-pago-design.md
 -- ============================================================================
