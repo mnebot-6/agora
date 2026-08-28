@@ -134,9 +134,12 @@ fun ActivityPriceField(
             )
         }
 
-        // Solo en externo: en 'agora' el usuario paga en Checkout y no hay nada que
-        // explicarle, y en 'free' no hay nada que cobrar.
-        if (mode == PaymentMode.EXTERNAL) {
+        // En externo, porque es donde hay algo que explicar: en 'agora' el usuario paga en
+        // Checkout y en 'free' no hay nada que cobrar. Y tambien en los otros modos cuando
+        // la actividad arrastra texto antiguo, para poder corregirlo o borrarlo: una
+        // actividad anterior a Stripe puede haber quedado en 'free' con su cost_description
+        // puesta, y seguirla ensenando en el detalle sin poder tocarla no vale.
+        if (mode == PaymentMode.EXTERNAL || howToPayInput.isNotBlank()) {
             OutlinedTextField(
                 value = howToPayInput,
                 onValueChange = onHowToPayInputChange,

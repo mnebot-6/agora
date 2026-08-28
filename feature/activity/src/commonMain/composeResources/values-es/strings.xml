@@ -28,7 +28,7 @@
     <string name="price_placeholder">6,50</string>
     <string name="price_invalid">Escribe un importe como 6,50</string>
     <string name="price_how_to_pay_label">Cómo se paga</string>
-    <string name="price_how_to_pay_placeholder">Bizum al 601386047 con tu nombre y la fecha como concepto</string>
+    <string name="price_how_to_pay_placeholder">Bizum al 600 000 000 con tu nombre y la fecha como concepto</string>
     <string name="price_agora_unavailable">Para cobrar por Agora, configura antes los cobros de la comunidad en sus ajustes.</string>
     <string name="price_mode_locked">El modo de pago se elige al crear la actividad y no se puede cambiar.</string>
     <string name="label_delete">Eliminar</string>
