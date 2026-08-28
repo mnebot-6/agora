@@ -23,6 +23,8 @@ data class GuestActivityInfo(
     @SerialName("duration_minutes") val durationMinutes: Int,
     @SerialName("location_name") val locationName: String? = null,
     @SerialName("cost_description") val costDescription: String? = null,
+    /** Importe por plaza. Un invitado siempre paga por fuera de Agora, nunca en Checkout. */
+    @SerialName("price_cents") val priceCents: Int? = null,
     @SerialName("slot_mode") val slotMode: SlotMode,
     /** null = sin tope (modo ilimitado). */
     val capacity: Int? = null,

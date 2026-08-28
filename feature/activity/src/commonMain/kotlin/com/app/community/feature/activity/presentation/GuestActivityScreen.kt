@@ -31,6 +31,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.app.community.core.data.repository.AuthRepository
 import com.app.community.core.model.SlotMode
+import com.app.community.core.model.formatEuros
 import com.app.community.core.ui.components.AgoraButton
 import com.app.community.core.ui.components.AgoraButtonVariant
 import com.app.community.core.ui.components.LoadingScreen
@@ -42,6 +43,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import agora.feature.activity.generated.resources.Res
+import agora.feature.activity.generated.resources.detail_cost
 import agora.feature.activity.generated.resources.guest_approved_message
 import agora.feature.activity.generated.resources.guest_approved_title
 import agora.feature.activity.generated.resources.guest_capacity
@@ -172,6 +174,19 @@ data class GuestActivityScreen(val code: String) : Screen {
             activity.locationName?.let {
                 Text(
                     text = stringResource(Res.string.guest_where, it),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            // Un invitado siempre paga por fuera de Agora, asi que el importe y el "como se
+            // paga" son lo unico que le dice que hay que pagar. Mismo criterio que el
+            // detalle de la actividad: los dos juntos cuando existen.
+            val cost = listOfNotNull(
+                activity.priceCents?.let { formatEuros(it) },
+                activity.costDescription,
+            ).joinToString(" · ").ifBlank { null }
+            cost?.let {
+                Text(
+                    text = stringResource(Res.string.detail_cost, it),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
