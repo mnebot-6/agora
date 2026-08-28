@@ -129,9 +129,11 @@ class EditActivityScreenModel(
                 datetime = datetime,
                 durationMinutes = durationMinutes,
                 locationName = s.locationName.ifBlank { null },
-                costDescription = if (s.paymentMode == PaymentMode.EXTERNAL) {
-                    s.howToPayInput.ifBlank { null }
-                } else null,
+                // Nunca se borra al editar. En 'external' este es el campo "como se
+                // paga"; en 'free' puede ser el texto de coste antiguo de una actividad
+                // anterior a Stripe, que el detalle sigue enseñando. Editar el nombre no
+                // puede hacerlo desaparecer en silencio.
+                costDescription = s.howToPayInput.ifBlank { null },
                 priceCents = priceCents,
             )
                 .onSuccess {
