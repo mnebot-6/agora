@@ -8,6 +8,7 @@
     <string name="slot_reserve">Reservar</string>
     <string name="slot_release">Liberar</string>
     <string name="slot_paid">Pagado</string>
+    <string name="slot_unmark_paid">Desmarcar pago</string>
     <string name="slot_actions_cd">Acciones de %1$s</string>
     <string name="unknown_user">Usuario</string>
     <string name="name_is_me">%1$s (tú)</string>

@@ -240,7 +240,13 @@ private fun ActivityDetailContent(
 
                     // Importe estructurado si lo hay; si no, el texto libre antiguo, que
                     // sigue siendo lo unico que tienen las actividades ya creadas.
-                    (activity.priceCents?.let { formatEuros(it) } ?: activity.costDescription)?.let { cost ->
+                    // El importe y el "como se paga" son dos cosas distintas en el modo
+                    // externo: 6,50 € no le dice a nadie a que numero hacer el Bizum.
+                    val cost = listOfNotNull(
+                        activity.priceCents?.let { formatEuros(it) },
+                        activity.costDescription,
+                    ).joinToString(" · ").ifBlank { null }
+                    cost?.let { cost ->
                         Text(stringResource(Res.string.detail_cost, cost), style = MaterialTheme.typography.bodyMedium)
                     }
 
@@ -407,6 +413,7 @@ private fun ActivityDetailContent(
                     onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                     onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                     onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
+                    onUnmarkPaid = { screenModel.unmarkSlotPaid(slotWithProfile.slot.id) },
                     onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
                     onDeclineOffer = { screenModel.declineOffer(slotWithProfile.slot.id) },
                 )
@@ -456,6 +463,7 @@ private fun ActivityDetailContent(
                         onReserve = { screenModel.reserveSlot(slotWithProfile.slot.id) },
                         onRelease = { screenModel.releaseSlot(slotWithProfile.slot.id) },
                         onMarkPaid = { screenModel.markSlotPaid(slotWithProfile.slot.id) },
+                        onUnmarkPaid = { screenModel.unmarkSlotPaid(slotWithProfile.slot.id) },
                         onAssign = { assignTarget = AssignTarget.ExistingSlot(slotWithProfile.slot.id) },
                         onDeclineOffer = { screenModel.declineOffer(slotWithProfile.slot.id) },
                     )
@@ -730,6 +738,7 @@ private fun SlotCard(
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
+    onUnmarkPaid: () -> Unit,
     onAssign: () -> Unit,
     onDeclineOffer: () -> Unit,
 ) {
@@ -858,6 +867,7 @@ private fun SlotCard(
                 onReserve = onReserve,
                 onRelease = onRelease,
                 onMarkPaid = onMarkPaid,
+                onUnmarkPaid = onUnmarkPaid,
                 onDeclineOffer = onDeclineOffer,
                 onAssign = onAssign,
             )
@@ -890,6 +900,7 @@ private fun SlotActions(
     onReserve: () -> Unit,
     onRelease: () -> Unit,
     onMarkPaid: () -> Unit,
+    onUnmarkPaid: () -> Unit,
     onAssign: () -> Unit,
     onDeclineOffer: () -> Unit,
 ) {
@@ -988,6 +999,18 @@ private fun SlotActions(
                 Text(stringResource(Res.string.slot_release), color = MaterialTheme.colorScheme.error)
             }
         }
+        // Plaza pagada de otra persona: el admin puede deshacer el marcado. El servidor
+        // rechaza los cobros de Stripe; aqui no se puede saber sin cargar los pagos de
+        // cada plaza, asi que se ofrece y se traduce el rechazo.
+        isAdmin && hasCost && slot.status == SlotStatus.PAID -> {
+            SlotOverflowMenu(slotLabel) { dismiss ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.slot_unmark_paid)) },
+                    onClick = { dismiss(); onUnmarkPaid() },
+                )
+            }
+        }
+
         isAdmin && slot.isAdminReleasable -> {
             if (hasCost && slot.status == SlotStatus.RESERVED) {
                 Row(
