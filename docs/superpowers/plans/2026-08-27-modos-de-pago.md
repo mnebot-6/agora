@@ -1925,12 +1925,19 @@ git commit -m "refactor(pagos): una sola regla para el traspaso de una plaza lib
 
 **Ficheros:** ninguno. Es la red de seguridad antes de publicar.
 
+Los pasos 1 a 5 son el ciclo del diseño. Los pasos 6 a 9 son los agujeros que aparecieron
+durante la implementación: no estaban en el plan original y son los que más conviene mirar,
+porque nadie los ha visto funcionar nunca.
+
+Despliegue ya hecho el 2026-08-28: migraciones aplicadas y verificadas, Edge Functions
+desplegadas. Queda publicar la web y el `.aab`.
+
 - [ ] **Paso 1: Modo externo, ciclo completo**
 
 En una comunidad **sin** cobrador de Stripe:
 
-1. Crear una actividad con "Pago externo", 6,50 €, "Bizum al 601386047".
-2. Comprobar que el detalle muestra `6,50 € · Bizum al 601386047`.
+1. Crear una actividad con "Pago externo", 6,50 €, y un texto de cómo pagar.
+2. Comprobar que el detalle muestra `6,50 € · <el texto>`.
 3. Reservar con otra cuenta: la plaza queda reservada al instante, sin pantalla de pago.
 4. Como admin, marcar pagada. Desmarcar. Volver a marcar.
 
@@ -1939,8 +1946,8 @@ En una comunidad **sin** cobrador de Stripe:
 5. Con la cuenta que tiene la plaza pagada, liberarla. Comprobar que **sigue apareciendo
    como suya** y marcada como liberada.
 6. Con una tercera cuenta, pulsar "Ocupar esta plaza". Comprobar que la ocupa al instante.
-7. Comprobar las tres notificaciones: la anterior ocupante recibe "Plaza ocupada", **todos
-   los admins** reciben "Devuélvele 6,50 € a …", y no hay ningún reembolso automático.
+7. Comprobar las notificaciones: quien tenía la plaza recibe "Plaza ocupada", **todos los
+   admins** reciben "Devuélvele 6,50 € a …", y no hay ningún reembolso automático.
 
 - [ ] **Paso 3: Modo Agora sigue intacto**
 
@@ -1954,7 +1961,7 @@ En una comunidad **con** cobrador:
 
 10. En el panel de Supabase, poner `stripe_charges_enabled = false` en esa comunidad.
 11. Reservar una plaza de la actividad "Pago con Agora": tiene que reservarse al instante,
-    sin Checkout.
+    sin Checkout, y avisar de que el organizador cobrará aparte.
 12. Devolver `stripe_charges_enabled = true` y comprobar que vuelve a salir a Checkout.
 
 - [ ] **Paso 5: El selector respeta el alta**
@@ -1962,19 +1969,53 @@ En una comunidad **con** cobrador:
 13. En la comunidad sin cobrador, abrir "Crear actividad": solo salen dos tarjetas y el
     aviso de que hay que configurar los cobros.
 14. Abrir "Editar" sobre cualquier actividad: el modo sale como texto, no como tarjetas.
+    El importe sigue siendo editable.
 
-- [ ] **Paso 6: Desplegar la web**
+- [ ] **Paso 6: Aforo ilimitado con pago externo** *(agujero descubierto en la revisión)*
+
+`UNLIMITED` es el modo de plazas por defecto, y hasta esta rama no había forma de marcar a
+nadie como pagado en él.
+
+15. Crear una actividad de aforo ilimitado con pago externo.
+16. Apuntarse con otra cuenta. Como admin, marcar esa fila como pagada y desmarcarla.
+17. Comprobar que la acción aparece en la fila del participante, no solo en las tarjetas de
+    plaza numeradas.
+
+- [ ] **Paso 7: Aforo ilimitado con pago Agora** *(era un agujero abierto en producción)*
+
+Antes de esta rama, "Apuntarme" en una actividad de pago de aforo ilimitado reservaba
+**gratis** sin pasar por Checkout.
+
+18. Crear una actividad de aforo ilimitado con "Pago con Agora".
+19. Pulsar "Apuntarme": tiene que salir a Stripe Checkout, no reservar directamente.
+
+- [ ] **Paso 8: Prioridad de la cola de suplentes** *(nunca había funcionado)*
+
+`RECORD IS NOT NULL` en Postgres solo es cierto si todas las columnas son no nulas, así que
+esta comprobación llevaba rota desde el baseline y **cualquiera podía saltarse la cola**.
+Ahora se aplica de verdad, o sea que es un cambio de comportamiento visible.
+
+20. Actividad limitada sin posiciones, todas las plazas ocupadas.
+21. Apuntar a dos cuentas a la cola de suplentes, en orden.
+22. Liberar una plaza y comprobar que va a la **primera** de la cola.
+23. Con la actividad en modo externo, que la segunda intente ocupar una plaza libre antes
+    que la primera: tiene que rechazarla.
+
+- [ ] **Paso 9: El invitado ve cuánto cuesta** *(no lo veía en ningún sitio)*
+
+24. Compartir el enlace de una actividad externa con importe y texto de pago.
+25. Abrirlo **en el navegador, sin sesión** (la landing de `web/a/`): tiene que verse
+    `6,50 € · <el texto>`.
+26. Abrir la misma actividad desde dentro de la app como invitado: mismo dato.
+
+- [ ] **Paso 10: Publicar**
 
 ```bash
 ./gradlew :composeApp:syncWebApp
 ```
 
 Después, `wrangler deploy` desde `web/`. El build de wasm de producción tarda del orden de
-una hora: cuéntalo y no lo encadenes con otra cosa.
+una hora. Y por último el `.aab` a Play.
 
-- [ ] **Paso 7: Commit final**
-
-```bash
-git add docs
-git commit -m "docs(pagos): comprobacion manual de los tres modos"
-```
+**Hasta que salga la app, `joinUnlimited` falla en silencio en las actividades `agora` de
+aforo ilimitado.** Es el daño conocido y acotado del orden de despliegue.
