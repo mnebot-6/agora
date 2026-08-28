@@ -55,14 +55,6 @@ export async function applyPaymentSucceeded(
   const payment = updated[0] as PaymentRow;
   if (!payment.slot_id) return "applied";
 
-  // Quien ocupaba la plaza antes, si es que la habia liberado esperando sustituto.
-  const { data: previous } = await supabase
-    .from("payments")
-    .select("id, method, user_id, amount_cents")
-    .eq("slot_id", payment.slot_id)
-    .eq("status", "awaiting_substitute")
-    .neq("id", paymentId);
-
   await supabase
     .from("slots")
     .update({
@@ -85,22 +77,13 @@ export async function applyPaymentSucceeded(
       .eq("user_id", payment.user_id);
   }
 
-  for (const prev of previous ?? []) {
-    // Lo que paso por Stripe se devuelve solo; lo demas lo debe el admin a mano.
-    await supabase
-      .from("payments")
-      .update({
-        status: prev.method === "stripe" ? "refund_pending" : "refund_owed",
-        refund_reason: "substitute",
-      })
-      .eq("id", prev.id);
-
-    if (prev.user_id) {
-      await notify(supabase, prev.user_id, "payment_refunded", "Plaza ocupada", {
-        activity_id: payment.activity_id,
-      });
-    }
-  }
+  // Cerrar las cuentas del ocupante anterior, si esta plaza venia liberada. La regla
+  // vive en SQL porque el modo externo la necesita tambien, y dos copias de la regla
+  // del dinero acaban divergiendo. No-op si no habia nadie esperando sustituto.
+  await supabase.rpc("settle_previous_occupant", {
+    p_slot_id: payment.slot_id,
+    p_exclude_payment_id: paymentId,
+  });
 
   if (payment.user_id) {
     await notify(supabase, payment.user_id, "payment_confirmed", "Pago confirmado", {
