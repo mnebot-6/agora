@@ -18,6 +18,7 @@ import com.app.community.core.model.ManualDebt
 import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.model.PendingGuestRequest
 import com.app.community.core.model.Position
 import com.app.community.core.model.Profile
@@ -27,6 +28,7 @@ import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotPosition
 import com.app.community.core.model.SlotStatus
 import com.app.community.core.model.SubstituteEntry
+import com.app.community.core.model.effectiveMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -96,6 +98,10 @@ class ActivityDetailScreenModel(
     val guestShareUrl: StateFlow<String?> = _guestShareUrl.asStateFlow()
 
     private var isPublicCommunity: Boolean = false
+
+    /** Modo que se ejecuta de verdad: 'agora' degrada a externo si la comunidad no cobra. */
+    private var effectiveMode: PaymentMode = PaymentMode.FREE
+
     private var pendingGuestRequests: List<PendingGuestRequest> = emptyList()
     private var members: List<CommunityMember> = emptyList()
 
@@ -128,8 +134,9 @@ class ActivityDetailScreenModel(
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
 
             // Comunidad pública → habilita compartir/invitados; carga la cola FIFO si soy admin
-            isPublicCommunity = communityRepository.getCommunity(activity.communityId)
-                .getOrNull()?.visibility?.let { it != CommunityVisibility.PRIVATE } ?: false
+            val community = communityRepository.getCommunity(activity.communityId).getOrNull()
+            isPublicCommunity = community?.visibility?.let { it != CommunityVisibility.PRIVATE } ?: false
+            effectiveMode = activity.effectiveMode(community?.stripeChargesEnabled ?: false)
             pendingGuestRequests = if (isAdmin && isPublicCommunity) {
                 guestRepository.listPendingRequests(activityId).getOrNull() ?: emptyList()
             } else emptyList()
@@ -254,8 +261,10 @@ class ActivityDetailScreenModel(
      * accion mas usada de la app.
      */
     fun reserveSlot(slotId: String) {
-        val activity = (_state.value as? ActivityDetailUiState.Content)?.activity
-        if (activity?.priceCents == null) {
+        // En externo no hay nada que cobrar por aqui: reservar es instantaneo, igual que
+        // en las gratuitas. Salir a Checkout para que el servidor lo rechace era un viaje
+        // de red de mas en la accion mas usada de la app.
+        if (effectiveMode != PaymentMode.AGORA) {
             reserveFree(slotId)
             return
         }
@@ -264,10 +273,8 @@ class ActivityDetailScreenModel(
                 .onSuccess { link -> _checkoutUrl.value = link.url }
                 .onError { msg, _ ->
                     when (PaymentError.from(msg)) {
-                        // La comunidad todavia no ha completado su alta de Stripe. NO es un
-                        // error para quien reserva: se apunta como siempre y el admin cobra
-                        // a mano. Ensenarle un fallo aqui seria castigarle por un tramite
-                        // que no es suyo.
+                        // El cobrador se ha caido entre que se cargo la pantalla y el
+                        // clic. Se reserva como en externo y el admin cobra a mano.
                         PaymentError.PAYMENTS_NOT_ENABLED,
                         PaymentError.ACTIVITY_IS_FREE -> reserveFree(slotId)
 
@@ -369,6 +376,27 @@ class ActivityDetailScreenModel(
         }
     }
 
+    fun unmarkSlotPaid(slotId: String) {
+        screenModelScope.launch {
+            slotRepository.unmarkSlotPaid(slotId)
+                .onSuccess { success ->
+                    _actionMessage.value =
+                        if (success) "Pago desmarcado" else "Esta plaza no consta como pagada"
+                    load()
+                }
+                .onError { msg, _ ->
+                    // El servidor es la autoridad: la pantalla no sabe si una plaza se
+                    // pago por Stripe sin cargar los pagos de cada una, asi que ofrece el
+                    // boton y traduce el rechazo.
+                    _actionMessage.value = if (msg.contains("paid_with_stripe")) {
+                        "Esta plaza se pagó por Stripe: no se puede desmarcar"
+                    } else {
+                        "Error: $msg"
+                    }
+                }
+        }
+    }
+
     fun joinUnlimited() {
         screenModelScope.launch {
             // For unlimited mode, create a new slot and reserve it
@@ -378,9 +406,14 @@ class ActivityDetailScreenModel(
                     val slots = slotRepository.getSlots(activityId).getOrNull() ?: return@onSuccess
                     val availableSlot = slots.lastOrNull { it.isAvailable }
                     if (availableSlot != null) {
-                        slotRepository.reserveSlot(availableSlot.id)
+                        // Por reserveSlot del modelo, NO por el repositorio: en modo agora
+                        // hay que salir a Checkout. Llamar al RPC a pelo era apuntarse
+                        // gratis a una actividad de pago de aforo ilimitado, y el servidor
+                        // ahora lo rechaza sin que el usuario vea nada.
+                        reserveSlot(availableSlot.id)
+                    } else {
+                        load()
                     }
-                    load()
                 }
                 .onError { msg, _ ->
                     _actionMessage.value = "Error: $msg"
