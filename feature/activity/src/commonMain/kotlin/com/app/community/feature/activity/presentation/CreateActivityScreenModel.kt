@@ -134,7 +134,14 @@ class CreateActivityScreenModel(
     fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
     fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
-    fun onPaymentModeChange(value: PaymentMode) = _state.update { it.copy(paymentMode = value) }
+    // Fuera del modo externo ese texto no se guarda, asi que se borra al cambiar de modo en
+    // vez de descartarlo en silencio al guardar.
+    fun onPaymentModeChange(value: PaymentMode) = _state.update {
+        it.copy(
+            paymentMode = value,
+            howToPayInput = if (value == PaymentMode.EXTERNAL) it.howToPayInput else "",
+        )
+    }
     fun onHowToPayInputChange(value: String) = _state.update { it.copy(howToPayInput = value) }
     fun onPriceInputChange(value: String) = _state.update { it.copy(priceInput = value) }
     fun onSlotModeChange(value: SlotMode) = _state.update { it.copy(slotMode = value) }
