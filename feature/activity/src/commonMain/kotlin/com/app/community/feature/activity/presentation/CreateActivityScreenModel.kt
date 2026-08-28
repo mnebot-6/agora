@@ -5,8 +5,10 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.app.community.core.common.RefreshBus
 import com.app.community.core.data.repository.ActivityRepository
 import com.app.community.core.data.repository.AuthRepository
+import com.app.community.core.data.repository.CommunityRepository
 import com.app.community.core.data.repository.SlotRepository
 import com.app.community.core.data.repository.SlotTemplateRepository
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.model.SlotMode
 import com.app.community.core.model.SlotTemplate
 import com.app.community.core.model.TemplateConfig
@@ -50,10 +52,14 @@ data class CreateActivityUiState(
     val durationHours: Int = 2,
     val durationMinutes: Int = 0,
     val locationName: String = "",
-    /** Actividad de pago. Si es false, reservar sigue siendo instantaneo. */
-    val isPaid: Boolean = false,
+    /** Como se cobra esta actividad. Se fija al crearla. */
+    val paymentMode: PaymentMode = PaymentMode.FREE,
     /** Texto crudo del campo de importe: "6,50". Se valida con parseEurosToCents. */
     val priceInput: String = "",
+    /** Instrucciones de cobro del modo externo. Va a activities.cost_description. */
+    val howToPayInput: String = "",
+    /** La comunidad tiene cobrador: sin esto no se ofrece el modo Agora. */
+    val canUseAgoraPayments: Boolean = false,
     val slotMode: SlotMode = SlotMode.UNLIMITED,
     val maxSlots: String = "",
     // Position mode fields
@@ -82,6 +88,7 @@ class CreateActivityScreenModel(
     private val slotRepository: SlotRepository,
     private val authRepository: AuthRepository,
     private val slotTemplateRepository: SlotTemplateRepository,
+    private val communityRepository: CommunityRepository,
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(CreateActivityUiState())
@@ -89,6 +96,7 @@ class CreateActivityScreenModel(
 
     init {
         loadTemplates()
+        loadPaymentCapability()
     }
 
     private fun loadTemplates() {
@@ -106,6 +114,19 @@ class CreateActivityScreenModel(
         }
     }
 
+    /**
+     * Si la comunidad no puede cobrar por Stripe, el modo Agora ni siquiera se ofrece.
+     * Ante un fallo de red se deja en false: mejor no ofrecer un modo que luego rechaza
+     * el servidor que ofrecerlo y dejar al admin con una actividad que no cobra.
+     */
+    private fun loadPaymentCapability() {
+        screenModelScope.launch {
+            val enabled = communityRepository.getCommunity(communityId)
+                .getOrNull()?.stripeChargesEnabled ?: false
+            _state.update { it.copy(canUseAgoraPayments = enabled) }
+        }
+    }
+
     // --- Basic fields ---
     fun onNameChange(value: String) = _state.update { it.copy(name = value) }
     fun onDescriptionChange(value: String) = _state.update { it.copy(description = value) }
@@ -113,7 +134,8 @@ class CreateActivityScreenModel(
     fun onTimeSelected(hour: Int, minute: Int) = _state.update { it.copy(timeHour = hour, timeMinute = minute) }
     fun onDurationSelected(hours: Int, minutes: Int) = _state.update { it.copy(durationHours = hours, durationMinutes = minutes) }
     fun onLocationNameChange(value: String) = _state.update { it.copy(locationName = value) }
-    fun onIsPaidChange(value: Boolean) = _state.update { it.copy(isPaid = value) }
+    fun onPaymentModeChange(value: PaymentMode) = _state.update { it.copy(paymentMode = value) }
+    fun onHowToPayInputChange(value: String) = _state.update { it.copy(howToPayInput = value) }
     fun onPriceInputChange(value: String) = _state.update { it.copy(priceInput = value) }
     fun onSlotModeChange(value: SlotMode) = _state.update { it.copy(slotMode = value) }
     fun onMaxSlotsChange(value: String) = _state.update { it.copy(maxSlots = value) }
@@ -304,8 +326,17 @@ class CreateActivityScreenModel(
             }
         }
 
-        val priceCents = if (s.isPaid) parseEurosToCents(s.priceInput) else null
-        if (s.isPaid && priceCents == null) {
+        // Defensa por si el estado llega con Agora sin cobrador: el selector no lo
+        // ofrece, pero el estado sobrevive a que la comunidad pierda el alta mientras
+        // la pantalla esta abierta.
+        if (s.paymentMode == PaymentMode.AGORA && !s.canUseAgoraPayments) {
+            _state.update { it.copy(status = CreateActivityStatus.Error("Esta comunidad todavía no puede cobrar por Agora")) }
+            return
+        }
+
+        val priceCents =
+            if (s.paymentMode != PaymentMode.FREE) parseEurosToCents(s.priceInput) else null
+        if (s.paymentMode != PaymentMode.FREE && priceCents == null) {
             _state.update { it.copy(status = CreateActivityStatus.Error("Introduce un importe válido, por ejemplo 6,50")) }
             return
         }
@@ -332,8 +363,11 @@ class CreateActivityScreenModel(
                 locationName = s.locationName.ifBlank { null },
                 locationLat = null,
                 locationLng = null,
-                costDescription = null,
+                costDescription = if (s.paymentMode == PaymentMode.EXTERNAL) {
+                    s.howToPayInput.ifBlank { null }
+                } else null,
                 priceCents = priceCents,
+                paymentMode = s.paymentMode,
                 slotMode = s.slotMode,
                 maxSlots = maxSlots,
                 createdBy = userId,

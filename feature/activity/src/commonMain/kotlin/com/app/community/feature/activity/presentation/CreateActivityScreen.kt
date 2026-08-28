@@ -164,12 +164,15 @@ data class CreateActivityScreen(val communityId: String) : Screen {
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Coste: gratuita o de pago con importe
+                // Coste: sin pago, pago externo o pago gestionado por Agora
                 ActivityPriceField(
-                    isPaid = state.isPaid,
+                    mode = state.paymentMode,
                     priceInput = state.priceInput,
-                    onIsPaidChange = screenModel::onIsPaidChange,
+                    howToPayInput = state.howToPayInput,
+                    canUseAgoraPayments = state.canUseAgoraPayments,
+                    onModeChange = screenModel::onPaymentModeChange,
                     onPriceInputChange = screenModel::onPriceInputChange,
+                    onHowToPayInputChange = screenModel::onHowToPayInputChange,
                 )
 
                 // Slot mode selector

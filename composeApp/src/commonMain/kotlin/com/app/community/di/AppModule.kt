@@ -99,6 +99,7 @@ val screenModelModule = module {
             slotRepository = get(),
             authRepository = get(),
             slotTemplateRepository = get(),
+            communityRepository = get(),
         )
     }
     factory { params ->
