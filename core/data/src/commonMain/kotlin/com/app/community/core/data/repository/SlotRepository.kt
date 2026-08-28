@@ -109,6 +109,21 @@ class SlotRepository {
             result.trim().toBoolean()
         }
 
+    /**
+     * Revierte un cobro MANUAL. El servidor rechaza los de Stripe con 'paid_with_stripe':
+     * ese dinero salio de verdad y la unica via de vuelta es un sustituto o cancelar.
+     */
+    suspend fun unmarkSlotPaid(slotId: String): AppResult<Boolean> =
+        safeCall {
+            val result = postgrest.rpc(
+                function = "unmark_slot_paid",
+                parameters = buildJsonObject {
+                    put("p_slot_id", slotId)
+                },
+            ).data
+            result.trim().toBoolean()
+        }
+
     suspend fun joinSubstituteQueue(
         activityId: String,
         positionId: String?,

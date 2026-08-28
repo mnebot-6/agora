@@ -17,5 +17,10 @@ data class Community(
     @SerialName("member_count") val memberCount: Int? = null,
     @SerialName("activity_count_upcoming") val activityCountUpcoming: Int? = null,
     @SerialName("parent_id") val parentId: String? = null,
+    /**
+     * Esta comunidad puede cobrar por Stripe. Lo mantiene al dia el webhook account.updated.
+     * Decide si una actividad 'agora' se ejecuta como tal o degrada a externa.
+     */
+    @SerialName("stripe_charges_enabled") val stripeChargesEnabled: Boolean = false,
     val breadcrumb: String? = null,
 )

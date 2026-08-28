@@ -6,6 +6,7 @@ import com.app.community.core.data.SupabaseProvider
 import com.app.community.core.model.Activity
 import com.app.community.core.model.ActivityStatus
 import com.app.community.core.model.CancellationBreakdown
+import com.app.community.core.model.PaymentMode
 import com.app.community.core.model.SlotMode
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.datetime.Instant
@@ -55,6 +56,7 @@ class ActivityRepository {
         locationLng: Double?,
         costDescription: String?,
         priceCents: Int?,
+        paymentMode: PaymentMode,
         slotMode: SlotMode,
         maxSlots: Int?,
         createdBy: String,
@@ -72,6 +74,7 @@ class ActivityRepository {
                     locationLng?.let { put("location_lng", it) }
                     costDescription?.let { put("cost_description", it) }
                     priceCents?.let { put("price_cents", it) }
+                    put("payment_mode", paymentMode.wire)
                     put("slot_mode", slotMode.name.lowercase())
                     maxSlots?.let { put("max_slots", it) }
                     put("created_by", createdBy)
