@@ -319,7 +319,11 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    IF v_first_in_queue IS NOT NULL AND v_first_in_queue.user_id != v_user_id THEN
+    -- Sobre el user_id, NO sobre el RECORD entero: `record IS NOT NULL` solo es
+    -- cierto si TODAS sus columnas son no nulas, y position_id es nula en
+    -- cuanto la actividad no usa posiciones. Escrito asi, esta comprobacion no
+    -- se ha ejecutado nunca.
+    IF v_first_in_queue.user_id IS NOT NULL AND v_first_in_queue.user_id <> v_user_id THEN
         -- Someone else has priority in the queue.
         PERFORM promote_substitute(p_slot_id, v_activity.id);
         RETURN FALSE;
@@ -387,9 +391,15 @@ BEGIN
         RAISE EXCEPTION 'Only community admins can unmark slots as paid';
     END IF;
 
+    -- Acotado al ocupante ACTUAL. Sin esto, un pago de Stripe de un ocupante
+    -- anterior, ya reembolsado, bloqueaba para siempre el desmarcado del cobro
+    -- manual del que tiene la plaza ahora. Con reserved_by nulo (plaza de
+    -- etiqueta de invitado) no casa ninguna fila, que es lo correcto: los
+    -- invitados nunca pagan por Stripe.
     IF EXISTS (
         SELECT 1 FROM payments
         WHERE slot_id = p_slot_id AND method = 'stripe'
+          AND user_id = v_slot.reserved_by
           AND status IN ('pending', 'succeeded', 'awaiting_substitute',
                          'refund_pending', 'refunded', 'refund_owed')
     ) THEN
@@ -439,6 +449,8 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.unmark_slot_paid(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.unmark_slot_paid(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.unmark_slot_paid(uuid) TO authenticated;
 
 -- ---------- begin_slot_payment ----------------------------------------------
@@ -551,7 +563,11 @@ BEGIN
             ORDER BY queued_at ASC LIMIT 1;
         END IF;
 
-        IF v_first_in_queue IS NOT NULL AND v_first_in_queue.user_id <> v_user_id THEN
+        -- Sobre el user_id, NO sobre el RECORD entero: `record IS NOT NULL` solo es
+        -- cierto si TODAS sus columnas son no nulas, y position_id es nula en
+        -- cuanto la actividad no usa posiciones. Escrito asi, esta comprobacion no
+        -- se ha ejecutado nunca.
+        IF v_first_in_queue.user_id IS NOT NULL AND v_first_in_queue.user_id <> v_user_id THEN
             RAISE EXCEPTION 'queue_priority';
         END IF;
     END IF;
