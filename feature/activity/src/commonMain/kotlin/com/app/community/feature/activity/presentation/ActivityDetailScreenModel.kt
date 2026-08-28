@@ -256,9 +256,9 @@ class ActivityDetailScreenModel(
     }
 
     /**
-     * Reservar. En actividades de pago sale a Stripe Checkout; en las gratuitas es
-     * instantaneo, exactamente igual que siempre. Ese camino no puede ralentizarse: es la
-     * accion mas usada de la app.
+     * Reservar. Solo el modo agora sale a Stripe Checkout; en gratuitas y en pago externo
+     * es instantaneo, exactamente igual que siempre. Ese camino no puede ralentizarse: es
+     * la accion mas usada de la app.
      */
     fun reserveSlot(slotId: String) {
         // En externo no hay nada que cobrar por aqui: reservar es instantaneo, igual que
