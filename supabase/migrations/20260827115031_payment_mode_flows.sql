@@ -161,7 +161,22 @@ BEGIN
     END IF;
 
     -- Gratuita o de pago externo: se asigna en el acto, sin ofertas ni ventanas.
+    --
+    -- ORDEN DE CERROJOS DEL SUBSISTEMA: primero slots, despues payments. Esta rama
+    -- lo respeta (lee payments y luego llama a settle_previous_occupant, que
+    -- bloquea payments) porque los cuatro llamadores traen la plaza YA bloqueada
+    -- con SELECT ... FROM slots FOR UPDATE: release_slot, decline_substitute_offer,
+    -- expire_substitute_offers y reserve_slot. Quien anada un llamador nuevo tiene
+    -- que bloquear la plaza antes de entrar aqui o se abre un interbloqueo.
     IF activity_payment_mode(p_activity_id) <> 'agora' THEN
+        -- Mismo motivo que en reserve_slot: no se promociona a nadie sobre una
+        -- plaza con un pago en curso.
+        IF EXISTS (
+            SELECT 1 FROM payments WHERE slot_id = p_slot_id AND status = 'pending'
+        ) THEN
+            RETURN FALSE;
+        END IF;
+
         -- No-op si la plaza no venia liberada y pagada.
         PERFORM settle_previous_occupant(p_slot_id);
 
@@ -200,6 +215,16 @@ BEGIN
     RETURN TRUE;
 END;
 $$;
+
+-- CREATE OR REPLACE no reinicia privilegios, y el baseline la dejo con GRANT ALL
+-- a anon y authenticated (baseline:3233-3234). Ahora esta funcion marca pagos
+-- para devolver y reasigna plazas pagadas: es SECURITY DEFINER y no comprueba
+-- pertenencia, asi que expuesta es un regalo. No la llama ningun cliente.
+-- Mismo criterio que expire_substitute_offers.
+REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.promote_substitute(uuid, uuid) TO service_role;
 
 -- ---------- reserve_slot ----------------------------------------------------
 -- Base: la version viva del baseline (20260625120019_baseline.sql:1880).
@@ -241,6 +266,25 @@ BEGIN
         AND v_slot.released_at IS NOT NULL
         AND v_slot.reserved_by IS DISTINCT FROM v_user_id
         AND v_mode <> 'agora';
+
+    -- Un Checkout abierto sobre esta plaza NO lo ve el indice
+    -- payments_one_pending_per_slot: ese cerrojo solo protege a quien inserta.
+    -- Si la actividad degrada a externa mientras alguien esta pagando, el relevo
+    -- instantaneo le pasaria por encima y su pago aterrizaria sobre una plaza que
+    -- ya es de otro. Que lo resuelva antes el retorno, el webhook o el barrido.
+    IF v_is_takeover AND EXISTS (
+        SELECT 1 FROM payments WHERE slot_id = p_slot_id AND status = 'pending'
+    ) THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Simetrica a la de begin_slot_payment. En modo agora se reserva pagando, y
+    -- no por aqui. El repliegue del cliente a reserve_slot cuando el Checkout
+    -- responde payments_not_enabled sigue funcionando: en ese momento el modo
+    -- efectivo ya no es 'agora', asi que esta guarda no salta.
+    IF v_mode = 'agora' THEN
+        RETURN FALSE;
+    END IF;
 
     IF v_slot.status <> 'available' AND NOT v_is_takeover THEN
         RETURN FALSE;
@@ -346,7 +390,7 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM payments
         WHERE slot_id = p_slot_id AND method = 'stripe'
-          AND status IN ('succeeded', 'awaiting_substitute',
+          AND status IN ('pending', 'succeeded', 'awaiting_substitute',
                          'refund_pending', 'refunded', 'refund_owed')
     ) THEN
         RAISE EXCEPTION 'paid_with_stripe';
@@ -374,6 +418,19 @@ BEGIN
             v_offered_to, 'slot_removed', 'Oferta cancelada',
             'La plaza que te habían ofrecido en ' || v_activity.name ||
             ' ya no está disponible.',
+            jsonb_build_object('activity_id', v_activity.id, 'slot_id', p_slot_id)
+        );
+    END IF;
+
+    -- Quien libero la plaza vuelve a ser su titular sin haberlo pedido. El aviso
+    -- al ofertado no cubre esto: son dos personas distintas.
+    IF v_slot.released_at IS NOT NULL AND v_slot.reserved_by IS NOT NULL
+       AND v_slot.reserved_by <> v_user_id THEN
+        INSERT INTO notifications (user_id, type, title, body, data)
+        VALUES (
+            v_slot.reserved_by, 'slot_removed', 'Tu plaza vuelve a ser tuya',
+            'Un administrador ha deshecho el cobro de tu plaza en ' || v_activity.name ||
+            ', así que ya no está buscando sustituto.',
             jsonb_build_object('activity_id', v_activity.id, 'slot_id', p_slot_id)
         );
     END IF;
