@@ -52,9 +52,11 @@ ALTER TABLE activities ADD CONSTRAINT activities_mode_matches_price
 -- Consecuencia asumida: desde un cliente viejo se puede seguir pasando una
 -- actividad de pago a gratuita y al reves, aunque el modo sea fijo al crear en
 -- la app nueva. Es exactamente el comportamiento de hoy, que es lo que se busca.
+-- SECURITY DEFINER porque el EXISTS de abajo no puede depender de la RLS del
+-- invocante: su resultado es irreversible (el modo es fijo al crear).
 CREATE OR REPLACE FUNCTION public.activities_derive_payment_mode()
     RETURNS trigger
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'pg_temp'
     AS $$
 BEGIN
