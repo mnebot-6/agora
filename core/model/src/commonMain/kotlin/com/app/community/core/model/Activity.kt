@@ -31,13 +31,15 @@ data class Activity(
     @SerialName("cost_description") val costDescription: String? = null,
     /** Importe por plaza en centimos. null = actividad gratuita. */
     @SerialName("price_cents") val priceCents: Int? = null,
+    /** Como se cobra. Fijo desde que se crea la actividad. */
+    @SerialName("payment_mode") val paymentMode: PaymentMode = PaymentMode.FREE,
     @SerialName("slot_mode") val slotMode: SlotMode,
     @SerialName("max_slots") val maxSlots: Int? = null,
     @SerialName("created_by") val createdBy: String,
     val status: ActivityStatus = ActivityStatus.ACTIVE,
 ) {
-    /** Reservar en esta actividad implica pagar. */
-    val isPaid: Boolean get() = priceCents != null
+    /** Tiene importe, sea quien sea el que lo cobra. */
+    val isPaid: Boolean get() = paymentMode != PaymentMode.FREE
 
     val location: Location?
         get() = locationName?.let { Location(it, locationLat, locationLng) }
