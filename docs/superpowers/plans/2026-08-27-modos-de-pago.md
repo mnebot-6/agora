@@ -22,56 +22,24 @@ haya dos versiones de la regla del dinero.
 
 ---
 
-## Estado de ejecución — actualizado 2026-08-27, sesión pausada
+## Estado de ejecución — actualizado 2026-08-27
 
 Rama: `feat/modos-de-pago`. **Nada aplicado todavía contra la base de datos.**
 
 | Tareas | Estado |
 |---|---|
 | 1 | ✅ Hecha, revisada y corregida (`efb6a54`) |
-| 2-5 | 🟡 Escritas y revisadas; **quedan 5 correcciones de la revisión de calidad sin aplicar** |
-| 6-15 | ⬜ Sin empezar |
+| 2-5 | ✅ Hechas, revisadas y corregidas (`f22415a`) |
+| 6-15 | ⬜ Sin empezar. La 6 es el primer punto de despliegue |
 
-### Lo primero al retomar: terminar las correcciones de las tareas 2-5
+### Agujero preexistente descubierto por el camino
 
-Sobre `supabase/migrations/20260827115031_payment_mode_flows.sql`. Ya aplicado en el
-commit WIP: la cabecera en futuro, el `SELECT` de la actividad sacado del bucle, el
-`coalesce` duplicado y el fan-out a admins como `INSERT ... SELECT`. **Falta:**
-
-1. **CRÍTICO — `promote_substitute` sigue con `GRANT ALL` a `anon`** desde el baseline
-   (líneas 3233-3234). `CREATE OR REPLACE` no reinicia privilegios, y ahora esa función
-   marca pagos para devolver y reasigna plazas pagadas. Añadir tras su definición:
-
-   ```sql
-   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM PUBLIC;
-   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM anon;
-   REVOKE ALL ON FUNCTION public.promote_substitute(uuid, uuid) FROM authenticated;
-   GRANT EXECUTE ON FUNCTION public.promote_substitute(uuid, uuid) TO service_role;
-   ```
-
-2. **CRÍTICO — el relevo instantáneo atropella un Checkout abierto.** El índice
-   `payments_one_pending_per_slot` solo protege a quien INSERTA, y las rutas nuevas no
-   insertan. Si la comunidad pierde el cobrador mientras alguien paga, el relevo le pasa
-   por encima: esa persona acaba pagando por Bizum, sin plaza, y con su pago en
-   `succeeded`, o sea fuera de toda lista de deudas. Añadir la guarda en tres sitios:
-
-   - `reserve_slot`, tras calcular `v_is_takeover`:
-     `IF v_is_takeover AND EXISTS (SELECT 1 FROM payments WHERE slot_id = p_slot_id AND status = 'pending') THEN RETURN FALSE; END IF;`
-   - `promote_substitute`, como primera sentencia de la rama `<> 'agora'`: el mismo
-     `EXISTS`, con `RETURN FALSE`.
-   - `unmark_slot_paid`: añadir `'pending'` a la lista de estados de su guarda de Stripe.
-
-3. **`unmark_slot_paid` no avisa a quien liberó la plaza**, que vuelve a ser su titular sin
-   pedirlo. Notificación `slot_removed` a `v_slot.reserved_by` cuando
-   `v_slot.released_at IS NOT NULL` y no sea el propio admin.
-
-4. **`reserve_slot` deja reservar gratis en modo `agora`** (preexistente, pero la función
-   se reescribe entera aquí). Guarda simétrica a la de `begin_slot_payment`:
-   `IF v_mode = 'agora' THEN RETURN FALSE; END IF;`, después de la guarda del punto 2.
-
-5. Comentario en `promote_substitute` dejando escrito que el orden de cerrojos del
-   subsistema es **slots primero, payments después**, y que sus llamadores traen la plaza
-   ya bloqueada.
+`joinUnlimited()` en `ActivityDetailScreenModel.kt:372` crea una plaza y llama al RPC
+`reserve_slot` **directamente, sin mirar el precio ni el modo**. En producción, hoy, eso
+permite apuntarse gratis a una actividad de pago de aforo ilimitado. La guarda
+`IF v_mode = 'agora' THEN RETURN FALSE` de la migración lo cierra en el servidor, pero
+deja al cliente fallando en silencio: plaza huérfana y ni un mensaje. **El arreglo está en
+el paso 3 de la tarea 12 y tiene que estar desplegado antes o a la vez que la migración.**
 
 ### Dos hallazgos de la revisión que se DESCARTARON, no los reabras
 
@@ -1738,7 +1706,47 @@ Sustituir el cuerpo de `reserveSlot` por:
     }
 ```
 
-- [ ] **Paso 3: Añadir `unmarkSlotPaid`**
+- [ ] **Paso 3: Arreglar `joinUnlimited`, que se salta el cobro entero**
+
+`joinUnlimited()` crea una plaza y llama al **repositorio** directamente, sin mirar el
+precio ni el modo. Es un agujero que ya existe en producción: en una actividad de pago de
+aforo ilimitado, "Apuntarme" reserva gratis y nunca sale a Checkout. La guarda
+`IF v_mode = 'agora' THEN RETURN FALSE` que la migración añade a `reserve_slot` lo cierra
+en el servidor, pero sin este cambio el cliente se queda fallando en silencio: plaza
+huérfana creada y ni un mensaje.
+
+Sustituir el cuerpo entero de `joinUnlimited` por:
+
+```kotlin
+    fun joinUnlimited() {
+        screenModelScope.launch {
+            // For unlimited mode, create a new slot and reserve it
+            slotRepository.createSlots(activityId, 1)
+                .onSuccess {
+                    // Reload to get the new slot, then reserve it
+                    val slots = slotRepository.getSlots(activityId).getOrNull() ?: return@onSuccess
+                    val availableSlot = slots.lastOrNull { it.isAvailable }
+                    if (availableSlot != null) {
+                        // Por reserveSlot del modelo, NO por el repositorio: en modo agora
+                        // hay que salir a Checkout. Llamar al RPC a pelo era apuntarse
+                        // gratis a una actividad de pago de aforo ilimitado, y el servidor
+                        // ahora lo rechaza sin que el usuario vea nada.
+                        reserveSlot(availableSlot.id)
+                    } else {
+                        load()
+                    }
+                }
+                .onError { msg, _ ->
+                    _actionMessage.value = "Error: $msg"
+                }
+        }
+    }
+```
+
+`reserveSlot` ya se encarga del `load()` en los caminos gratuito y externo, y en `agora`
+deja la URL de Checkout puesta, así que el `load()` incondicional de antes sobra.
+
+- [ ] **Paso 4: Añadir `unmarkSlotPaid`**
 
 Justo después de `markSlotPaid`:
 
@@ -1765,7 +1773,7 @@ Justo después de `markSlotPaid`:
     }
 ```
 
-- [ ] **Paso 4: Compilar**
+- [ ] **Paso 5: Compilar**
 
 ```bash
 ./gradlew :composeApp:compileDebugKotlinAndroid
@@ -1773,7 +1781,7 @@ Justo después de `markSlotPaid`:
 
 Esperado: compila.
 
-- [ ] **Paso 5: Commit**
+- [ ] **Paso 6: Commit**
 
 ```bash
 git add feature/activity
