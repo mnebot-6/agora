@@ -28,21 +28,63 @@ Rama: `feat/modos-de-pago`. **Nada aplicado todavía contra la base de datos.**
 
 | Tareas | Estado |
 |---|---|
-| 1-5 | ✅ Hechas, revisadas y corregidas (`efb6a54`, `f22415a`, `30f67cf`) |
-| 6 | ✅ Migraciones verificadas contra un Postgres real en Docker (`e0d595a`) |
-| 7-15 | ⬜ Sin empezar |
+| 1-5 | ✅ SQL escrito, revisado y corregido dos veces |
+| 6 | ✅ Verificado contra un Postgres real en Docker: 17 migraciones y 12 escenarios |
+| 7-8 | ✅ Modelo y repositorios, 6 tests nuevos |
+| 9-11 | ✅ Crear y editar |
+| 12-13 | ✅ Detalle de la actividad |
+| 14 | ✅ La Edge Function delega el traspaso en la RPC |
+| 15 | ⬜ **Pendiente: despliegue y comprobación manual. Lo lanza una persona.** |
 
-**Las dos migraciones siguen sin aplicarse a producción**, y no se aplican hasta tener lista
-la app: van juntas en la misma ventana, justo antes de la tarea 15.
+**Nada se ha desplegado.** Hay tres migraciones sin aplicar (`20260827113804`,
+`20260827115031`, `20260828101500`), las Edge Functions sin desplegar y la app sin publicar.
+
+### Cosas descubiertas por el camino que no estaban en el plan
+
+Todas arregladas dentro de esta rama:
+
+1. **La prioridad de la cola de suplentes lleva rota desde el baseline.** `RECORD IS NOT NULL`
+   en Postgres solo es cierto si todas las columnas son no nulas, y `substitute_queue.position_id`
+   es nula en cuanto la actividad no usa posiciones. La comprobación no se ha ejecutado nunca.
+2. **`joinUnlimited` se saltaba el cobro entero**: creaba plaza y llamaba al RPC sin mirar el
+   precio, así que en aforo ilimitado de pago se reservaba gratis.
+3. **La restricción nueva habría roto a los clientes ya instalados.** Trigger de compatibilidad.
+4. **En aforo ilimitado no había forma de marcar a nadie como pagado**: el diseño lo promete y
+   la fila de participante no lo ofrecía.
+5. **Los invitados no veían el importe**, ni en la app ni en la landing web del enlace compartido.
+6. `unmark_slot_paid` se bloqueaba de por vida por un pago de Stripe ajeno ya reembolsado.
+
+### `deno` no está instalado
+
+`deno test supabase/functions/_shared/payments_test.ts` no se ha podido ejecutar. El cambio de
+la tarea 14 es una sustitución sin símbolos nuevos, pero conviene correrlo antes de desplegar
+las funciones.
 
 ### Agujero preexistente descubierto por el camino
 
 `joinUnlimited()` en `ActivityDetailScreenModel.kt:372` crea una plaza y llama al RPC
 `reserve_slot` **directamente, sin mirar el precio ni el modo**. En producción, hoy, eso
 permite apuntarse gratis a una actividad de pago de aforo ilimitado. La guarda
-`IF v_mode = 'agora' THEN RETURN FALSE` de la migración lo cierra en el servidor, pero
-deja al cliente fallando en silencio: plaza huérfana y ni un mensaje. **El arreglo está en
-el paso 3 de la tarea 12 y tiene que estar desplegado antes o a la vez que la migración.**
+`IF v_mode = 'agora' THEN RETURN FALSE` de la migración lo cierra en el servidor. El
+arreglo del cliente está en el paso 3 de la tarea 12.
+
+### ORDEN DE DESPLIEGUE: migraciones, funciones, app. En ese orden y sin saltárselo
+
+**La app NO puede salir antes que las migraciones.** `Activity.paymentMode` tiene
+`PaymentMode.FREE` por defecto, así que contra una base sin la columna `payment_mode`
+**toda** actividad decodifica como gratuita, `effectiveMode()` devuelve `FREE` y reservar
+se vuelve instantáneo: cualquiera se quedaría gratis una plaza de una actividad de Stripe
+con dinero real detrás.
+
+**Las Edge Functions tampoco pueden salir antes que las migraciones.** `payments.ts` llama
+a `settle_previous_occupant` y descarta el error; si la función SQL todavía no existe,
+ningún ocupante anterior recibiría su devolución y nada quedaría registrado.
+
+Al revés no duele: con las migraciones puestas, los clientes viejos siguen funcionando
+—el Checkout no cambia y el trigger de compatibilidad cubre crear y editar— y el único
+daño es el conocido, que `joinUnlimited` falle en silencio en una actividad `agora` de
+aforo ilimitado hasta que llegue la app. Por eso la ventana entre los tres pasos debe ser
+corta, pero el orden no es negociable.
 
 ### Dos hallazgos de la revisión que se DESCARTARON, no los reabras
 
