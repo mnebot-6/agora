@@ -1,5 +1,38 @@
 # Pendiente para subir Agora a Google Play
 
+## Estado 2026-08-31 — subida de la v1.1.0 (modos de pago)
+
+Todo lo de abajo (secciones de junio) ya está hecho: ficha, assetlinks con el SHA
+de Play App Signing, Data Safety, clasificación, canal de Prueba interna activo.
+Lo único que queda de aquello es el **tester #12** si se quiere ir a Producción.
+
+Preparado en esta sesión:
+
+| Item | Estado |
+|---|---|
+| `versionCode` 3 → **4**, `versionName` 1.0.2 → **1.1.0** | hecho en `composeApp/build.gradle.kts` |
+| `.aab` firmado (Play App Signing, keystore local) | `composeApp/build/outputs/bundle/release/composeApp-release.aab` |
+| Notas de versión es-ES y en-US | `docs/play_release_notes_1.1.0.md` |
+| Migraciones de pago en producción | aplicadas el 2026-08-28 |
+| Edge Functions | desplegadas el 2026-08-28 |
+| Web (`share-agora.app`) | desplegada, md5 verificado contra el build local |
+
+Lo que hay que hacer a mano (nadie más puede):
+
+1. Subir el `.aab` a **Prueba interna** → Crear versión → arrastrar el fichero.
+2. Pegar las notas de `docs/play_release_notes_1.1.0.md`.
+3. Revisar y lanzar el despliegue en Prueba interna.
+4. Instalar desde Play y pasar la comprobación manual de
+   `docs/superpowers/plans/2026-08-27-modos-de-pago.md` (10 pasos).
+
+**Hasta que esta versión llegue a los móviles, `joinUnlimited` falla en silencio
+en actividades `agora` de aforo ilimitado.** Es el daño conocido del orden de
+despliegue (migraciones primero, app última).
+
+---
+
+## Histórico — sesiones de junio 2026
+
 Última actualización: **2026-06-25 fin de sesión**.
 
 App ya creada en Play Console:
