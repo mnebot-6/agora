@@ -246,9 +246,7 @@ private fun ActivityDetailContent(
                         activity.priceCents?.let { formatEuros(it) },
                         activity.costDescription,
                     ).joinToString(" · ").ifBlank { null }
-                    cost?.let { cost ->
-                        Text(stringResource(Res.string.detail_cost, cost), style = MaterialTheme.typography.bodyMedium)
-                    }
+                    cost?.let { CostLine(it) }
 
                     activity.description?.let { desc ->
                         if (desc.isNotBlank()) {

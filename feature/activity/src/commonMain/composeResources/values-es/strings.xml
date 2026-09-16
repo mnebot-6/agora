@@ -44,6 +44,8 @@
     <string name="detail_location">Lugar: %1$s</string>
     <string name="detail_cost">Coste: %1$s</string>
     <string name="detail_location_cd">Abrir ubicación en mapas</string>
+    <string name="detail_phone_copy">Copiar el teléfono</string>
+    <string name="detail_phone_copied">Número copiado</string>
     <string name="detail_status_archived">Archivada</string>
     <string name="detail_status_label">Estado: %1$s</string>
     <string name="detail_edit">Editar</string>
