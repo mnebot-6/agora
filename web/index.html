@@ -79,6 +79,8 @@
       color: var(--primary);
       border: 1px solid var(--primary);
     }
+    /* Las apps nativas aún no están publicadas: se anuncian, no se enlazan. */
+    .btn.disabled { opacity: 0.55; cursor: default; }
     .hint {
       color: var(--muted);
       font-size: 0.85rem;
@@ -104,9 +106,8 @@
     </p>
 
     <a class="btn" href="/app/">Abrir Agora</a>
-    <a class="btn secondary" href="https://play.google.com/store/apps/details?id=app.shareagora.community">
-      Descargar en Google Play
-    </a>
+    <span class="btn secondary disabled">Google Play &middot; próximamente</span>
+    <span class="btn secondary disabled">App Store &middot; próximamente</span>
 
     <p class="hint">
       La versión web funciona en iPhone (Safari 18.2 o superior) y en cualquier

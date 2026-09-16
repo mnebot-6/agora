@@ -78,7 +78,6 @@
   </div>
 
   <script>
-    const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.shareagora.community";
 
     function esc(s) {
       return String(s ?? "").replace(/[&<>"']/g, (c) => (
@@ -99,11 +98,12 @@
       content.innerHTML = `<p>Este enlace no es correcto.</p>`;
     } else {
       content.innerHTML = `
-        <p>Ábrela en el navegador y únete con este código, o instala la app:</p>
+        <p>Ábrela en el navegador y únete con este código:</p>
         <div class="code">${esc(code)}</div>
         <a class="btn" id="openWeb" href="/app/?c=${encodeURIComponent(code)}">Abrir en el navegador</a>
         <button class="secondary" id="openApp">Abrir en la app</button>
-        <button class="secondary" id="getPlay">Descargar en Google Play</button>`;
+        <button class="secondary" disabled>Google Play &middot; próximamente</button>
+        <button class="secondary" disabled>App Store &middot; próximamente</button>`;
 
       // "Abrir en el navegador" (principal, sobre todo para iOS): la web app pide
       // login/registro y auto-une a la comunidad con el código (App.kt lo resuelve
@@ -114,7 +114,6 @@
       document.getElementById("openApp").onclick = () => {
         location.href = "agora://invite/" + encodeURIComponent(code);
       };
-      document.getElementById("getPlay").onclick = () => { location.href = PLAY_STORE_URL; };
     }
   </script>
 </body>
