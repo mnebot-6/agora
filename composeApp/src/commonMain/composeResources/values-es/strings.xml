@@ -46,4 +46,8 @@
     <string name="day_fri">Viernes</string>
     <string name="day_sat">S\u00e1bado</string>
     <string name="day_sun">Domingo</string>
+
+    <!-- Link de actividad -->
+    <string name="activity_link_not_found">Este enlace ya no es válido.</string>
+    <string name="activity_link_close">Cerrar</string>
 </resources>

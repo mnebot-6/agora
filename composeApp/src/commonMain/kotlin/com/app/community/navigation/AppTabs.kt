@@ -23,7 +23,6 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.jetbrains.compose.resources.stringResource
 import com.app.community.core.common.DeepLinkHandler
 import com.app.community.feature.activity.presentation.ActivityDetailScreen
-import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.community.presentation.AutoJoinByInviteScreen
 import com.app.community.feature.community.presentation.CommunityListScreen
 import com.app.community.feature.notification.presentation.NotificationListScreen
@@ -47,7 +46,7 @@ object AgoraTab : Tab {
             LaunchedEffect(pendingActivityCode) {
                 val code = DeepLinkHandler.consumeActivityCode()
                 if (code != null) {
-                    navigator.push(GuestActivityScreen(code))
+                    navigator.push(ActivityLinkScreen(code))
                 }
             }
             LaunchedEffect(pendingNotificationActivityId) {

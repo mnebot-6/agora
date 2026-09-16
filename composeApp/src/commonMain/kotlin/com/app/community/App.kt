@@ -37,7 +37,6 @@ import com.app.community.core.ui.components.AgoraNavigationBarItem
 import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.theme.AgoraTypography
 import com.app.community.core.ui.theme.AppTheme
-import com.app.community.feature.activity.presentation.GuestActivityScreen
 import com.app.community.feature.auth.presentation.LoginScreen
 import com.app.community.navigation.AgoraTab
 import com.app.community.navigation.CommunitiesTab
@@ -58,8 +57,6 @@ fun App() {
     val authRepository = koinInject<AuthRepository>()
     val profileRepository = koinInject<ProfileRepository>()
     val isGuest by authRepository.isGuestSession.collectAsState(initial = false)
-    val guestStore = koinInject<GuestSessionStore>()
-    val pendingActivityCode by DeepLinkHandler.pendingActivityCode.collectAsState()
     LaunchedEffect(isAuthenticated, isGuest) {
         if (isAuthenticated == true && !isGuest) {
             val userId = authRepository.currentUserId() ?: return@LaunchedEffect
@@ -107,47 +104,21 @@ fun App() {
                 when {
                     // Supabase todavía restaurando sesión desde storage.
                     isAuthenticated == null -> LoadingScreen()
-                    // Sesión de invitado anónimo: UI confinada a la actividad.
+                    // Sesión anónima que dejó el antiguo formulario de invitado: ya no
+                    // tiene UI, se cierra y la persona pasa por el login.
                     isAuthenticated == true && isGuest -> {
-                        LaunchedEffect(pendingActivityCode) {
-                            if (pendingActivityCode != null) {
-                                guestStore.setActivityCode(pendingActivityCode)
-                                DeepLinkHandler.consumeActivityCode()
-                            }
-                        }
-                        val guestCode = guestStore.activityCode()
-                        if (guestCode != null) {
-                            key(guestCode) { Navigator(GuestActivityScreen(guestCode)) }
-                        } else {
-                            // Sesión anónima sin actividad objetivo → cerrar sesión.
-                            LaunchedEffect(Unit) { authRepository.signOut() }
-                            LoadingScreen()
-                        }
-                    }
-                    // Usuario real: UI de miembro. El deep link de actividad se
-                    // resuelve en AgoraTab (miembro → detalle; no miembro →
-                    // flujo de invitado con su identidad real).
-                    isAuthenticated == true -> {
-                        LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
-                        MainContent(
-                            selectedTab = selectedTab,
-                            onSelectTab = { selectedTab = it },
-                        )
-                    }
-                    // No autenticado: si llega un link de actividad, entrar como
-                    // invitado anónimo; si no, login.
-                    pendingActivityCode != null -> {
-                        LaunchedEffect(pendingActivityCode) {
-                            guestStore.setActivityCode(pendingActivityCode)
-                            DeepLinkHandler.consumeActivityCode()
-                            authRepository.signInAnonymously()
-                        }
+                        LaunchedEffect(Unit) { authRepository.signOut() }
                         LoadingScreen()
                     }
-                    else -> {
-                        LaunchedEffect(Unit) { guestStore.setActivityCode(null) }
-                        Navigator(LoginScreen())
-                    }
+                    // Usuario real: UI de miembro. El deep link de actividad se
+                    // resuelve en AgoraTab (ActivityLinkScreen).
+                    isAuthenticated == true -> MainContent(
+                        selectedTab = selectedTab,
+                        onSelectTab = { selectedTab = it },
+                    )
+                    // No autenticado: login. Un link de actividad queda pendiente
+                    // en DeepLinkHandler y se resuelve al entrar.
+                    else -> Navigator(LoginScreen())
                 }
             }
         }

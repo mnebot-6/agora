@@ -72,7 +72,6 @@ import com.app.community.core.ui.components.LoadingScreen
 import com.app.community.core.ui.components.SlotStatusBadge
 import com.app.community.core.ui.components.MarbleCard
 import com.app.community.core.ui.share.rememberInviteSharer
-import com.app.community.core.model.PendingGuestRequest
 import com.app.community.core.ui.theme.AgoraElevation
 import com.app.community.core.ui.theme.AgoraSpacing
 import com.app.community.core.ui.theme.MarblePanelShape
@@ -312,18 +311,6 @@ private fun ActivityDetailContent(
                         onClick = screenModel::generateGuestLink,
                         variant = AgoraButtonVariant.Secondary,
                         modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Cola FIFO de solicitudes de invitados pendientes
-            if (state.pendingGuestRequests.isNotEmpty()) {
-                item { FriezeBandHeader(title = stringResource(Res.string.detail_guest_requests_header)) }
-                items(state.pendingGuestRequests, key = { it.id }) { request ->
-                    GuestRequestRow(
-                        request = request,
-                        onApprove = { screenModel.approveGuestRequest(request.id) },
-                        onReject = { screenModel.rejectGuestRequest(request.id) },
                     )
                 }
             }
@@ -691,53 +678,6 @@ private fun ParticipantRow(
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelMedium,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GuestRequestRow(
-    request: PendingGuestRequest,
-    onApprove: () -> Unit,
-    onReject: () -> Unit,
-) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MarblePanelShape,
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            modifier = Modifier.padding(AgoraSpacing.md).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(request.guestName, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    request.guestEmail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (request.requestedPositions.isNotEmpty()) {
-                    Text(
-                        request.requestedPositions.joinToString(" · "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(AgoraSpacing.xs)) {
-                TextButton(onClick = onApprove) {
-                    Text(stringResource(Res.string.detail_guest_request_approve), style = MaterialTheme.typography.labelMedium)
-                }
-                TextButton(onClick = onReject) {
-                    Text(
-                        stringResource(Res.string.detail_guest_request_reject),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
             }
         }
     }

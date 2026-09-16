@@ -2,9 +2,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Serve a/index.html for any /a/* path (dynamic guest link codes)
+    // Link de actividad sin la app instalada: a la web app, que pide iniciar sesion
+    // y luego abre la actividad (miembro) o la comunidad (no miembro).
     if (url.pathname.startsWith("/a/") && url.pathname.length > 3) {
-      return env.ASSETS.fetch(new URL("/a/index.html", url));
+      const code = url.pathname.slice(3).split("/")[0]; // ya viene codificado
+      return Response.redirect(new URL(`/app/?a=${code}`, url), 302);
     }
 
     // Serve c/index.html for any /c/* path (community invite codes):

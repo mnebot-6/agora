@@ -21,11 +21,9 @@ import com.app.community.core.domain.auth.SignUpUseCase
 import com.app.community.core.domain.community.CreateCommunityUseCase
 import com.app.community.core.domain.community.GetMyCommunitiesUseCase
 import com.app.community.core.domain.community.JoinCommunityUseCase
-import com.app.community.GuestSessionStore
 import com.app.community.feature.activity.presentation.ActivityDetailScreenModel
 import com.app.community.feature.activity.presentation.CreateActivityScreenModel
 import com.app.community.feature.activity.presentation.EditActivityScreenModel
-import com.app.community.feature.activity.presentation.GuestActivityScreenModel
 import com.app.community.feature.auth.presentation.ForgotPasswordScreenModel
 import com.app.community.feature.auth.presentation.LoginScreenModel
 import com.app.community.feature.auth.presentation.ProfileScreenModel
@@ -70,7 +68,6 @@ fun repositoryModule(settings: Settings) = module {
     single { ReportRepository() }
     single { BlockRepository() }
     single { GuestRepository() }
-    single { GuestSessionStore(get()) }
 }
 
 val useCaseModule = module {
@@ -118,12 +115,6 @@ val screenModelModule = module {
             profileRepository = get(),
             guestRepository = get(),
             paymentRepository = get(),
-        )
-    }
-    factory { params ->
-        GuestActivityScreenModel(
-            code = params.get(),
-            guestRepository = get(),
         )
     }
     factory { params ->

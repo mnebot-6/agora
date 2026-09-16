@@ -19,10 +19,9 @@ class AuthRepository {
     }
 
     /**
-     * True cuando la sesión activa es de un invitado anónimo. Todas las cuentas
-     * reales se crean vía Email (siempre tienen email no nulo); los invitados
-     * anónimos no tienen email. Se usa para confinar la sesión de invitado fuera
-     * de la UI de miembro (ver App.kt).
+     * True cuando la sesión activa es de un invitado anónimo del antiguo formulario
+     * web. Las cuentas reales se crean vía Email y siempre tienen email. App.kt
+     * cierra estas sesiones: ya no hay UI de invitado.
      */
     val isGuestSession: Flow<Boolean> = auth.sessionStatus.map {
         val user = auth.currentUserOrNull()
@@ -30,15 +29,6 @@ class AuthRepository {
     }
 
     fun currentUserId(): String? = auth.currentUserOrNull()?.id
-
-    fun isAnonymous(): Boolean {
-        val user = auth.currentUserOrNull() ?: return false
-        return user.email.isNullOrBlank()
-    }
-
-    /** Inicia sesión anónima (invitado). Cada dispositivo obtiene su identidad. */
-    suspend fun signInAnonymously(): AppResult<Unit> =
-        safeCall { auth.signInAnonymously() }
 
     suspend fun signUp(email: String, password: String, displayName: String): AppResult<Unit> =
         safeCall {

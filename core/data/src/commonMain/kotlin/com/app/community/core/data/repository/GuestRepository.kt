@@ -4,8 +4,6 @@ import com.app.community.core.common.AppResult
 import com.app.community.core.common.safeCall
 import com.app.community.core.data.SupabaseProvider
 import com.app.community.core.model.GuestActivityPreview
-import com.app.community.core.model.GuestRequestResult
-import com.app.community.core.model.PendingGuestRequest
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -14,9 +12,8 @@ import kotlinx.serialization.json.put
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
 /**
- * Acceso a las RPCs de invitados a actividad (migración 024). Todas son
- * SECURITY DEFINER y validan el código del link en el servidor; el cliente
- * nunca pasa IDs de comunidad/actividad para autorizar.
+ * Link compartible de una actividad (migración 024). Las RPCs son SECURITY
+ * DEFINER y validan el código del link en el servidor.
  */
 class GuestRepository {
 
@@ -36,56 +33,12 @@ class GuestRepository {
         url
     }
 
-    /** Preview de la actividad para un invitado (sirve a anónimos). */
+    /** Resuelve el código del link: actividad, comunidad y si ya soy miembro. */
     suspend fun getPreview(code: String): AppResult<GuestActivityPreview> = safeCall {
         val result = postgrest.rpc(
             function = "get_activity_guest_preview",
             parameters = buildJsonObject { put("p_code", code) },
         )
         lenientJson.decodeFromString<GuestActivityPreview>(result.data)
-    }
-
-    /** Solicita asistencia como invitado (retiene un slot pending). */
-    suspend fun requestSlot(
-        code: String,
-        name: String,
-        email: String,
-    ): AppResult<GuestRequestResult> = safeCall {
-        val result = postgrest.rpc(
-            function = "request_guest_slot",
-            parameters = buildJsonObject {
-                put("p_code", code)
-                put("p_name", name)
-                put("p_email", email)
-            },
-        )
-        lenientJson.decodeFromString<GuestRequestResult>(result.data)
-    }
-
-    /** Admin: cola FIFO de solicitudes pendientes de una actividad. */
-    suspend fun listPendingRequests(activityId: String): AppResult<List<PendingGuestRequest>> = safeCall {
-        val result = postgrest.rpc(
-            function = "list_pending_guest_requests",
-            parameters = buildJsonObject { put("p_activity_id", activityId) },
-        )
-        lenientJson.decodeFromString<List<PendingGuestRequest>>(result.data)
-    }
-
-    /** Admin: aprueba una solicitud (confirma el slot). */
-    suspend fun approveRequest(requestId: String): AppResult<Unit> = safeCall {
-        postgrest.rpc(
-            function = "approve_guest_request",
-            parameters = buildJsonObject { put("p_request_id", requestId) },
-        )
-        Unit
-    }
-
-    /** Admin: rechaza una solicitud (libera el slot). */
-    suspend fun rejectRequest(requestId: String): AppResult<Unit> = safeCall {
-        postgrest.rpc(
-            function = "reject_guest_request",
-            parameters = buildJsonObject { put("p_request_id", requestId) },
-        )
-        Unit
     }
 }

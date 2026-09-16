@@ -19,7 +19,6 @@ import com.app.community.core.model.CommunityMember
 import com.app.community.core.model.CommunityVisibility
 import com.app.community.core.model.MemberRole
 import com.app.community.core.model.PaymentMode
-import com.app.community.core.model.PendingGuestRequest
 import com.app.community.core.model.Position
 import com.app.community.core.model.Profile
 import com.app.community.core.model.Slot
@@ -60,7 +59,6 @@ sealed class ActivityDetailUiState {
         val participantCount: Int = 0,
         val isUserJoined: Boolean = false,
         val isPublicCommunity: Boolean = false,
-        val pendingGuestRequests: List<PendingGuestRequest> = emptyList(),
         val members: List<CommunityMember> = emptyList(),
     ) : ActivityDetailUiState()
 
@@ -102,7 +100,6 @@ class ActivityDetailScreenModel(
     /** Modo que se ejecuta de verdad: 'agora' degrada a externo si la comunidad no cobra. */
     private var effectiveMode: PaymentMode = PaymentMode.FREE
 
-    private var pendingGuestRequests: List<PendingGuestRequest> = emptyList()
     private var members: List<CommunityMember> = emptyList()
 
     init {
@@ -133,13 +130,10 @@ class ActivityDetailScreenModel(
             members = membersResult.getOrNull() ?: emptyList()
             val isAdmin = members.any { it.userId == userId && it.role == MemberRole.ADMIN }
 
-            // Comunidad pública → habilita compartir/invitados; carga la cola FIFO si soy admin
+            // Comunidad pública → habilita compartir el link de la actividad
             val community = communityRepository.getCommunity(activity.communityId).getOrNull()
             isPublicCommunity = community?.visibility?.let { it != CommunityVisibility.PRIVATE } ?: false
             effectiveMode = activity.effectiveMode(community?.stripeChargesEnabled ?: false)
-            pendingGuestRequests = if (isAdmin && isPublicCommunity) {
-                guestRepository.listPendingRequests(activityId).getOrNull() ?: emptyList()
-            } else emptyList()
 
             loadSlots(activity, userId, isAdmin)
         }
@@ -162,7 +156,6 @@ class ActivityDetailScreenModel(
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
-                    pendingGuestRequests = pendingGuestRequests,
                     members = members,
                 )
             }
@@ -178,7 +171,6 @@ class ActivityDetailScreenModel(
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
-                    pendingGuestRequests = pendingGuestRequests,
                     members = members,
                 )
             }
@@ -214,7 +206,6 @@ class ActivityDetailScreenModel(
                     participantCount = slots.count { it.status != SlotStatus.AVAILABLE },
                     isUserJoined = slots.any { it.reservedBy == userId },
                     isPublicCommunity = isPublicCommunity,
-                    pendingGuestRequests = pendingGuestRequests,
                     members = members,
                 )
             }
@@ -571,22 +562,6 @@ class ActivityDetailScreenModel(
 
     fun consumeGuestShareUrl() {
         _guestShareUrl.value = null
-    }
-
-    fun approveGuestRequest(requestId: String) {
-        screenModelScope.launch {
-            guestRepository.approveRequest(requestId)
-                .onSuccess { load() }
-                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
-        }
-    }
-
-    fun rejectGuestRequest(requestId: String) {
-        screenModelScope.launch {
-            guestRepository.rejectRequest(requestId)
-                .onSuccess { load() }
-                .onError { msg, _ -> _actionMessage.value = "Error: $msg" }
-        }
     }
 
     fun clearActionMessage() {
